@@ -18,3 +18,5 @@ Route::get('/projects/{slug}', function ($slug) {
 Route::get('/certifications', function () {
     return Inertia::render('CertificationsPage', ['title' => 'Certifications']);
 });
+
+Route::post('/contact', [\App\Http\Controllers\ContactMessageController::class, 'store']);

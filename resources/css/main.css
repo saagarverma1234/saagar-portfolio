@@ -80,8 +80,15 @@ button {
     padding: 0 2rem;
 }
 
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+}
+
 .section {
-    padding: 6rem 0;
+    padding-top: 6rem;
+    padding-bottom: 6rem;
 }
 
 .font-mono {

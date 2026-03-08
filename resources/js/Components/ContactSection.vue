@@ -30,6 +30,10 @@
                         <transition name="fade">
                             <p v-if="submitted" class="success-msg font-mono">Message sent successfully!</p>
                         </transition>
+                        <transition name="fade">
+                            <p v-if="errorMessage" class="error-msg font-mono"
+                                style="color: #ff4b4b; font-size: 0.875rem;">{{ errorMessage }}</p>
+                        </transition>
                     </form>
 
                     <!-- Alternative Actions -->
@@ -62,6 +66,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
     data() {
         return {
@@ -71,18 +77,27 @@ export default {
                 message: ''
             },
             isSubmitting: false,
-            submitted: false
+            submitted: false,
+            errorMessage: ''
         };
     },
     methods: {
         async handleSubmit() {
             this.isSubmitting = true;
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            this.isSubmitting = false;
-            this.submitted = true;
-            this.form = { name: '', email: '', message: '' };
-            setTimeout(() => { this.submitted = false; }, 5000);
+            this.errorMessage = '';
+
+            try {
+                await axios.post('/contact', this.form);
+                this.isSubmitting = false;
+                this.submitted = true;
+                this.form = { name: '', email: '', message: '' };
+                setTimeout(() => { this.submitted = false; }, 5000);
+            } catch (error) {
+                this.isSubmitting = false;
+                this.errorMessage = 'Oops! Something went wrong. Please try again.';
+                setTimeout(() => { this.errorMessage = ''; }, 5000);
+                console.error(error);
+            }
         }
     }
 }

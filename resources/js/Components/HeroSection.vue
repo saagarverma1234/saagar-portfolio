@@ -29,35 +29,28 @@
 
         <!-- Stats/Impact Section moved back to Hero -->
         <div class="hero-stats" ref="heroStats">
-          <!-- Row 1: Main Work Metrics -->
-          <div class="stats-row">
-            <div class="stat-item">
-              <span class="stat-number font-mono">{{ displayedYears }}+</span>
-              <span class="stat-label">Years of<br>Experience</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number font-mono">{{ displayedHours }}+</span>
-              <span class="stat-label">Total Hours<br>Worked</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number font-mono">{{ displayedSuccess }}%</span>
-              <span class="stat-label">Job Success<br>Score</span>
-            </div>
+          <div class="stat-item">
+            <span class="stat-number font-mono">{{ displayedYears }}+</span>
+            <span class="stat-label">Years of<br>Experience</span>
           </div>
-
-          <!-- Row 2: Achievement Metrics -->
-          <div class="stats-row secondary">
-            <div class="stat-item">
-              <span class="stat-number font-mono">{{ displayedProjects }}+</span>
-              <span class="stat-label">Projects<br>Completed</span>
+          <div class="stat-item">
+            <span class="stat-number font-mono">{{ displayedHours }}+</span>
+            <span class="stat-label">Total Hours<br>Worked</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number font-mono">{{ displayedSuccess }}%</span>
+            <span class="stat-label">Job Success<br>Score</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number font-mono">{{ displayedProjects }}+</span>
+            <span class="stat-label">Projects<br>Completed</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number font-mono">{{ (displayedRating / 10).toFixed(1) }}</span>
+            <div class="stars">
+              <Star v-for="i in 5" :key="i" :size="14" fill="#FFD700" color="#FFD700" />
             </div>
-            <div class="stat-item">
-              <span class="stat-number font-mono">{{ (displayedRating / 10).toFixed(1) }}</span>
-              <div class="stars">
-                <Star v-for="i in 5" :key="i" :size="14" fill="#FFD700" color="#FFD700" />
-              </div>
-              <span class="stat-label">Average<br>Rating</span>
-            </div>
+            <span class="stat-label">Average<br>Rating</span>
           </div>
         </div>
       </div>
@@ -232,7 +225,7 @@ export default {
       const startTime = performance.now();
 
       const targets = {
-        years: 5,
+        years: 6,
         hours: 8000,
         projects: 37,
         rating: 50, // Multiplied by 10 for integer animation
@@ -348,23 +341,13 @@ export default {
 
 /* Stats Styling */
 .hero-stats {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   padding-top: 2rem;
   border-top: 1px solid var(--border);
   width: 100%;
   max-width: 600px;
-}
-
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-}
-
-.stats-row.secondary {
-  grid-template-columns: repeat(3, 1fr);
 }
 
 .stat-item {
@@ -410,6 +393,10 @@ export default {
 @media (max-width: 768px) {
   .hero-actions {
     flex-direction: column;
+  }
+
+  .hero-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -466,7 +453,8 @@ export default {
 .code-title {
   margin: 0 auto;
   font-size: 0.875rem;
-  color: var(--muted);
+  color: var(--text);
+  opacity: 0.5;
 }
 
 .code-body {

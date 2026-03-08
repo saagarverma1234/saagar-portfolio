@@ -262,12 +262,14 @@ export default {
     border-radius: 12px;
     padding: 2rem;
     box-shadow: var(--shadow);
-    display: inline-flex;
+    display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     max-width: 100%;
     position: relative;
     z-index: 21;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .calendar-card-container {

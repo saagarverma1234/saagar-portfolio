@@ -297,7 +297,7 @@ export default {
 }
 
 .project-title {
-    font-size: 3.5rem;
+    font-size: clamp(2rem, 8vw, 3.5rem);
     margin-bottom: 1rem;
     line-height: 1.1;
     letter-spacing: -1px;
