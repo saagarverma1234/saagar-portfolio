@@ -215,10 +215,7 @@ export default {
 <style scoped>
 .preloader {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   /* Background color strictly removed: The cursor's shadow now paints the entire background */
   color: var(--text);
   z-index: 99999;
