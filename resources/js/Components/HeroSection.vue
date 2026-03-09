@@ -10,7 +10,7 @@
           Building scalable software & telling stories through video.
         </h2>
         <p class="hero-description muted-text">
-          Full Stack Developer + Video Editor with over 5 years of experience in crafting experiences that look good and
+          Full Stack Developer + Video Editor with over 6 years of experience in crafting experiences that look good and
           run fast. Based in India, working globally.
         </p>
 
