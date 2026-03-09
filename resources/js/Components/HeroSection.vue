@@ -22,7 +22,7 @@
             rel="noopener noreferrer">
             Upwork
           </a>
-          <a href="/resume.pdf" class="btn-outline" target="_blank">
+          <a href="/assets/resume.pdf" class="btn-outline" download="Saagar_Verma_Resume.pdf">
             Resume
           </a>
         </div>

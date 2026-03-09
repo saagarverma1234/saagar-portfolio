@@ -53,7 +53,7 @@
           <p class="status-msg">
             Currently available for freelance projects and full-time opportunities.
           </p>
-          <a href="/resume.pdf" class="btn-outline resume-link" target="_blank">
+          <a href="/assets/resume.pdf" class="btn-outline resume-link" download="Saagar_Verma_Resume.pdf">
             Get Resume
           </a>
         </div>

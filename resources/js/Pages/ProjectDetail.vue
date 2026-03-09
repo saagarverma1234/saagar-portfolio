@@ -220,10 +220,10 @@ export default {
                 },
                 'coinvo-trading': {
                     title: 'coinvotrading.com',
-                    tags: ['Custom Build', 'Finance'],
-                    problem: 'Required a custom platform providing cryptocurrency trading metrics and live signals.',
-                    solution: 'Built a real-time data dashboard using custom backend services and an interactive frontend.',
-                    techStack: ['Vue/React', 'WebSockets', 'Crypto APIs'],
+                    tags: ['Custom Build', 'Finance', 'Funnels'],
+                    problem: 'The platform needed a high-converting entry point to acquire users, paired with a centralized backend capable of monitoring complex trading analytics and tracking progression.',
+                    solution: 'Engineered a seamless landing page equipped with a custom funnel system to maximize user conversions. Alongside the frontend, built a comprehensive and secure admin panel to track analytics, manage user data, and oversee all trading activities efficiently.',
+                    techStack: ['Vue.js', 'Laravel', 'Tailwind', 'Admin Panel'],
                     results: { 'Platform': 'Custom', 'Status': 'Live' },
                     liveUrl: 'https://coinvotrading.com',
                     image: '/images/projects/coinvo-trading.png',
@@ -279,11 +279,6 @@ export default {
 </script>
 
 <style scoped>
-.project-detail {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
 .back-link {
     margin-bottom: 3rem;
 }

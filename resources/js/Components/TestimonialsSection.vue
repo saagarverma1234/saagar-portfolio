@@ -27,7 +27,8 @@
 
             <div class="testimonials-masonry">
                 <div v-for="(testimonial, index) in visibleTestimonials" :key="index" class="testimonial-card fade-up"
-                    :class="{ 'featured': testimonial.featured }" :style="{ animationDelay: (index * 50) + 'ms' }">
+                    :class="{ 'featured': testimonial.featured }" :style="{ animationDelay: (index * 50) + 'ms' }"
+                    @click="openTestimonial(testimonial)">
 
                     <Quote class="quote-icon" :size="24" />
 
@@ -67,6 +68,46 @@
                 </button>
             </div>
         </div>
+
+        <Transition name="modal-fade">
+            <div v-if="selectedTestimonial" class="testimonial-modal-overlay" @click.self="closeTestimonial">
+                <div class="testimonial-modal-content">
+                    <button class="modal-close-btn" @click="closeTestimonial" aria-label="Close">
+                        <X :size="24" />
+                    </button>
+
+                    <Quote class="quote-icon" :size="24" />
+
+                    <div class="testimonial-body">
+                        <p class="content">{{ selectedTestimonial.text }}</p>
+                        <a v-if="selectedTestimonial.link" :href="selectedTestimonial.link" target="_blank"
+                            class="project-link font-mono">
+                            <ExternalLink :size="14" />
+                            View Project
+                        </a>
+                    </div>
+
+                    <div class="testimonial-footer">
+                        <div class="client-info">
+                            <div class="client-avatar" v-if="selectedTestimonial.avatar">
+                                <img :src="selectedTestimonial.avatar" :alt="selectedTestimonial.author">
+                            </div>
+                            <div class="client-placeholder" v-else>
+                                {{ selectedTestimonial.author.charAt(0) }}
+                            </div>
+                            <div class="meta">
+                                <h4 class="author">{{ selectedTestimonial.author }}</h4>
+                                <p class="role" v-if="selectedTestimonial.role">{{ selectedTestimonial.role }}</p>
+                                <div class="verified-badge" v-if="selectedTestimonial.verified">
+                                    <ShieldCheck :size="12" />
+                                    <span>Verified Client</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
     </section>
 </template>
 
@@ -75,12 +116,24 @@ import {
     Star,
     Quote,
     ShieldCheck,
-    ExternalLink
+    ExternalLink,
+    X
 } from 'lucide-vue-next';
 import { ref, computed, onMounted, nextTick } from 'vue';
 
 const showAll = ref(false);
 const initialLimit = 6;
+const selectedTestimonial = ref(null);
+
+const openTestimonial = (testimonial) => {
+    selectedTestimonial.value = testimonial;
+    document.body.style.overflow = 'hidden';
+};
+
+const closeTestimonial = () => {
+    selectedTestimonial.value = null;
+    document.body.style.overflow = '';
+};
 
 const visibleTestimonials = computed(() => {
     return showAll.value ? testimonials : testimonials.slice(0, initialLimit);
@@ -112,7 +165,7 @@ const testimonials = [
         author: "Christina Stoltz",
         role: "Business Owner",
         verified: true,
-        text: "Saagar didn’t just complete a project — he saved it. I brought Saagar in during a critical moment when my business was under real pressure, timelines were tight, and the work required both technical precision and calm, thoughtful problem-solving. He stepped in immediately, took ownership, and delivered with a level of care and dedication that is extremely rare. What sets Saagar apart is not just his technical skill, but his commitment to his clients. He communicates clearly, works tirelessly, and genuinely cares about the long-term success of the project — not just “checking boxes” or closing a contract."
+        text: "Saagar didn’t just complete a project - he saved it. I brought Saagar in during a critical moment when my business was under real pressure, timelines were tight, and the work required both technical precision and calm, thoughtful problem-solving. He stepped in immediately, took ownership, and delivered with a level of care and dedication that is extremely rare. What sets Saagar apart is not just his technical skill, but his commitment to his clients. He communicates clearly, works tirelessly, and genuinely cares about the long-term success of the project - not just “checking boxes” or closing a contract."
     },
     {
         author: "eCommerce Team",
@@ -311,6 +364,7 @@ onMounted(() => {
     position: relative;
     display: flex;
     flex-direction: column;
+    cursor: pointer;
 }
 
 .testimonial-card:hover {
@@ -418,6 +472,92 @@ onMounted(() => {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.75rem;
+    }
+}
+
+/* Modal Styles */
+.testimonial-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 80px 1rem;
+    /* 80px ensures clearance for navbar and equal bottom margin */
+}
+
+.testimonial-modal-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transform-style: preserve-3d;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.modal-close-btn:hover {
+    color: var(--accent);
+    background-color: rgba(100, 255, 218, 0.1);
+}
+
+/* Transitions */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+    transition: opacity 0.4s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+    opacity: 0;
+}
+
+.modal-fade-enter-active .testimonial-modal-content {
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-fade-enter-from .testimonial-modal-content {
+    transform: perspective(1000px) rotateY(-90deg);
+}
+
+.modal-fade-leave-active .testimonial-modal-content {
+    transition: transform 0.4s ease-in;
+}
+
+.modal-fade-leave-to .testimonial-modal-content {
+    transform: perspective(1000px) rotateY(90deg);
+}
+
+@media (max-width: 640px) {
+    .testimonial-modal-content {
+        padding: 1.5rem;
     }
 }
 </style>

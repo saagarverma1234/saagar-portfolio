@@ -84,7 +84,7 @@ export default {
       this.typeFirstVisitSeq();
     },
     typeFirstVisitSeq() {
-      // Phase 0: Type out "Saagar Verma — "
+      // Phase 0: Type out "Saagar Verma - "
       if (this.firstVisitPhase === 0) {
         if (this.charIndex < this.baseText.length) {
           this.text += this.baseText.charAt(this.charIndex);

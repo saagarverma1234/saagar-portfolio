@@ -16,14 +16,15 @@
                         <p>
                             With over <strong>5 years of professional experience</strong>, I've had the privilege of
                             leading development teams for companies in
-                            Australia and the UAE. My journey has taken me through diverse roles—from lead frontend
-                            developer to technical lead—allowing me to master the entire product lifecycle from initial
+                            Australia and the UAE. My journey has taken me through diverse roles - from lead frontend
+                            developer to technical lead - allowing me to master the entire product lifecycle from
+                            initial
                             architecture to global scale.
                         </p>
                         <p>
-                            I specialize in the <strong>TALL stack</strong> (Tailwind, Alpine, Laravel, Livewire) and
+                            I specialize in building cutting-edge frontends using the
                             <strong>VILT stack</strong> (Vue, Inertia, Laravel, Tailwind), with a strong focus on
-                            <strong>Inertia.js</strong> for building seamless single-page experiences. Beyond pure
+                            <strong>Inertia.js</strong> for creating seamless single-page experiences. Beyond pure
                             coding, I bring deep expertise in <strong>Performance Marketing</strong> and
                             <strong>eCommerce optimization</strong>, ensuring every line of code serves a business
                             objective.
