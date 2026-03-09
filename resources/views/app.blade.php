@@ -9,26 +9,33 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
+    <!-- Fallback Meta Settings -->
+    @php
+        $metaTitle = $page['props']['meta']['title'] ?? config('app.name', 'Saagar Verma | Full Stack Developer & Video Editor');
+        $metaDesc = $page['props']['meta']['description'] ?? 'Hire Saagar Verma, a Senior Full Stack Developer and Video Editor. Specializing in creating fast, scalable websites, custom web apps, eCommerce optimization, and cinematic video storytelling for your brand.';
+        $metaImage = $page['props']['meta']['image'] ?? '/images/saagar-verma.png';
+    @endphp
+
     <!-- Primary Meta Tags -->
-    <title inertia>{{ config('app.name', 'Saagar Verma | Full Stack Developer & Video Editor') }}</title>
-    <meta name="title" content="Saagar Verma | Full Stack Developer & Video Editor">
-    <meta name="description" content="Hire Saagar Verma, a Senior Full Stack Developer and Video Editor. Specializing in creating fast, scalable websites, custom web apps, eCommerce optimization, and cinematic video storytelling for your brand.">
+    <title inertia>{{ $metaTitle }}</title>
+    <meta name="title" content="{{ $metaTitle }}">
+    <meta name="description" content="{{ $metaDesc }}">
     <meta name="keywords" content="freelancer, create a website, web developer, full stack developer, video editor, Laravel, Vue, TALL stack, VILT stack, eCommerce developer, custom website, Saagar Verma">
     <meta name="author" content="Saagar Verma">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ config('app.url') }}/">
-    <meta property="og:title" content="Saagar Verma | Full Stack Developer & Video Editor">
-    <meta property="og:description" content="Hire Saagar Verma, a Senior Full Stack Developer and Video Editor. Specializing in creating fast, scalable websites, custom web apps, eCommerce optimization, and cinematic video storytelling for your brand.">
-    <meta property="og:image" content="{{ asset('images/saagar-verma.png') }}">
+    <meta property="og:url" content="{{ request()->url() }}">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $metaDesc }}">
+    <meta property="og:image" content="{{ asset($metaImage) }}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="{{ config('app.url') }}/">
-    <meta property="twitter:title" content="Saagar Verma | Full Stack Developer & Video Editor">
-    <meta property="twitter:description" content="Hire Saagar Verma, a Senior Full Stack Developer and Video Editor. Specializing in creating fast, scalable websites, custom web apps, eCommerce optimization, and cinematic video storytelling for your brand.">
-    <meta property="twitter:image" content="{{ asset('images/saagar-verma.png') }}">
+    <meta property="twitter:url" content="{{ request()->url() }}">
+    <meta property="twitter:title" content="{{ $metaTitle }}">
+    <meta property="twitter:description" content="{{ $metaDesc }}">
+    <meta property="twitter:image" content="{{ asset($metaImage) }}">
     
     <!-- Fonts & Icons -->
     <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
@@ -38,6 +45,26 @@
 
     @vite(['resources/css/main.css', 'resources/js/app.js'])
     @inertiaHead
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "Person",
+      "name": "Saagar Verma",
+      "url": "{{ config('app.url') }}/",
+      "image": "{{ config('app.url') }}/images/saagar-verma.png",
+      "sameAs": [
+        "https://www.upwork.com/freelancers/~014475753a03f5690d"
+      ],
+      "jobTitle": "Senior Full Stack Developer & Video Editor",
+      "worksFor": {
+        "@@type": "Organization",
+        "name": "Freelance"
+      },
+      "description": "Hire Saagar Verma, a Senior Full Stack Developer and Video Editor based in India, specializing in fast, scalable websites, custom web apps, and cinematic video storytelling."
+    }
+    </script>
 </head>
 <body class="antialiased">
     @inertia

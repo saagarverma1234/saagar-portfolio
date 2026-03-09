@@ -12,7 +12,12 @@ Route::get('/projects', function () {
 });
 
 Route::get('/projects/{slug}', function ($slug) {
-    return Inertia::render('ProjectDetail', ['title' => 'Project', 'slug' => $slug]);
+    $meta = config("projects.{$slug}");
+    return Inertia::render('ProjectDetail', [
+        'title' => 'Project', 
+        'slug' => $slug,
+        'meta' => $meta
+    ]);
 });
 
 Route::get('/certifications', function () {
