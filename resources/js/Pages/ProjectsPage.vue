@@ -18,13 +18,19 @@
         <div class="projects-grid">
             <TransitionGroup name="list" appear>
                 <div v-for="project in filteredProjects" :key="project.slug" class="project-card">
-                    <Link :href="`/projects/${project.slug}`" class="card-link">
                     <div class="card-image">
                         <img v-if="project.image" :src="project.image" :alt="project.title" class="project-img" />
                         <div v-else class="placeholder-img" :style="{ backgroundColor: project.color }"></div>
                     </div>
                     <div class="card-content">
-                        <h3>{{ project.title }}</h3>
+                        <h3>
+                            <Link :href="`/projects/${project.slug}`" class="card-title-link">{{ project.title }}</Link>
+                        </h3>
+                        <a v-if="project.liveUrl" :href="project.liveUrl" target="_blank"
+                            class="external-link font-mono">
+                            {{ project.displayUrl }}
+                            <ExternalLink :size="14" />
+                        </a>
                         <p class="muted-text">{{ project.shortDescription }}</p>
                         <div class="tags">
                             <span v-for="tag in project.tags" :key="tag" class="tag font-mono">
@@ -32,7 +38,6 @@
                             </span>
                         </div>
                     </div>
-                    </Link>
                 </div>
             </TransitionGroup>
         </div>
@@ -66,7 +71,9 @@ export default {
                 // Top Priority
                 {
                     slug: 'coinvo-trading',
-                    title: 'coinvotrading.com',
+                    title: 'Coinvo Trading',
+                    liveUrl: 'https://coinvotrading.com',
+                    displayUrl: 'coinvotrading.com',
                     category: 'Custom Builds',
                     tags: ['Custom Build', 'Finance'],
                     shortDescription: 'Cryptocurrency trading metrics and signals platform.',
@@ -75,7 +82,9 @@ export default {
                 },
                 {
                     slug: 'the-spinal-studio',
-                    title: 'thespinalstudio.com.au',
+                    title: 'The Spinal Studio',
+                    liveUrl: 'https://thespinalstudio.com.au',
+                    displayUrl: 'thespinalstudio.com.au',
                     category: 'WordPress',
                     tags: ['WordPress', 'Healthcare'],
                     shortDescription: 'Chiropractic and wellness center corporate website.',
@@ -84,7 +93,9 @@ export default {
                 },
                 {
                     slug: 'peter-sheppard',
-                    title: 'petersheppard.com.au',
+                    title: 'Peter Sheppard',
+                    liveUrl: 'https://petersheppard.com.au',
+                    displayUrl: 'petersheppard.com.au',
                     category: 'Shopify',
                     tags: ['Shopify', 'E-commerce'],
                     shortDescription: 'Premium footwear e-commerce experience.',
@@ -93,7 +104,9 @@ export default {
                 },
                 {
                     slug: 'fansyme',
-                    title: 'fansyme.com',
+                    title: 'Fansyme',
+                    liveUrl: 'https://fansyme.com',
+                    displayUrl: 'fansyme.com',
                     category: 'Custom Builds',
                     tags: ['Custom Build', 'Platform'],
                     shortDescription: 'Custom bespoke web platform.',
@@ -102,7 +115,9 @@ export default {
                 },
                 {
                     slug: 'bug-tracker',
-                    title: 'bug-tracker.unicornai.org',
+                    title: 'Bug Tracker',
+                    liveUrl: 'https://bug-tracker.unicornai.org',
+                    displayUrl: 'bug-tracker.unicornai.org',
                     category: 'Custom Builds',
                     tags: ['Custom Build', 'SaaS'],
                     shortDescription: 'Custom job and bug tracking system.',
@@ -111,7 +126,9 @@ export default {
                 },
                 {
                     slug: 'unicorn-ai',
-                    title: 'unicornai.org',
+                    title: 'Unicorn AI',
+                    liveUrl: 'https://unicornai.org',
+                    displayUrl: 'unicornai.org',
                     category: 'Custom Builds',
                     tags: ['Custom Build', 'AI'],
                     shortDescription: 'Custom AI platform and organizational website.',
@@ -120,7 +137,9 @@ export default {
                 },
                 {
                     slug: 'storylife',
-                    title: 'storylife.ai',
+                    title: 'Storylife AI',
+                    liveUrl: 'https://storylife.ai',
+                    displayUrl: 'storylife.ai',
                     category: 'Custom Builds',
                     tags: ['Custom Build', 'AI'],
                     shortDescription: 'AI-driven story creation and generation platform.',
@@ -131,7 +150,9 @@ export default {
                 // Shopify
                 {
                     slug: 'nail-company',
-                    title: 'nailcompany.com',
+                    title: 'Nail Company',
+                    liveUrl: 'https://nailcompany.com',
+                    displayUrl: 'nailcompany.com',
                     category: 'Shopify',
                     tags: ['Shopify', 'E-commerce'],
                     shortDescription: 'Professional nail and beauty supply platform.',
@@ -140,7 +161,9 @@ export default {
                 },
                 {
                     slug: 'ploome-pilates',
-                    title: 'ploomepilates.com',
+                    title: 'Ploome Pilates',
+                    liveUrl: 'https://ploomepilates.com',
+                    displayUrl: 'ploomepilates.com',
                     category: 'Shopify',
                     tags: ['Shopify', 'E-commerce'],
                     shortDescription: 'Pilates equipment and activewear online store.',
@@ -150,7 +173,9 @@ export default {
                 // WordPress
                 {
                     slug: 'gr8media',
-                    title: 'gr8media.com.au',
+                    title: 'GR8 Media',
+                    liveUrl: 'https://gr8media.com.au',
+                    displayUrl: 'gr8media.com.au',
                     category: 'WordPress',
                     tags: ['WordPress', 'Agency'],
                     shortDescription: 'Digital marketing and creative agency portfolio.',
@@ -159,7 +184,9 @@ export default {
                 },
                 {
                     slug: 'crunch-kids',
-                    title: 'crunchkids.com',
+                    title: 'Crunch Kids',
+                    liveUrl: 'https://crunchkids.com',
+                    displayUrl: 'crunchkids.com',
                     category: 'WordPress',
                     tags: ['WordPress', 'Education'],
                     shortDescription: 'Educational platform or resources for children.',
@@ -168,7 +195,9 @@ export default {
                 },
                 {
                     slug: 'greene-financial',
-                    title: 'greenefinancial.com.au',
+                    title: 'Greene Financial',
+                    liveUrl: 'https://greenefinancial.com.au',
+                    displayUrl: 'greenefinancial.com.au',
                     category: 'WordPress',
                     tags: ['WordPress', 'Finance'],
                     shortDescription: 'Financial consulting and advisory services website.',
@@ -177,7 +206,9 @@ export default {
                 },
                 {
                     slug: 'fixio',
-                    title: 'fixio.com.au',
+                    title: 'Fixio',
+                    liveUrl: 'https://fixio.com.au',
+                    displayUrl: 'fixio.com.au',
                     category: 'WordPress',
                     tags: ['WordPress', 'Services'],
                     shortDescription: 'Professional tech and device repair services.',
@@ -186,7 +217,9 @@ export default {
                 },
                 {
                     slug: 'eponaco',
-                    title: 'eponaco.com.au',
+                    title: 'Eponaco',
+                    liveUrl: 'https://eponaco.com.au',
+                    displayUrl: 'eponaco.com.au',
                     category: 'WordPress',
                     tags: ['WordPress', 'Business'],
                     shortDescription: 'Corporate business website built on WordPress.',
@@ -196,6 +229,8 @@ export default {
                 {
                     slug: 'ltufc',
                     title: 'LTUFC',
+                    liveUrl: 'https://ltufc.com.au',
+                    displayUrl: 'ltufc.com.au',
                     category: 'WordPress',
                     tags: ['WordPress', 'Sports'],
                     shortDescription: 'Official website for the Latrobe University Football Club.',
@@ -206,6 +241,8 @@ export default {
                 {
                     slug: 'shopglu-connector',
                     title: 'Shopify App: Shopglu',
+                    liveUrl: 'https://apps.shopify.com/shopglu-takealot-connector',
+                    displayUrl: 'apps.shopify.com/shopglu',
                     category: 'Custom Builds',
                     tags: ['Shopify App', 'Integration'],
                     shortDescription: 'Custom Shopify App connector for Takealot.',
@@ -290,6 +327,7 @@ export default {
 }
 
 .project-card {
+    position: relative;
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
@@ -326,10 +364,48 @@ export default {
     height: 100%;
 }
 
+.card-title-link {
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.card-title-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.card-title-link:hover {
+    color: var(--accent);
+}
+
+.external-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    margin-bottom: 1rem;
+    transition: opacity 0.2s ease;
+    opacity: 0.8;
+    position: relative;
+    z-index: 2;
+}
+
+.external-link:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
 .card-image {
     aspect-ratio: 16/9;
     overflow: hidden;
     border-bottom: 1px solid var(--border);
+    position: relative;
+    display: block;
 }
 
 .placeholder-img {
@@ -345,6 +421,7 @@ export default {
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s;
+    display: block;
 }
 
 .project-card:hover .placeholder-img,
@@ -359,7 +436,7 @@ export default {
 .card-content h3 {
     font-family: 'Inter', sans-serif;
     font-size: 1.25rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .card-content .muted-text {

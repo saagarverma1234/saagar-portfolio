@@ -235,8 +235,8 @@ export default {
 }
 
 .text {
-  font-size: 1.5rem;
-  letter-spacing: 1px;
+  font-size: 2rem;
+  letter-spacing: 1.5px;
   position: relative;
   z-index: 10;
   /* Ensures typed text stays above the cursor's huge shadow */
@@ -246,9 +246,9 @@ export default {
   position: relative;
   z-index: 5;
   display: inline-block;
-  width: 14px;
-  height: 1.5rem;
-  margin-left: 4px;
+  width: 18px;
+  height: 2rem;
+  margin-left: 6px;
   /* Massive shadow forms the dark background of the entire loading screen */
   box-shadow: 0 0 0 4000px var(--bg);
   border-radius: 2px;
