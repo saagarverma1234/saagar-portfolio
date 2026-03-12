@@ -6,7 +6,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { createPinia } from 'pinia';
 import MainLayout from './Layouts/MainLayout.vue';
 
-const appName = window?.document?.getElementsByTagName('title')[0]?.innerText || 'Saagar Verma';
+const appName = 'Saagar Verma';
 
 createServer((page) =>
   createInertiaApp({

@@ -39,6 +39,8 @@
     
     <!-- Fonts & Icons -->
     <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
+    <link rel="shortcut icon" href="/images/logo.svg" />
+    <link rel="apple-touch-icon" href="/images/logo.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -46,7 +48,7 @@
     @vite(['resources/css/main.css', 'resources/js/app.js'])
     @inertiaHead
 
-    <!-- Structured Data -->
+    <!-- Structured Data: Person -->
     <script type="application/ld+json">
     {
       "@@context": "https://schema.org",
@@ -63,6 +65,55 @@
         "name": "Freelance"
       },
       "description": "Hire Saagar Verma, a Senior Full Stack Developer and Video Editor based in India, specializing in fast, scalable websites, custom web apps, and cinematic video storytelling."
+    }
+    </script>
+
+    <!-- Structured Data: Website + Sitelinks Search Box -->
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "WebSite",
+      "name": "Saagar Verma",
+      "url": "{{ config('app.url') }}/"
+    }
+    </script>
+
+    <!-- Structured Data: Site Navigation (helps Google show sitelinks) -->
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "ItemList",
+      "name": "Site Navigation",
+      "itemListElement": [
+        {
+          "@@type": "ListItem",
+          "position": 1,
+          "name": "Projects",
+          "description": "View all web development and video editing projects by Saagar Verma.",
+          "url": "{{ config('app.url') }}/projects"
+        },
+        {
+          "@@type": "ListItem",
+          "position": 2,
+          "name": "Certifications",
+          "description": "Professional certifications and credentials earned by Saagar Verma.",
+          "url": "{{ config('app.url') }}/certifications"
+        },
+        {
+          "@@type": "ListItem",
+          "position": 3,
+          "name": "About",
+          "description": "Learn more about Saagar Verma, Full Stack Developer and Video Editor.",
+          "url": "{{ config('app.url') }}/#about"
+        },
+        {
+          "@@type": "ListItem",
+          "position": 4,
+          "name": "Contact",
+          "description": "Get in touch with Saagar Verma for freelance work and collaborations.",
+          "url": "{{ config('app.url') }}/#contact"
+        }
+      ]
     }
     </script>
 </head>
