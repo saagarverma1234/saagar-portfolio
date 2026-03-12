@@ -12,7 +12,7 @@ createServer((page) =>
   createInertiaApp({
     page,
     render: renderToString,
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => title,
     resolve: async (name) => {
         const pageTemplate = await resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue'));
         pageTemplate.default.layout = pageTemplate.default.layout || MainLayout;

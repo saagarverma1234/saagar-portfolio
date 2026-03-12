@@ -8,7 +8,7 @@ import MainLayout from './Layouts/MainLayout.vue';
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Saagar Verma';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => title,
     resolve: async (name) => {
         const page = await resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue'));
         page.default.layout = page.default.layout || MainLayout;

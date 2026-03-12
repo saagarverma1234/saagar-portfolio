@@ -35,7 +35,7 @@ export default {
     props: {
         title: {
             type: String,
-            default: 'Home'
+            default: 'Saagar Verma - Senior Full Stack Developer | Hire Now'
         }
     },
     mounted() {
