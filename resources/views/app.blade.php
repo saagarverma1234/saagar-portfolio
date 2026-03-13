@@ -11,7 +11,7 @@
     
     <!-- Fallback Meta Settings -->
     @php
-        $metaTitle = $page['props']['meta']['title'] ?? config('app.name', 'Saagar Verma | Full Stack Developer & Video Editor');
+        $metaTitle = $page['props']['meta']['title'] ?? $page['props']['title'] ?? 'Saagar Verma - Senior Full Stack Developer | Hire Now';
         $metaDesc = $page['props']['meta']['description'] ?? 'Hire Saagar Verma, a Senior Full Stack Developer and Video Editor. Specializing in creating fast, scalable websites, custom web apps, eCommerce optimization, and cinematic video storytelling for your brand.';
         $metaImage = $page['props']['meta']['image'] ?? '/images/saagar-verma.png';
     @endphp
