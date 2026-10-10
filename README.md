@@ -1,59 +1,108 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Saagar Verma — Portfolio
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Personal portfolio of Saagar Verma, Head of Engineering and Full-Stack & DevOps Engineer. Built with Laravel, Vue, and Inertia.js to present selected projects, professional experience, certifications, and a contact form.
 
-## About Laravel
+**Visit the portfolio: [saagarverma.com](https://saagarverma.com)**
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Backend:** Laravel 12 and PHP
+- **Frontend:** Vue 3, Inertia.js 2, and Pinia
+- **Build tooling:** Vite 7 with client and server-side rendering builds
+- **Icons:** Lucide
+- **Local database:** SQLite by default
+- **Development tools:** Pest 4 and Laravel Pint
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Features
 
-## Learning Laravel
+- Home page with dedicated sections for introduction, experience, testimonials, and contact
+- Project listing and individual project pages
+- Certifications page
+- Theme store and reusable Vue components
+- Contact form with server-side validation and database storage
+- Public résumé, project images, robots.txt, and sitemap.xml
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+The contact endpoint stores submissions in the `contact_messages` table. It does not currently send email notifications.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Run locally
 
-## Laravel Sponsors
+### Requirements
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- PHP 8.3 or newer, with the extensions required by Composer and SQLite support
+- Composer 2
+- Node.js 22.12 or newer and npm
 
-### Premium Partners
+Although the application declares PHP `^8.2`, its locked Pest 4 / PHPUnit 12 development dependencies require PHP 8.3.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Installation
 
-## Contributing
+Run these commands in a fresh local checkout:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+git clone https://github.com/saagarverma1234/saagar-portfolio.git
+cd saagar-portfolio
+composer install
+cp .env.example .env
+php artisan key:generate
+php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+php artisan migrate
+npm ci
+npm run build
+composer run dev
+```
 
-## Code of Conduct
+Open the address printed by the Laravel development server, normally `http://127.0.0.1:8000`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The development command starts the Laravel server, queue listener, log viewer, and Vite together. The default environment uses SQLite with database-backed sessions, cache, and queues.
 
-## Security Vulnerabilities
+## Project structure
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Path | Purpose |
+| --- | --- |
+| `routes/web.php` | Page routes and contact endpoint |
+| `resources/js/Pages/` | Home, projects, project detail, and certifications pages |
+| `resources/js/Components/` | Reusable portfolio sections |
+| `resources/js/Layouts/` | Shared page layout |
+| `resources/js/Stores/` | Theme state |
+| `resources/css/main.css` | Site styles |
+| `config/projects.php` | Project metadata used by the detail route |
+| `app/Http/Controllers/ContactMessageController.php` | Contact validation and persistence |
+| `database/migrations/` | Database schema |
+| `public/images/` | Profile, project, and brand assets |
+| `public/assets/resume.pdf` | Downloadable résumé |
 
-## License
+## Working on the portfolio
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Update the relevant Vue page or component for page content. Project details also use metadata in `config/projects.php`; keep that metadata consistent with the frontend. Replace images under `public/images/` and the résumé at `public/assets/resume.pdf` as needed.
+
+### Build assets
+
+```bash
+npm run build
+```
+
+This generates both client assets and an SSR bundle. Running SSR in production additionally requires the Inertia SSR process; generating the bundle alone does not start it.
+
+### Run the existing tests
+
+```bash
+composer test
+```
+
+The current test suite contains starter example tests, rather than comprehensive portfolio or contact-form coverage.
+
+### Format PHP
+
+```bash
+vendor/bin/pint
+```
+
+## Hosting
+
+This is a PHP application and requires Laravel-compatible hosting with the web root pointed at `public/`. GitHub Pages cannot run its backend or contact endpoint.
+
+For production, configure the environment and database, disable debug mode, build assets, and run the required migrations. Keep `.env`, credentials, and submitted contact messages out of version control.
+
+## Feedback
+
+Suggestions and reproducible bug reports are welcome through this repository's issues. For professional enquiries, visit [saagarverma.com](https://saagarverma.com) or email [saagarverma1234@gmail.com](mailto:saagarverma1234@gmail.com).
