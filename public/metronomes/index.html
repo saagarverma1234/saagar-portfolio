@@ -129,6 +129,7 @@ footer .yt { display: inline-flex; align-items: center; gap: 8px; color: var(--t
              border-radius: 999px; padding: 10px 16px; background: var(--panel); }
 footer .yt svg { width: 20px; height: 20px; }
 footer p { margin: 12px auto 0; max-width: 620px; font-weight: 700; }
+footer p.stats-note { font-size: 12px; margin-top: 8px; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; background: #2a2c38; color: var(--text);
          padding: 10px 16px; border-radius: 10px; font-size: 14px; transition: .25s; pointer-events: none; z-index: 9; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -230,10 +231,12 @@ body.og .timer { display: none; }
       <svg viewBox="0 0 24 24"><path fill="#ff3d3d" d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.6 12a31 31 0 00.4 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.4-4.8 31 31 0 00-.4-4.8z"/><path fill="#fff" d="M9.8 15.1L15.6 12 9.8 8.9z"/></svg>
       Watch on YouTube: Chaos to Order</a>
     <p>The motion is real physics: each metronome is a pendulum with an escapement, and they all push on the same board on rollers (Pantaleone 2002, American Journal of Physics). The board's sway is drawn twice its real size so you can see it.</p>
+    <p class="stats-note">Anonymous play stats, no cookies, no personal data.</p>
   </footer>
 </div>
 <div class="toast" id="toast"></div>
+<script src="stats.js?v=1"></script>
 <script src="engine.js"></script>
-<script src="game.js"></script>
+<script src="game.js?v=2"></script>
 </body>
 </html>

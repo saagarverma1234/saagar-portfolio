@@ -35,6 +35,7 @@
     { id: 'big', name: 'Add 1 big one', N: 100, start: 'tie3', goal: 'A perfect 3-way tie. Add one big metronome, 18x heavier. Whose beat wins?' }
   ];
   var CHMAP = {}; CH.forEach(function (c) { CHMAP[c.id] = c; });
+  function T(name, data) { try { if (!OG && window.c2oStats) window.c2oStats.track(name, data); } catch (e) {} }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
   // ---------------- state ----------------
@@ -375,6 +376,8 @@
       if (!(score >= prev)) { store(key, String(score)); sub += ' · new best!'; renderChips(); }
       else sub += ' · best ' + bestText(challenge, prev);
     }
+    T('synced', { t: Math.round(round.time * 10) / 10, n: n, flips: flips, ch: challenge ? challenge.id : '' });
+    if (challenge) T('challenge_complete', { ch: challenge.id, t: Math.round(round.time * 10) / 10, flips: flips });
     $('bannerBig').textContent = big; $('bannerSub').textContent = sub;
     $('banner').classList.add('show');
     clearTimeout(bannerTimer); bannerTimer = setTimeout(function () { $('banner').classList.remove('show'); }, 4000);
@@ -409,9 +412,10 @@
     $('sN').value = setup.N; $('oN').textContent = setup.N; $('sB').value = setup.bpm; $('oB').textContent = setup.bpm;
   }
   function on(id, fn) { $(id).addEventListener('click', function (e) { initAudio(); fn(e); }); }
-  on('aNudge', function () { acted(); sim.nudge(); fx.push = sim.t; play(BUF.knock, AC ? AC.currentTime + 0.01 : 0, 0.9, 1); });
-  on('aShake', function () { acted(); sim.setMotor(!sim.motor); syncButtons(); });
+  on('aNudge', function () { T('control', { c: 'nudge' }); acted(); sim.nudge(); fx.push = sim.t; play(BUF.knock, AC ? AC.currentTime + 0.01 : 0, 0.9, 1); });
+  on('aShake', function () { T('control', { c: 'shake' }); acted(); sim.setMotor(!sim.motor); syncButtons(); });
   on('aFlip', function () {
+    T('control', { c: 'flip', n: flipN });
     acted();
     var pool = [], i, pick = null;
     for (i = 0; i < setup.N; i++) if (sim.active[i] && !sim.flip[i]) pool.push(i);
@@ -426,18 +430,21 @@
   on('fMinus', function () { flipN = Math.max(1, flipN - 1); syncButtons(); });
   on('fPlus', function () { flipN = Math.min(20, flipN + 1); syncButtons(); });
   on('aBig', function () {
+    T('control', { c: 'big' });
     acted();
     if (sim.bigOn) { sim.removeBig(); fx.bigT = sim.t; fx.bigOut = true; }
     else { sim.addBig(); fx.bigT = sim.t; fx.bigOut = false; play(BUF.knock, AC ? AC.currentTime + 0.4 : 0, 0.7, 0.8); }
     syncButtons();
   });
   on('aWeights', function () {
+    T('control', { c: 'weights' });
     acted();
     fx.weightsOn = !fx.weightsOn; fx.weightsT = sim.t; sim.setWeights(fx.weightsOn); setup.weights = fx.weightsOn;
     play(BUF.knock, AC ? AC.currentTime + (fx.weightsOn ? 0.38 : 0.01) : 0, 0.8, 0.7);
     syncButtons();
   });
   on('aLift', function () {
+    T('control', { c: 'lift' });
     acted();
     if (liftedIdx.length) {
       for (var k = 0; k < liftedIdx.length; k++) { sim.active[liftedIdx[k]] = 1; fx.drop[liftedIdx[k]] = sim.t; }
@@ -453,20 +460,23 @@
     }
     syncButtons();
   });
-  on('reset', function () { newSim(true); });
-  on('rand', function () { newSim(false); });
+  on('reset', function () { T('control', { c: 'reset' }); newSim(true); });
+  on('rand', function () { T('control', { c: 'randomise' }); newSim(false); });
   document.querySelectorAll('.seg .btn').forEach(function (b) {
-    b.addEventListener('click', function () { initAudio(); setChallenge(null); setup.start = b.dataset.start; newSim(false); });
+    b.addEventListener('click', function () { T('control', { c: 'teams', v: b.dataset.start }); initAudio(); setChallenge(null); setup.start = b.dataset.start; newSim(false); });
   });
   $('sN').addEventListener('input', function () { setChallenge(null); setup.N = +this.value; $('oN').textContent = setup.N; newSim(true); });
   $('sB').addEventListener('input', function () {
     setup.bpm = +this.value; $('oB').textContent = setup.bpm; sim.setBpm(setup.bpm); acted(); syncButtons();
     if (challenge) setChallenge(null, true);
   });
-  $('mute').addEventListener('click', function () { setMuted(!muted); });
+  $('sN').addEventListener('change', function () { T('control', { c: 'count', v: setup.N }); });
+  $('sB').addEventListener('change', function () { T('control', { c: 'speed', v: setup.bpm }); });
+  $('mute').addEventListener('click', function () { setMuted(!muted); T('mute', { on: muted ? 1 : 0 }); });
   $('play').addEventListener('click', function () { initAudio(); begin(); });
-  on('bAgain', function () { newSim(false); });
-  on('bShare', share); on('share', share);
+  on('bAgain', function () { T('control', { c: 'again' }); newSim(false); });
+  on('bShare', function () { T('share', { w: 'banner', synced: round.synced ? 1 : 0 }); share(); });
+  on('share', function () { T('share', { w: 'top', synced: round.synced ? 1 : 0 }); share(); });
 
   function tapSound() { play(BUF.tick, AC ? AC.currentTime + 0.005 : 0, 0.3, 1.6); }
 
@@ -480,7 +490,7 @@
       var dx = x - pos.bx[i], dy = y - pos.by[i], d = dx * dx + dy * dy;
       if (d < pos.r[i] * pos.r[i] && d < bd) { bd = d; best = i; }
     }
-    if (best >= 0) { acted(); if (sim.flipOne(best)) tapSound(); }
+    if (best >= 0) { acted(); if (sim.flipOne(best)) { tapSound(); T('control', { c: 'tap' }); } }
   });
 
   // ---------------- challenges UI ----------------
@@ -491,7 +501,7 @@
       b.textContent = c.name;
       var best = parseFloat(store('c2o-best-' + c.id) || 'NaN');
       if (best === best) { var s = document.createElement('span'); s.className = 'best'; s.textContent = bestText(c, best); b.appendChild(s); }
-      b.addEventListener('click', function () { initAudio(); setChallenge(c); if (!started) begin(); });
+      b.addEventListener('click', function () { initAudio(); setChallenge(c); T('challenge_start', { ch: c.id, src: 'chip' }); if (!started) begin(); });
       box.appendChild(b);
     });
     $('goaltext').textContent = challenge ? challenge.goal : 'Free play. Pick a challenge, or change the set-up below and tap metronomes to flip them.';
@@ -510,6 +520,7 @@
   }
   function begin() {
     started = true; $('start').classList.add('hide');
+    T('play', { ch: challenge ? challenge.id : '' });
     newSim(true);            // the timer starts from a fresh out-of-step board
     round.t0 = sim.t; round.hold0 = -1; round.synced = false; round.flips0 = sim.flips;
   }
@@ -551,7 +562,7 @@
   window.addEventListener('resize', resize);
   if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
   var c0 = CHMAP[params.get('c')];
-  if (c0) { setChallenge(c0); $('start').querySelector('h2').innerHTML = c0.name.replace(/\?$/, '') + '<br><span>Your turn.</span>'; $('start').querySelector('p').textContent = c0.goal; }
+  if (c0) { setChallenge(c0); T('challenge_start', { ch: c0.id, src: 'link' }); $('start').querySelector('h2').innerHTML = c0.name.replace(/\?$/, '') + '<br><span>Your turn.</span>'; $('start').querySelector('p').textContent = c0.goal; }
   else { newSim(false); renderChips(); }
   setMuted(muted);
   if (OG) {                       // share image: a frame part-way from chaos to order
