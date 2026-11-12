@@ -17,6 +17,12 @@
         <priority>0.8</priority>
     </url>
 
+    <url>
+        <loc>https://saagarverma.com/metronomes/</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
     <!-- Project Details -->
     <url>
         <loc>https://saagarverma.com/projects/coinvo-trading</loc>
