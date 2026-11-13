@@ -48,10 +48,15 @@ header.top { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; heig
 .brand svg { width: 28px; height: 28px; }
 .prog { flex: 1; min-width: 0; text-align: center; font-family: VT, monospace; font-size: 22px; color: var(--muted); white-space: nowrap; }
 .prog b { color: var(--text); font-weight: 400; }
-@media (max-width: 560px) { body.ingame .brand span { display: none; } }
+@media (max-width: 560px) { body.ingame .brand { display: none; } }
 .ib { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; height: 44px; min-width: 44px; padding: 0 12px;
       display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto; }
 .ib svg { width: 19px; height: 19px; }
+a.ib { color: var(--text); text-decoration: none; font-size: 14px; gap: 2px; }
+.ib.back { padding: 0 12px 0 6px; }
+.ib.back svg { width: 22px; height: 22px; }
+body.ingame .ib.back { padding: 0; }
+body.ingame .ib.back span { display: none; }
 main.scr { flex: 1 0 auto; display: flex; flex-direction: column; padding-bottom: 18px; }
 .panel { background: rgba(14, 15, 32, .94); border: 1px solid var(--line); border-radius: 16px; }
 .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; min-height: 50px; padding: 0 20px; cursor: pointer; font-size: 16px;
@@ -159,7 +164,12 @@ main.scr { flex: 1 0 auto; display: flex; flex-direction: column; padding-bottom
 .endc .stack { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
 
 .modal { position: fixed; inset: 0; z-index: 40; background: rgba(5, 5, 14, .9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
-.modal img { max-width: min(92vw, 420px); max-height: 66vh; border-radius: 14px; border: 1px solid var(--line); }
+.modal { padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+.modal img { max-width: min(100%, 420px); max-height: calc(100% - 150px); border-radius: 14px; border: 1px solid var(--line); }
+.modal .row { width: min(420px, 100%); flex-wrap: nowrap; }
+.modal .row .btn { flex: 1; min-width: 0; padding: 0 6px; font-size: 15px; white-space: nowrap; }
+.modal a.btn { color: var(--text); text-decoration: none; }
+.modal #mClose { min-width: 140px; }
 .toast { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(20px); opacity: 0; background: #2a2c48; color: var(--text);
          padding: 10px 16px; border-radius: 10px; font-size: 14px; transition: .25s; pointer-events: none; z-index: 50; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -237,12 +247,15 @@ footer nav.site a { color: var(--muted); }
   * { transition-duration: .01s !important; }
 }
 </style>
+<link rel="stylesheet" href="/game-below.css?v=1">
+<style>:root { --gb-accent: #f4c86e; --gb-ink: #241a06; }</style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3532470064725978" crossorigin="anonymous"></script>
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
 <div class="app">
   <header class="top">
+    <a class="ib back" id="bBack" href="/games" aria-label="All games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
     <button class="brand" id="bHome" aria-label="Quiet Worlds: back to the start">
       <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="#f4c86e"/><path d="M16 7a9 9 0 010 18" fill="#c98f3e"/><ellipse cx="16" cy="16" rx="15" ry="4.5" fill="none" stroke="#f5efe3" stroke-width="1.6" transform="rotate(-18 16 16)"/></svg>
       <span>QUIET WORLDS</span>
@@ -311,8 +324,21 @@ footer nav.site a { color: var(--muted); }
   <!-- AdSense slot -->
   <div class="ad-wrap"><div class="ad-slot" id="ad-slot" aria-hidden="true"></div></div>
   <!-- Suggestions box (posts to /game-feedback) -->
+  <section class="sec" id="more-games" aria-labelledby="mgH">
+    <div class="sec-h"><h2 id="mgH">More games</h2><a href="/games">See all</a></div>
+    <div class="mg-list" id="mgList">
+      <a class="mg" href="/bump-theory/" style="--accent:#ffcc33"><img src="/images/games/bump-theory.webp" alt="" width="640" height="360" loading="lazy" decoding="async"><span><b>1 Ball → 10,000</b><small>Bump Theory · Puzzle</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+      <a class="mg" href="/metronomes/" style="--accent:#ffcc66"><img src="/images/games/metronomes.webp" alt="" width="640" height="360" loading="lazy" decoding="async"><span><b>Metronome Sync Game</b><small>Chaos to Order · Simulation</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+      <a class="mg" href="/swipe-theory/" style="--accent:#ffa24c"><img src="/images/games/swipe-theory.webp" alt="" width="640" height="360" loading="lazy" decoding="async"><span><b>Protect Pumpkin!</b><small>Swipe Theory · Arcade</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+    </div>
+  </section>
+  <div class="sec">
   <details class="suggest" id="suggestions">
-    <summary>Suggestions: tell us what to improve</summary>
+    <summary>
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1121 12z"/></svg></span>
+      <span class="tx"><b>Suggestions</b><small>Tell us what to add, fix or change</small></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
     <form id="sgForm" method="post" action="/game-feedback" novalidate>
       <label for="sgMsg">What should we add, fix or change?</label>
       <textarea id="sgMsg" name="message" maxlength="500" rows="4" required placeholder="A planet idea, a bug, a feature..."></textarea>
@@ -326,6 +352,7 @@ footer nav.site a { color: var(--muted); }
       <p class="sg-note">Suggestions are stored privately on this site and read only by us. See the <a href="/privacy">privacy policy</a>.</p>
     </form>
   </details>
+  </div>
   <article class="guide" id="how-it-works">
     <h2>How to play Choose Your Planet</h2>
     <p>Every round shows four planets, each with a picture and one cosy promise: a warm cottage, a full pantry, a friendly neighbour. You have to live on one of them for a whole year. Pick the one you trust. Then the planet tells you its secret, and you find out how your year went.</p>
@@ -371,7 +398,8 @@ footer nav.site a { color: var(--muted); }
 </div>
 <div class="toast" id="toast" role="status"></div>
 <script src="worlds.js?v=1"></script>
-<script src="game.js?v=1"></script>
+<script src="game.js?v=2"></script>
 <script src="/game-feedback.js?v=1" defer></script>
+<script src="/game-more.js?v=1" defer></script>
 </body>
 </html>

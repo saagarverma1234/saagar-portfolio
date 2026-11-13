@@ -47,7 +47,7 @@ a:hover { text-decoration-color: currentColor; }
 .top { position: sticky; top: 0; z-index: 5; background: rgba(11,12,16,.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
        padding-top: env(safe-area-inset-top); }
 .top .in { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 58px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--text); text-decoration: none; font: 700 16px/1 var(--head); white-space: nowrap; }
+.brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; min-width: 44px; color: var(--text); text-decoration: none; font: 700 16px/1 var(--head); white-space: nowrap; }
 .brand img { width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto; }
 .top nav { display: flex; gap: 2px; }
 .top nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 999px; color: var(--muted); text-decoration: none; font: 700 15px/1 var(--head); }

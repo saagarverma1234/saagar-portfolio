@@ -63,6 +63,8 @@ header.top .ttl span { max-width: 100%; overflow: hidden; text-overflow: ellipsi
 .hud .num.pop { animation: pop .35s ease-out; }
 @keyframes pop { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .hud.tipping .num { display: none; }
+/* menu and level list cover the board: hide the counter behind them so no ghost digits show through */
+.stage:has(#levels:not([hidden])) .hud, .stage:has(#menu:not([hidden])) .hud { visibility: hidden; }
 .hud .sub { margin-top: 4px; font-size: 12px; letter-spacing: 2px; color: var(--muted); display: flex; justify-content: center; align-items: center; gap: 8px; }
 .hud .stars { display: inline-flex; gap: 2px; }
 .hud .stars i { width: 15px; height: 15px; display: inline-block; background: #3a3c48; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
@@ -108,7 +110,7 @@ header.top .ttl span { max-width: 100%; overflow: hidden; text-overflow: ellipsi
 .ov[hidden] { display: none; }
 .menu { background: rgba(6,7,12,.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); gap: 16px; container-type: inline-size; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
 .menu .links2 { display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; margin-top: 4px; font-size: 14px; }
-.menu .links2 a { color: var(--muted); text-decoration: none; padding: 12px 4px; display: inline-flex; align-items: center; gap: 6px; }
+.menu .links2 a { color: var(--muted); text-decoration: none; padding: 12px 4px; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
 .menu .links2 a:hover { color: var(--text); }
 .menu .links2 svg { width: 16px; height: 16px; }
 .menu .mark { font-size: 12px; letter-spacing: 6px; color: var(--muted); margin-left: 6px; }
@@ -204,6 +206,8 @@ footer h2 { font-size: 16px; color: var(--text); margin: 22px 0 0; }
 footer nav.site { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin-top: 18px; font-size: 13px; }
 footer nav.site a { color: var(--muted); }
 </style>
+<link rel="stylesheet" href="/game-below.css?v=1">
+<style>:root { --gb-accent: #ffcc33; --gb-ink: #1a1406; }</style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3532470064725978" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -269,8 +273,21 @@ footer nav.site a { color: var(--muted); }
   <!-- AdSense slot -->
   <div class="ad-wrap"><div class="ad-slot" id="ad-slot" aria-hidden="true"></div></div>
   <!-- Suggestions box (posts to /game-feedback) -->
+  <section class="sec" id="more-games" aria-labelledby="mgH">
+    <div class="sec-h"><h2 id="mgH">More games</h2><a href="/games">See all</a></div>
+    <div class="mg-list" id="mgList">
+      <a class="mg" href="/metronomes/" style="--accent:#ffcc66"><img src="/images/games/metronomes.webp" alt="" width="640" height="360" loading="lazy" decoding="async"><span><b>Metronome Sync Game</b><small>Chaos to Order · Simulation</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+      <a class="mg" href="/quiet-worlds/" style="--accent:#f4c86e"><img src="/images/games/quiet-worlds.webp" alt="" width="640" height="360" loading="lazy" decoding="async"><span><b>Choose Your Planet</b><small>Quiet Worlds · Choice</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+      <a class="mg" href="/swipe-theory/" style="--accent:#ffa24c"><img src="/images/games/swipe-theory.webp" alt="" width="640" height="360" loading="lazy" decoding="async"><span><b>Protect Pumpkin!</b><small>Swipe Theory · Arcade</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+    </div>
+  </section>
+  <div class="sec">
   <details class="suggest" id="suggestions">
-    <summary>Suggestions: tell us what to improve</summary>
+    <summary>
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1121 12z"/></svg></span>
+      <span class="tx"><b>Suggestions</b><small>Tell us what to add, fix or change</small></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
     <form id="sgForm" method="post" action="/game-feedback" novalidate>
       <label for="sgMsg">What should we add, fix or change?</label>
       <textarea id="sgMsg" name="message" maxlength="500" rows="4" required placeholder="A new level idea, a bug, a feature..."></textarea>
@@ -284,6 +301,7 @@ footer nav.site a { color: var(--muted); }
       <p class="sg-note">Suggestions are stored privately on this site and read only by us. See the <a href="/privacy">privacy policy</a>.</p>
     </form>
   </details>
+  </div>
   <article class="guide" id="how-it-works">
     <h2>How it works: the 1 Ball &rarr; 10,000 guide</h2>
     <p>Every round starts with one ball. Your job is to arrange the pieces you are given so that ball multiplies into as many balls as possible before they leave the board. The idea comes from the Bump Theory channel's multiplying-ball videos, and the counter at the top is exact: it is never an estimate.</p>
@@ -357,5 +375,6 @@ footer nav.site a { color: var(--muted); }
 <script src="levels.js?v=2"></script>
 <script src="game.js?v=2"></script>
 <script src="/game-feedback.js?v=1" defer></script>
+<script src="/game-more.js?v=1" defer></script>
 </body>
 </html>

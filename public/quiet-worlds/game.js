@@ -532,6 +532,11 @@
   $('bNext').addEventListener('click', next);
   $('bSkip').addEventListener('click', finishReveal);
   $('bHome').addEventListener('click', goMenu);
+  // "< Games" is a plain link on the menu and the end screen; during a round it becomes "back to the menu"
+  $('bBack').addEventListener('click', function (e) {
+    if (!document.body.classList.contains('ingame')) return;
+    e.preventDefault(); goMenu();
+  });
   $('bAgain').addEventListener('click', function () { start(G && G.mode === 'daily' ? 'daily' : 'classic'); });
   $('bEndDaily').addEventListener('click', function () { start(G && G.mode === 'daily' ? 'classic' : 'daily'); });
   $('bShare').addEventListener('click', share);

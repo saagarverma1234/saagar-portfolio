@@ -131,6 +131,12 @@
   }
   function show(id, on) { $(id).hidden = !on; }
   function setTitle(s) { ttl.textContent = s; }
+  // header: "< Games" link on the menu; in a level the "<" goes back to the menu (pauses first while playing), plus a Levels button
+  function setNav(inGame) {
+    var b = $('bBack');
+    b.classList.toggle('icon', inGame); b.setAttribute('aria-label', inGame ? 'Back to menu' : 'All games');
+    $('bLevels').hidden = !inGame;
+  }
 
   // ------------------------------------------------------------------ level control
   function startLevel(i, endless) {
@@ -148,7 +154,7 @@
     setTitle(G.endless ? 'Endless' : lvName(i) + ' · ' + G.world.name);
     shield.x = shield.tx = cat.x; shield.y = shield.ty = Math.max(150, headY() - 215); shield.show = true;
     ['menu', 'levels', 'result', 'hold'].forEach(function (k) { show(k, false); });
-    hud.hidden = false; $('bPause').hidden = false;
+    hud.hidden = false; $('bPause').hidden = false; setNav(true);
     drawHud();
   }
   function setupEnts() {
@@ -706,7 +712,7 @@
   function goMenu() {
     G.mode = 'menu'; S.stopMusic(); G.objs = []; G.parts = []; G.cap = null; G.say = null;
     G.world = WORLDS[0]; G.def = WORLDS[0].levels[0]; G.ents = { tornado: null, ufos: [], dragon: null };
-    hud.hidden = true; $('bPause').hidden = true; shield.show = false;
+    hud.hidden = true; $('bPause').hidden = true; shield.show = false; setNav(false);
     setTitle('Protect Pumpkin!');
     var nextLv = 0; for (var i = 0; i < NLEV; i++) if (unlocked(i)) nextLv = i;
     $('playLab').textContent = Object.keys(data.stars).length ? 'Play ' + lvName(nextLv) : 'Play';
@@ -749,6 +755,13 @@
     if (!endlessUnlocked()) { toast('Beat level 1-3 to unlock Endless mode'); return; }
     startLevel(0, true);
   });
+  $('bBack').addEventListener('click', function (e) {
+    if (G.mode === 'menu' && $('levels').hidden) return; // plain link to /games
+    if (G.mode === 'menu') { e.preventDefault(); show('levels', false); show('menu', true); return; }
+    e.preventDefault(); S.unlock();
+    if (G.mode === 'play') { pause(); return; } // never lose a run by accident: pause, then "Main menu" is one tap away
+    goMenu();
+  });
   $('bLevels').addEventListener('click', function () { S.unlock(); if (G.mode === 'play') pause(); openLevels(); });
   $('bLvClose').addEventListener('click', function () { show('levels', false); if (G.mode === 'menu') show('menu', true); });
   $('bRetry').addEventListener('click', function () { S.click(); startLevel(G.li, G.endless); });
@@ -773,8 +786,8 @@
     var drops = [[24, 30], [52, 70], [150, 26], [176, 80], [36, 120], [168, 136], [96, 14]];
     c.strokeStyle = '#7cc6ff'; c.lineWidth = 3;
     drops.forEach(function (p) { c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(p[0] - 3, p[1] + 12); c.stroke(); });
-    A.drawCat(c, 100, 184, .25, A.catState({ eye: 0, closed: 'happy', mouth: 'smile', blush: 1, tail: .7, sway: .4 }));
-    A.drawShield(c, 'umbrella', 96, 56, -.12, 0);
+    A.drawCat(c, 100, 184, .235, A.catState({ eye: 0, closed: 'happy', mouth: 'smile', blush: 1, tail: .7, sway: .4 }));
+    c.save(); c.translate(102, 36); c.scale(-.7, .7); A.drawShield(c, 'umbrella', 0, 0, .1, 0); c.restore(); // smaller + higher so the handle stays clear of Pumpkin's ears
   }
 
   // ------------------------------------------------------------------ boot
