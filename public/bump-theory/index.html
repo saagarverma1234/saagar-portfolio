@@ -143,6 +143,36 @@ footer .yt { display: inline-flex; align-items: center; gap: 8px; color: var(--t
 footer .yt svg { width: 20px; height: 20px; }
 footer p { margin: 12px auto 0; max-width: 620px; }
 footer h2 { font-size: 16px; color: var(--text); margin: 22px 0 0; }
+/* suggestions box */
+.suggest { max-width: 720px; margin: 20px auto 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+.suggest summary { cursor: pointer; padding: 14px 16px; font-family: InterB, system-ui, sans-serif; font-weight: 700; font-size: 15px; color: var(--text); list-style-position: inside; }
+.suggest form { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 6px; }
+.suggest label { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.suggest label span { color: var(--dim); }
+.suggest textarea, .suggest input { width: 100%; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #0b0c10; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.suggest textarea { resize: vertical; min-height: 96px; }
+.suggest textarea:focus, .suggest input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.suggest .sg-count { align-self: flex-end; font-size: 12px; color: var(--dim); }
+.suggest .sg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.suggest .sg-send { align-self: flex-start; margin-top: 8px; background: var(--gold); color: #1a1406; border: 0; border-radius: 12px; min-height: 46px; padding: 0 26px; font: 700 16px InterB, system-ui, sans-serif; cursor: pointer; }
+.suggest .sg-send:disabled { opacity: .5; cursor: default; }
+.suggest .sg-status { margin: 4px 0 0; font-size: 14px; color: var(--text); min-height: 1px; }
+.suggest .sg-note { margin: 2px 0 0; font-size: 12px; color: var(--dim); }
+.suggest .sg-note a { color: var(--muted); }
+.suggest .sg-thanks { margin: 4px 0 6px; color: var(--gold); font-size: 15px; }
+.below .suggest { margin-left: 16px; margin-right: 16px; }
+/* how it works + site links: plain reading text below the game */
+.guide { max-width: 720px; margin: 28px auto 0; padding: 0 16px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400;
+         font-size: 16px; line-height: 1.65; color: var(--muted); overflow-wrap: break-word; }
+.guide h2 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 22px; line-height: 1.25; margin: 0 0 12px; }
+.guide h3 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 17px; margin: 24px 0 6px; }
+.guide p, .guide ul, .guide ol { margin: 0 0 12px; }
+.guide ul, .guide ol { padding-left: 20px; }
+.guide li { margin-bottom: 6px; }
+.guide strong { color: var(--text); font-weight: 600; }
+.guide a { color: var(--gold); }
+footer nav.site { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin-top: 18px; font-size: 13px; }
+footer nav.site a { color: var(--muted); }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3532470064725978" crossorigin="anonymous"></script>
 </head>
@@ -205,6 +235,68 @@ footer h2 { font-size: 16px; color: var(--text); margin: 22px 0 0; }
 <div class="below">
   <!-- AdSense slot -->
   <div class="ad-wrap"><div class="ad-slot" id="ad-slot" aria-hidden="true"></div></div>
+  <!-- Suggestions box (posts to /game-feedback) -->
+  <details class="suggest" id="suggestions">
+    <summary>Suggestions: tell us what to improve</summary>
+    <form id="sgForm" method="post" action="/game-feedback" novalidate>
+      <label for="sgMsg">What should we add, fix or change?</label>
+      <textarea id="sgMsg" name="message" maxlength="500" rows="4" required placeholder="A new level idea, a bug, a feature..."></textarea>
+      <div class="sg-count"><span id="sgCount">0</span>/500</div>
+      <label for="sgContact">Name or email <span>(optional, only if you want a reply)</span></label>
+      <input id="sgContact" name="contact" maxlength="120" autocomplete="email">
+      <input class="sg-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <input type="hidden" name="game" value="bump-theory">
+      <button type="submit" class="sg-send">Send</button>
+      <p class="sg-status" role="status" aria-live="polite"></p>
+      <p class="sg-note">Suggestions are stored privately on this site and read only by us. See the <a href="/privacy">privacy policy</a>.</p>
+    </form>
+  </details>
+  <article class="guide" id="how-it-works">
+    <h2>How it works: the 1 Ball &rarr; 10,000 guide</h2>
+    <p>Every round starts with one ball. Your job is to arrange the pieces you are given so that ball multiplies into as many balls as possible before they leave the board. The idea comes from the Bump Theory channel's multiplying-ball videos, and the counter at the top is exact: it is never an estimate.</p>
+
+    <h3>How to play</h3>
+    <ol>
+      <li><strong>Place pieces.</strong> Drag a piece from the tray at the bottom onto the board. Some levels only allow pieces in marked zones; gates on a rail slide left and right only.</li>
+      <li><strong>Adjust.</strong> Tap a placed piece to turn it, drag it to move it, or drag it back to the tray to remove it. The circular arrow button takes everything back.</li>
+      <li><strong>Drop.</strong> Press DROP (or the space bar) and watch. The round ends when every ball has left the board, landed in lava, or come to rest.</li>
+      <li><strong>Score.</strong> Reach the level's target for one star; two and three stars need more balls. Earning a star unlocks the next level. Stuck? The Hint button shows ghost outlines of one good layout.</li>
+    </ol>
+
+    <h3>The pieces</h3>
+    <ul>
+      <li><strong>Multiplier gates (x2, x3, x4, x5, x10):</strong> a ball that crosses a xN gate becomes N balls, fanned out in a spray. A ball, and every ball split from it, can use each gate only once, so a ball bouncing back up through the same gate will not multiply again.</li>
+      <li><strong>Walls:</strong> bouncy bars you can angle to steer the stream or build funnels.</li>
+      <li><strong>Bumpers:</strong> orange rings that kick balls away hard. Great for rescuing balls heading toward lava, risky near the edges.</li>
+      <li><strong>Pegs:</strong> small round posts that scatter balls, like a Plinko board.</li>
+      <li><strong>Lava:</strong> any ball that touches it is gone, and it is subtracted from the count.</li>
+      <li><strong>Moving and spinning pieces</strong> appear in later levels. Their motion is the same every time, so a layout that works once will work again.</li>
+    </ul>
+
+    <h3>The maths of multiplying</h3>
+    <p>If one stream of balls passes through several gates in a row, the gates multiply: x2 then x3 then x5 gives 2 &times; 3 &times; 5 = 30 balls. Order does not change the product (5 &times; 3 &times; 2 is also 30), and that is why the big numbers come fast: two x10 gates make 100, three make 1,000, and four make 10,000, the number in the title. The catch is that gates only count the balls that actually reach them.</p>
+    <p>Suppose 10 balls arrive at a x2 gate but only 6 of them hit it. You get 6 &times; 2 + 4 = 16, not 20. In general, if k balls arrive at a xN gate and a fraction p of them pass through, you leave with k &times; (1 + p(N &minus; 1)) balls. That one formula explains most of the strategy: a later gate is only worth its full multiplier if the whole spray goes through it.</p>
+    <p>Where a stream splits and takes different routes, add the routes together. If 5 balls go left through a x10 and 5 go right through a x2, you end with 50 + 10 = 60.</p>
+
+    <h3>Tips</h3>
+    <ul>
+      <li><strong>Small gates first, big gates last.</strong> A gate's spray gets wider the bigger its multiplier. Put x2 and x3 near the top, where the stream is still narrow, and save x10 for the bottom, where a wide spray no longer has to hit anything.</li>
+      <li><strong>Funnel before every gate.</strong> Two angled walls in a V squeeze a wide spray back into a narrow stream so the next gate catches all of it.</li>
+      <li><strong>Watch the first drop.</strong> Run a layout once just to see where the balls go, then move one piece at a time.</li>
+      <li><strong>Turn gates to match the flow.</strong> A gate tilted along the path of a sloping stream catches more of it than a flat one.</li>
+      <li><strong>Keep lava losses small.</strong> One ball lost after a x10 costs 1, but one lost before it costs 10. Protect the stream most at the top.</li>
+    </ul>
+
+    <h3>Sandbox and Recycle</h3>
+    <p>Sandbox mode gives you unlimited x2, x3, x5 and x10 gates, walls, bumpers and pegs (up to 40 pieces). With <strong>Recycle</strong> on, balls that fall out of the bottom come back in at the top with their gate memory cleared, so they can multiply again. That turns the board into an exponential machine: a single x2 gate doubles the count on every loop, and ten loops is 2<sup>10</sup> = 1,024.</p>
+
+    <h3>FAQ</h3>
+    <p><strong>Is the counter real when the screen can't show that many balls?</strong> Yes. Your device draws up to about 20,000 balls (fewer on slower phones). Past that, a ball that splits keeps the extra balls as a hidden weight instead of drawing them, so one drawn ball can stand for many. The counter always equals 1 ball times every split, minus lava losses.</p>
+    <p><strong>Why don't the balls bump into each other?</strong> On purpose: skipping ball-to-ball collisions is what lets thousands of balls move smoothly in a phone browser.</p>
+    <p><strong>Is every level possible?</strong> Yes. Each of the 24 levels was checked by a solver that found a layout reaching the three-star target, and the Hint button shows one good layout.</p>
+    <p><strong>Where is my progress saved?</strong> In your browser only (local storage). Clearing this site's data resets your stars. Nothing is sent to a server; see the <a href="/privacy">privacy policy</a>.</p>
+    <p><strong>Is it free?</strong> Yes, with no download or account. Ads below the game help pay for it.</p>
+  </article>
   <footer>
     <div class="links">
       <a class="yt" href="https://www.youtube.com/@bumptheory" rel="noopener" target="_blank">
@@ -215,6 +307,9 @@ footer h2 { font-size: 16px; color: var(--text); margin: 22px 0 0; }
     <h2>How to play</h2>
     <p>Drag gates, walls and bumpers from the tray onto the board. Tap a piece to turn it, drag it back to the tray to remove it. Press Drop: every ball that goes through a xN gate becomes N balls (each ball can use each gate once). Lava eats balls. Beat the target for a star, and reach the 3-star score to master the level.</p>
     <p>The counter is exact: it is 1 ball times every split, minus the balls lost in lava. Sound is made live in your browser.</p>
+    <nav class="site" aria-label="Site">
+      <a href="/games">More games</a><a href="/">Home</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a>
+    </nav>
   </footer>
 </div>
 
@@ -227,5 +322,6 @@ footer h2 { font-size: 16px; color: var(--text); margin: 22px 0 0; }
 <script src="sim.js?v=1"></script>
 <script src="levels.js?v=1"></script>
 <script src="game.js?v=1"></script>
+<script src="/game-feedback.js?v=1" defer></script>
 </body>
 </html>

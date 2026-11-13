@@ -129,6 +129,9 @@ class AdminController extends Controller
             'controls' => $this->stats->controls($from, $to, $includeTest),
             'medianSync' => $this->stats->median('synced', $from, $to, $includeTest),
             'recent' => $this->stats->recent($includeTest),
+            'suggestions' => $this->stats->suggestions($includeTest),
+            'suggestionCount' => $this->stats->suggestionCount($includeTest),
+            'suggestionGames' => MetronomeStats::SUGGESTION_GAMES,
             'generatedAt' => gmdate('j M, g:i A', $now + $offset),
         ];
     }

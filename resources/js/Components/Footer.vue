@@ -37,6 +37,8 @@
             <li>
               <Link href="/certifications">Certifications</Link>
             </li>
+            <li><a href="/games">Games</a></li>
+            <li><a href="/about">About</a></li>
           </ul>
         </div>
 
@@ -45,6 +47,8 @@
           <ul class="footer-nav">
             <li><a href="mailto:saagarverma1234@gmail.com">Email</a></li>
             <li><a href="https://www.upwork.com/freelancers/~014475753a03f5690d" target="_blank">Upwork</a></li>
+            <li><a href="/contact">Contact page</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
           </ul>
         </div>
 

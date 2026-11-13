@@ -130,6 +130,35 @@ footer .yt { display: inline-flex; align-items: center; gap: 8px; color: var(--t
 footer .yt svg { width: 20px; height: 20px; }
 footer p { margin: 12px auto 0; max-width: 620px; font-weight: 700; }
 footer p.stats-note { font-size: 12px; margin-top: 8px; }
+/* suggestions box */
+.suggest { max-width: 720px; margin: 20px auto 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+.suggest summary { cursor: pointer; padding: 14px 16px; font-family: InterB, system-ui, sans-serif; font-weight: 700; font-size: 15px; color: var(--text); list-style-position: inside; }
+.suggest form { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 6px; }
+.suggest label { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.suggest label span { color: var(--dim); }
+.suggest textarea, .suggest input { width: 100%; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #0b0c10; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.suggest textarea { resize: vertical; min-height: 96px; }
+.suggest textarea:focus, .suggest input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.suggest .sg-count { align-self: flex-end; font-size: 12px; color: var(--dim); }
+.suggest .sg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.suggest .sg-send { align-self: flex-start; margin-top: 8px; background: var(--gold); color: #1a1406; border: 0; border-radius: 12px; min-height: 46px; padding: 0 26px; font: 700 16px InterB, system-ui, sans-serif; cursor: pointer; }
+.suggest .sg-send:disabled { opacity: .5; cursor: default; }
+.suggest .sg-status { margin: 4px 0 0; font-size: 14px; color: var(--text); min-height: 1px; }
+.suggest .sg-note { margin: 2px 0 0; font-size: 12px; color: var(--dim); }
+.suggest .sg-note a { color: var(--muted); }
+.suggest .sg-thanks { margin: 4px 0 6px; color: var(--gold); font-size: 15px; }
+/* how it works + site links: plain reading text below the game */
+.guide { max-width: 720px; margin: 28px auto 0; padding: 0 4px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400;
+         font-size: 16px; line-height: 1.65; color: var(--muted); overflow-wrap: break-word; }
+.guide h2 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 22px; line-height: 1.25; margin: 0 0 12px; }
+.guide h3 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 17px; margin: 24px 0 6px; }
+.guide p, .guide ul { margin: 0 0 12px; }
+.guide ul { padding-left: 20px; }
+.guide li { margin-bottom: 6px; }
+.guide strong { color: var(--text); font-weight: 600; }
+.guide a { color: var(--gold); }
+footer nav.site { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin-top: 16px; font-size: 13px; }
+footer nav.site a { color: var(--muted); }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; background: #2a2c38; color: var(--text);
          padding: 10px 16px; border-radius: 10px; font-size: 14px; transition: .25s; pointer-events: none; z-index: 9; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -138,7 +167,7 @@ footer p.stats-note { font-size: 12px; margin-top: 8px; }
 /* screenshot mode for the share image */
 body.og { overflow: hidden; }
 body.og .wrap { max-width: none; padding: 0; }
-body.og header.top, body.og .side, body.og .ad-wrap, body.og footer, body.og .goal, body.og .start { display: none; }
+body.og header.top, body.og .side, body.og .ad-wrap, body.og footer, body.og .goal, body.og .start, body.og .guide, body.og .suggest { display: none; }
 body.og .stage { height: 100vh; border-radius: 0; border: 0; }
 body.og .ogtitle { display: block; }
 body.og .game { grid-template-columns: 1fr; }
@@ -227,17 +256,75 @@ body.og .timer { display: none; }
   <!-- AdSense slot -->
   <div class="ad-wrap"><div class="ad-slot" id="ad-slot" aria-hidden="true"></div></div>
 
+  <!-- Suggestions box (posts to /game-feedback) -->
+  <details class="suggest" id="suggestions">
+    <summary>Suggestions: tell us what to improve</summary>
+    <form id="sgForm" method="post" action="/game-feedback" novalidate>
+      <label for="sgMsg">What should we add, fix or change?</label>
+      <textarea id="sgMsg" name="message" maxlength="500" rows="4" required placeholder="A new level idea, a bug, a feature..."></textarea>
+      <div class="sg-count"><span id="sgCount">0</span>/500</div>
+      <label for="sgContact">Name or email <span>(optional, only if you want a reply)</span></label>
+      <input id="sgContact" name="contact" maxlength="120" autocomplete="email">
+      <input class="sg-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <input type="hidden" name="game" value="metronomes">
+      <button type="submit" class="sg-send">Send</button>
+      <p class="sg-status" role="status" aria-live="polite"></p>
+      <p class="sg-note">Suggestions are stored privately on this site and read only by us. See the <a href="/privacy">privacy policy</a>.</p>
+    </form>
+  </details>
+  <article class="guide" id="how-it-works">
+    <h2>How it works: why metronomes fall into sync</h2>
+    <p>Put a group of metronomes on a board that can roll, start them at random, and within a minute or two they all tick together. This game runs the same equations as the Chaos to Order videos: nothing is scripted.</p>
+
+    <h3>Each metronome is a self-driven pendulum</h3>
+    <p>A metronome is a pendulum with an escapement: a small spring mechanism that gives the pendulum a tiny kick on every swing. If the swing gets too small, the kicks add energy; if it gets too big, friction wins. So every metronome settles into its own steady swing. Like real ones, each metronome in the game runs a tiny fraction of a percent faster or slower than its neighbours, so on their own they would drift apart forever.</p>
+
+    <h3>The rolling board connects them</h3>
+    <p>The board sits on rollers, so it can slide left and right. When a pendulum swings to the right, it pushes the board slightly to the left, just as stepping forward in a small boat pushes the boat backward. That is conservation of momentum. The board's motion in turn shakes every metronome on it. This is called <em>coupling</em>, and the board is the only link between them.</p>
+    <p>Here is the key effect. When most metronomes swing together, the board rocks in rhythm with them. A metronome that is slightly ahead of the crowd gets its base moved in a way that slows it a little; one that is behind gets sped up a little. Small nudges, repeated a hundred times a minute, pull everyone toward the common beat.</p>
+
+    <h3>Phase locking and the Kuramoto picture</h3>
+    <p>Physicists describe each metronome by its <em>phase</em>: where it is in its swing, as an angle on a circle (0° at one end, 180° at the other, back to 360°). Yoshiki Kuramoto showed in the 1970s that a crowd of oscillators with slightly different natural speeds will suddenly lock to a shared rhythm once the coupling between them is strong enough compared with how different they are. Fireflies flashing together and audiences clapping in unison follow the same rule. Metronomes on a board are the classic tabletop example, worked out by James Pantaleone in the American Journal of Physics in 2002, the paper this game's engine is based on.</p>
+
+    <h3>What the numbers in the game mean</h3>
+    <ul>
+      <li><strong>IN STEP %</strong> is the Kuramoto order parameter. Picture every metronome as an arrow pointing to its phase on a circle and average all the arrows. If they point every which way, the average is close to zero (0%). If they all point the same way, the average is a full-length arrow (100%). The game shows it averaged over the last half second so it doesn't flicker.</li>
+      <li><strong>Synced in X s</strong> appears when the counter reaches 100% and stays there for half a second. The timer counts from the start of the round or your last action.</li>
+      <li><strong>Speed (ticks a minute)</strong> is the tempo. A tick is half a swing, so 208 ticks a minute is about 1.7 full swings per second.</li>
+      <li><strong>BEAT NOW</strong>, shown while the motor runs, is the tempo the crowd is actually keeping, measured from the average swing.</li>
+    </ul>
+
+    <h3>What each button does to the physics</h3>
+    <ul>
+      <li><strong>Nudge</strong> gives the board one short shove. It disturbs everyone at once, which can break a stuck pattern.</li>
+      <li><strong>Shake</strong> starts a motor that rocks the board at 1.1 times the metronomes' tempo (229 against 208). A strong steady drive can drag oscillators onto its own beat, a process called entrainment. Watch BEAT NOW to see whose beat wins.</li>
+      <li><strong>Flip</strong> reverses a metronome's swing as it passes the centre, jumping it half a cycle. Tap a single metronome to flip just that one.</li>
+      <li><strong>Add big one</strong> sets down a metronome 18 times heavier. It pushes the board 18 times harder than any other, so the crowd tends to fall in behind it.</li>
+      <li><strong>Add weights</strong> puts 48 kg on the board. A heavier board barely moves, so the coupling becomes very weak and the metronomes stay out of step for a long time. Take the weights off and syncing resumes.</li>
+    </ul>
+
+    <h3>Why some ties never break</h3>
+    <p>In the <em>Break the 3-way tie</em> challenge, three equal teams are a third of a swing apart. Their pushes on the board cancel exactly, like three people pulling a ring at 120° to each other, so the board stays still and nothing pulls the teams together. Remove that symmetry by flipping a few metronomes from one team, lifting some off or adding the big one, and the board starts to move and sync takes over. The <em>50 vs 50</em> tie (two teams half a swing apart) also cancels at first, but it is unstable: the tiniest imbalance grows, and left alone it breaks in about 15 seconds.</p>
+
+    <h3>Is it exactly real?</h3>
+    <p>The equations are the published model, solved with the 4th-order Runge-Kutta method in small time steps, using realistic masses and lengths. Only the drawing is exaggerated: the board's sway is shown at twice its real size so you can see it. You can try the same experiment at home with a few metronomes on a light board resting on two drink cans.</p>
+  </article>
+
   <footer>
     <a class="yt" href="https://www.youtube.com/@chaostoorderlab" rel="noopener" target="_blank">
       <svg viewBox="0 0 24 24"><path fill="#ff3d3d" d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.6 12a31 31 0 00.4 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.4-4.8 31 31 0 00-.4-4.8z"/><path fill="#fff" d="M9.8 15.1L15.6 12 9.8 8.9z"/></svg>
       Watch on YouTube: Chaos to Order</a>
     <p>The motion is real physics: each metronome is a pendulum with an escapement, and they all push on the same board on rollers (Pantaleone 2002, American Journal of Physics). The board's sway is drawn twice its real size so you can see it.</p>
-    <p class="stats-note">Anonymous play stats, no cookies, no personal data.</p>
+    <p class="stats-note">Play stats are anonymous and use no cookies. Ads are served by Google, which may use cookies: see the <a href="/privacy">privacy policy</a>.</p>
+    <nav class="site" aria-label="Site">
+      <a href="/games">More games</a><a href="/">Home</a><a href="/bump-theory/">Bump Theory game</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a>
+    </nav>
   </footer>
 </div>
 <div class="toast" id="toast"></div>
 <script src="stats.js?v=1"></script>
 <script src="engine.js"></script>
 <script src="game.js?v=2"></script>
+<script src="/game-feedback.js?v=1" defer></script>
 </body>
 </html>

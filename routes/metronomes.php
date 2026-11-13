@@ -18,3 +18,6 @@ Route::permanentRedirect('/metronomes/admin', '/metronomes-admin');
 Route::post('/metronomes-admin/login', [AdminController::class, 'login']);
 Route::post('/metronomes-admin/logout', [AdminController::class, 'logout']);
 Route::post('/metronomes-admin/delete-test', [AdminController::class, 'deleteTest']);
+
+// Suggestions box on the game pages (no web middleware: no cookies; see GameFeedbackController).
+Route::post('/game-feedback', [\App\Http\Controllers\GameFeedbackController::class, 'store']);

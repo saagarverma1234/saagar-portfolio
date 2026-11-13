@@ -12,6 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function (): void {
             Route::group([], base_path('routes/metronomes.php'));
+            Route::group([], base_path('routes/site.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

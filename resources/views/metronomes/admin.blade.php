@@ -257,6 +257,27 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
     </div>
   </div>
 
+  <div class="card" id="suggestions">
+    <h2>Suggestions from players ({{ $num($suggestionCount) }}{{ $suggestionCount > count($suggestions) ? ', newest '.count($suggestions).' shown' : '' }})</h2>
+    @if ($suggestions)
+      <div class="scroll"><table class="recent">
+        <thead><tr><th>Time (IST)</th><th>Game</th><th>Suggestion</th><th>Name / email</th></tr></thead>
+        <tbody>
+        @foreach ($suggestions as $s)
+          <tr>
+            <td style="white-space:nowrap">{{ $ist($s->created_at) }}</td>
+            <td>{{ $suggestionGames[$s->game] ?? $s->game }} @if ($s->test)<span class="tag">test</span>@endif</td>
+            <td style="white-space:pre-wrap;min-width:220px">{{ $s->message }}</td>
+            <td>{{ $s->contact !== '' ? $s->contact : '–' }}</td>
+          </tr>
+        @endforeach
+        </tbody>
+      </table></div>
+    @else
+      <div class="empty">No suggestions yet.</div>
+    @endif
+  </div>
+
   <div class="card">
     <h2>Recent 50 events</h2>
     @if ($recent)

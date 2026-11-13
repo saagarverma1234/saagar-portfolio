@@ -83,7 +83,12 @@ class MetronomeStats
     private function migrate(Connection $connection): void
     {
         $version = (int) ($connection->selectOne('PRAGMA user_version')->user_version ?? 0);
+        if ($version >= 2) {
+            return;
+        }
         if ($version >= 1) {
+            $this->migrateSuggestions($connection);
+
             return;
         }
 
@@ -113,6 +118,26 @@ class MetronomeStats
         $connection->statement('CREATE TABLE IF NOT EXISTS login_failures (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, who TEXT NOT NULL)');
         $connection->statement('CREATE INDEX IF NOT EXISTS login_failures_who_ts ON login_failures (who, ts)');
         $connection->statement('PRAGMA user_version = 1');
+        $this->migrateSuggestions($connection);
+    }
+
+    /**
+     * Version 2: player suggestions from the game pages (see GameFeedbackController).
+     */
+    private function migrateSuggestions(Connection $connection): void
+    {
+        $connection->statement('CREATE TABLE IF NOT EXISTS suggestions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            game TEXT NOT NULL,
+            message TEXT NOT NULL,
+            contact TEXT NOT NULL DEFAULT \'\',
+            ip_hash TEXT NOT NULL,
+            test INTEGER NOT NULL DEFAULT 0
+        )');
+        $connection->statement('CREATE INDEX IF NOT EXISTS suggestions_created ON suggestions (created_at)');
+        $connection->statement('CREATE INDEX IF NOT EXISTS suggestions_ip_created ON suggestions (ip_hash, created_at)');
+        $connection->statement('PRAGMA user_version = 2');
     }
 
     /**
@@ -390,7 +415,76 @@ class MetronomeStats
 
     public function deleteTestEvents(): int
     {
-        return $this->db()->table('events')->where('test', 1)->delete();
+        return $this->db()->table('events')->where('test', 1)->delete()
+            + $this->db()->table('suggestions')->where('test', 1)->delete();
+    }
+
+    /**
+     * Games that may receive suggestions, keyed by the value the page sends.
+     */
+    public const SUGGESTION_GAMES = ['metronomes' => 'Metronome Sync Game', 'bump-theory' => 'Bump Theory: 1 Ball → 10,000'];
+
+    public const SUGGESTIONS_PER_HOUR = 5;
+
+    public const SUGGESTIONS_PER_DAY_TOTAL = 300;
+
+    /**
+     * Keyed hash of the client IP for rate limiting suggestions. The raw IP is never stored.
+     */
+    public function suggestionIpHash(Request $request): string
+    {
+        $ip = (string) ($request->header('CF-Connecting-IP') ?: $request->ip());
+
+        return substr(hash_hmac('sha256', 'game-feedback|'.$ip, (string) config('app.key')), 0, 16);
+    }
+
+    /**
+     * Store one suggestion. Returns 'ok', or 'limited' when this IP (or the whole site) sent too many.
+     */
+    public function addSuggestion(string $game, string $message, string $contact, string $ipHash, bool $isTest): string
+    {
+        $now = time();
+        $row = ['created_at' => $now, 'game' => $game, 'message' => $message, 'contact' => $contact, 'ip_hash' => $ipHash, 'test' => $isTest ? 1 : 0];
+
+        if (! $this->sqliteAvailable()) {
+            @file_put_contents(preg_replace('/\.sqlite$/', '', $this->path()).'-suggestions.ndjson', json_encode($row)."\n", FILE_APPEND | LOCK_EX);
+
+            return 'ok';
+        }
+
+        $table = $this->db()->table('suggestions');
+        if ((clone $table)->where('ip_hash', $ipHash)->where('created_at', '>=', $now - 3600)->count() >= self::SUGGESTIONS_PER_HOUR
+            || (clone $table)->where('created_at', '>=', $now - 86400)->count() >= self::SUGGESTIONS_PER_DAY_TOTAL) {
+            return 'limited';
+        }
+        $table->insert($row);
+
+        return 'ok';
+    }
+
+    /**
+     * Newest suggestions first.
+     *
+     * @return list<object>
+     */
+    public function suggestions(bool $includeTest, int $limit = 100): array
+    {
+        $query = $this->db()->table('suggestions')->orderByDesc('id')->limit($limit);
+        if (! $includeTest) {
+            $query->where('test', 0);
+        }
+
+        return $query->get(['id', 'created_at', 'game', 'message', 'contact', 'test'])->all();
+    }
+
+    public function suggestionCount(bool $includeTest): int
+    {
+        $query = $this->db()->table('suggestions');
+        if (! $includeTest) {
+            $query->where('test', 0);
+        }
+
+        return $query->count();
     }
 
     /**
@@ -553,6 +647,7 @@ class MetronomeStats
 
     public function testEventCount(): int
     {
-        return $this->db()->table('events')->where('test', 1)->count();
+        return $this->db()->table('events')->where('test', 1)->count()
+            + $this->db()->table('suggestions')->where('test', 1)->count();
     }
 }
