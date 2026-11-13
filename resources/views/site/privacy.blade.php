@@ -46,14 +46,14 @@
 <p>Where the law requires it (for example for visitors in the European Economic Area, the UK and Switzerland), Google may show a consent message before personalised ads are used. If you decline, Google may still show non-personalised ads, which use cookies for things like frequency capping and fraud prevention. We do not control which cookies Google sets and we do not receive any personal information from Google about you.</p>
 
 <h2>Other third-party services</h2>
-<table>
+<div class="table-wrap"><table class="stack">
   <tr><th>Service</th><th>What it does here</th><th>What it can receive</th></tr>
-  <tr><td>Cloudflare</td><td>Network and security provider in front of the site (caching, protection against attacks)</td><td>IP address and request details for every visit</td></tr>
-  <tr><td>Hosting provider</td><td>Runs the server the site lives on</td><td>Server logs as described above</td></tr>
-  <tr><td>Google AdSense</td><td>Shows ads</td><td>Cookies and device data, under Google's own privacy policy</td></tr>
-  <tr><td>Google Fonts</td><td>Serves the fonts on the portfolio pages</td><td>IP address and browser details when the font files load</td></tr>
-  <tr><td>YouTube</td><td>Only when you click a link to one of our channels</td><td>Whatever YouTube collects once you are on youtube.com</td></tr>
-</table>
+  <tr><td data-label="Service">Cloudflare</td><td data-label="What it does here">Network and security provider in front of the site (caching, protection against attacks)</td><td data-label="What it can receive">IP address and request details for every visit</td></tr>
+  <tr><td data-label="Service">Hosting provider</td><td data-label="What it does here">Runs the server the site lives on</td><td data-label="What it can receive">Server logs as described above</td></tr>
+  <tr><td data-label="Service">Google AdSense</td><td data-label="What it does here">Shows ads</td><td data-label="What it can receive">Cookies and device data, under Google's own privacy policy</td></tr>
+  <tr><td data-label="Service">Google Fonts</td><td data-label="What it does here">Serves the fonts on the portfolio pages</td><td data-label="What it can receive">IP address and browser details when the font files load</td></tr>
+  <tr><td data-label="Service">YouTube</td><td data-label="What it does here">Only when you click a link to one of our channels</td><td data-label="What it can receive">Whatever YouTube collects once you are on youtube.com</td></tr>
+</table></div>
 <p>We do not sell personal data, we do not use it to build profiles of you, and we do not share it with anyone except the service providers above, or if required by law.</p>
 
 <h2>Children</h2>

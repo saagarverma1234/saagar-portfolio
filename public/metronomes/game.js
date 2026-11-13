@@ -88,6 +88,7 @@
   function geom() {
     var wide = W / H;
     G.yBack = H * (OG ? 0.30 : 0.40); G.yFront = H * (OG ? 0.68 : 0.72);
+    if (!OG && H > W * 1.3) { G.yBack = H * 0.37; G.yFront = H * 0.77; }   // tall phone stage: deeper board, less empty floor
     G.P = Math.min(W * 0.93, H * 0.98);                        // px across the lattice at the front row
     G.cx = W / 2;
     G.pxm = G.P / 1.3;                                          // px per metre at the front (lattice ~1.3 m wide)
@@ -411,7 +412,7 @@
     document.querySelectorAll('.seg .btn').forEach(function (b) { b.classList.toggle('on', b.dataset.start === setup.start); });
     $('sN').value = setup.N; $('oN').textContent = setup.N; $('sB').value = setup.bpm; $('oB').textContent = setup.bpm;
   }
-  function on(id, fn) { $(id).addEventListener('click', function (e) { initAudio(); fn(e); }); }
+  function on(id, fn) { $(id).addEventListener('click', function (e) { initAudio(); if (!started && /^a[A-Z]/.test(id)) begin(); fn(e); }); }
   on('aNudge', function () { T('control', { c: 'nudge' }); acted(); sim.nudge(); fx.push = sim.t; play(BUF.knock, AC ? AC.currentTime + 0.01 : 0, 0.9, 1); });
   on('aShake', function () { T('control', { c: 'shake' }); acted(); sim.setMotor(!sim.motor); syncButtons(); });
   on('aFlip', function () {
