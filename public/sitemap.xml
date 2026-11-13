@@ -64,6 +64,38 @@
         <priority>0.8</priority>
     </url>
 
+    <!-- Articles -->
+    <url>
+        <loc>https://saagarverma.com/articles</loc>
+        <lastmod>2026-11-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://saagarverma.com/articles/why-metronomes-sync</loc>
+        <lastmod>2026-11-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://saagarverma.com/articles/maths-of-1-ball-to-10000</loc>
+        <lastmod>2026-11-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://saagarverma.com/articles/how-bump-theory-simulations-are-made</loc>
+        <lastmod>2026-11-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://saagarverma.com/articles/can-a-planet-really-be-safe</loc>
+        <lastmod>2026-11-13</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
     <!-- Project Details -->
     <url>
         <loc>https://saagarverma.com/projects/coinvo-trading</loc>

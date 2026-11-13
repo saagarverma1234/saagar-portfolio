@@ -15,6 +15,15 @@ Route::permanentRedirect('/privacy-policy', '/privacy');
 Route::view('/games', 'site.games');
 
 /*
+| Articles: an index at /articles and one Blade view per article
+| (config/articles.php lists them).
+*/
+Route::view('/articles', 'site.articles.index');
+foreach (config('articles', []) as $article) {
+    Route::view('/articles/'.$article['slug'], 'site.articles.'.$article['slug'], ['article' => $article]);
+}
+
+/*
 | Game list as JSON (from config/games.php) for the "More games" strip on the
 | static game pages, so a new game appears there without editing each page.
 */

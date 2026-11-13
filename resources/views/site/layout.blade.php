@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>@yield('title')</title>
 <meta name="description" content="@yield('description')">
-<link rel="canonical" href="https://saagarverma.com@yield('path')">
+<link rel="canonical" href="https://saagarverma.com{{ $__env->yieldContent('path') }}">
 <meta name="author" content="Saagar Verma">
 <meta name="theme-color" content="#0b0c10">
 <meta name="color-scheme" content="dark">
@@ -13,7 +13,7 @@
 <meta property="og:site_name" content="Saagar Verma">
 <meta property="og:title" content="@yield('og_title', $__env->yieldContent('title'))">
 <meta property="og:description" content="@yield('description')">
-<meta property="og:url" content="https://saagarverma.com@yield('path')">
+<meta property="og:url" content="https://saagarverma.com{{ $__env->yieldContent('path') }}">
 @hasSection('og_image')
 <meta property="og:image" content="@yield('og_image')">
 <meta property="og:image:width" content="1200">
@@ -127,6 +127,7 @@ code { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; background: va
     <nav aria-label="Footer">
       <a href="/">Home</a>
       <a href="/games">Games</a>
+      <a href="/articles">Articles</a>
       @foreach (config('games', []) as $footerGame)
         <a href="{{ $footerGame['url'] }}">{{ $footerGame['title'] }}</a>
       @endforeach
