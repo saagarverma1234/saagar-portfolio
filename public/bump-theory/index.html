@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>1 Ball → 10,000: Bump Theory Multiplier Game</title>
+<meta name="description" content="Place multiplier gates, walls and bumpers, drop one ball and watch it multiply into thousands. 24 levels from easy to impossible, plus a sandbox. Free browser game from the Bump Theory channel.">
+<link rel="canonical" href="https://saagarverma.com/bump-theory/">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Bump Theory">
+<meta property="og:title" content="1 Ball → 10,000: Bump Theory Multiplier Game">
+<meta property="og:description" content="Drop one ball. Place the gates. Watch it turn into 10,000. How many balls can you make?">
+<meta property="og:url" content="https://saagarverma.com/bump-theory/">
+<meta property="og:image" content="https://saagarverma.com/bump-theory/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="1 Ball → 10,000: Bump Theory Multiplier Game">
+<meta name="twitter:description" content="Drop one ball. Place the gates. Watch it turn into 10,000.">
+<meta name="twitter:image" content="https://saagarverma.com/bump-theory/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="inter-700.woff2" as="font" type="font/woff2" crossorigin>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"1 Ball → 10,000: Bump Theory Multiplier Game","url":"https://saagarverma.com/bump-theory/","description":"A browser physics puzzle: place multiplier gates, walls and bumpers, drop one ball and watch it multiply into thousands. Based on the Bump Theory YouTube channel.","genre":["Puzzle","Simulation"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","isAccessibleForFree":true,"author":{"@type":"Person","name":"Saagar Verma","url":"https://saagarverma.com/"},"sameAs":"https://www.youtube.com/@bumptheory"}
+</script>
+<style>
+/* Inter 700 (SIL Open Font License 1.1, The Inter Project Authors), self-hosted */
+@font-face { font-family: InterB; src: url('inter-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+:root {
+  --bg: #000; --panel: #111218; --panel2: #1a1b23; --line: #2a2c38; --text: #f4f4f7; --muted: #b8bac7; --dim: #7d8090;
+  --cyan: #33d9ff; --lime: #9ef040; --violet: #9e73ff; --pink: #ff5494; --gold: #ffcc33; --orange: #ff8c2e; --red: #ff4d4d;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font-family: InterB, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 700; }
+button { font: inherit; color: inherit; }
+.app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; max-width: 760px; margin: 0 auto;
+       padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+header.top { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 6px 10px; height: 52px; }
+header.top .ttl { flex: 1; min-width: 0; text-align: center; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header.top .ttl small { color: var(--dim); font-size: 12px; letter-spacing: 2px; margin-right: 6px; }
+.ib { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; height: 40px; min-width: 40px; padding: 0 12px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-size: 14px; flex: 0 0 auto; }
+.ib svg { width: 18px; height: 18px; }
+.ib.on { border-color: var(--gold); color: var(--gold); }
+.ib[hidden] { display: none; }
+
+.stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background: #000; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#cvgl { pointer-events: none; }
+.hud { position: absolute; left: 0; right: 0; top: 6px; text-align: center; pointer-events: none; z-index: 2; }
+.hud .num { font-size: clamp(40px, 11vw, 64px); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; text-shadow: 0 0 24px rgba(0,0,0,.9); }
+.hud .num .from { color: var(--dim); font-size: .5em; letter-spacing: 0; vertical-align: middle; margin-right: .2em; }
+.hud .num.pop { animation: pop .35s ease-out; }
+@keyframes pop { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.hud .sub { margin-top: 4px; font-size: 13px; letter-spacing: 2px; color: var(--muted); display: flex; justify-content: center; align-items: center; gap: 8px; }
+.hud .stars { display: inline-flex; gap: 2px; }
+.hud .stars i { width: 15px; height: 15px; display: inline-block; background: #3a3c48; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.hud .stars i.on { background: var(--gold); }
+.hud.win .num { color: var(--gold); }
+.tip { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(92%, 420px); text-align: center; font-size: 14px; color: var(--muted);
+       background: rgba(10,10,14,.72); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; pointer-events: none; z-index: 2; transition: opacity .3s; line-height: 1.35; }
+.tip.hide { opacity: 0; }
+#fps { position: absolute; right: 6px; bottom: 6px; font-size: 11px; color: var(--lime); background: rgba(0,0,0,.6); padding: 3px 6px; border-radius: 6px; z-index: 4; pointer-events: none; display: none; font-variant-numeric: tabular-nums; }
+
+/* tray */
+.tray { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: #07070a; border-top: 1px solid var(--line); touch-action: none; }
+.inv { flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.inv::-webkit-scrollbar { display: none; }
+.chip { position: relative; flex: 0 0 auto; width: 62px; height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); cursor: grab;
+        display: flex; align-items: center; justify-content: center; font-size: 18px; touch-action: none; }
+.chip.empty { opacity: .3; cursor: default; }
+.chip .cnt { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; border-radius: 10px; background: var(--text); color: #000; font-size: 12px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+.chip .gate { width: 46px; height: 22px; border-radius: 11px; border: 3px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.chip .wall { width: 44px; height: 8px; border-radius: 4px; background: #eceef6; transform: rotate(-20deg); }
+.chip .bump { width: 30px; height: 30px; border-radius: 50%; border: 4px solid var(--orange); background: #2a1606; }
+.chip .peg { width: 14px; height: 14px; border-radius: 50%; background: #cfd2de; }
+.chip.toggle { width: auto; padding: 0 10px; font-size: 13px; cursor: pointer; }
+.chip.toggle.on { border-color: var(--lime); color: var(--lime); }
+.drop { flex: 0 0 auto; height: 56px; min-width: 96px; border: 0; border-radius: 14px; background: var(--gold); color: #1a1406; font-size: 20px; letter-spacing: 1px; cursor: pointer;
+        box-shadow: 0 0 0 4px rgba(255,204,51,.14), 0 0 30px rgba(255,190,60,.3); }
+.drop.stop { background: #2a2c38; color: var(--text); box-shadow: none; }
+.drop:active, .btn:active, .ib:active { transform: scale(.97); }
+.sq { flex: 0 0 auto; width: 44px; height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.sq svg { width: 20px; height: 20px; }
+
+/* overlays */
+.ov { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+.ov[hidden] { display: none; }
+.menu { background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,.25), rgba(0,0,0,.8)); gap: 14px; }
+.menu .mark { font-size: 12px; letter-spacing: 6px; color: var(--muted); margin-left: 6px; }
+.menu h1 { margin: 0; font-size: clamp(40px, 12vw, 64px); line-height: 1; letter-spacing: -1px; text-shadow: 0 0 30px rgba(0,0,0,.9); }
+.menu h1 span { color: var(--gold); }
+.menu p { margin: 0; color: var(--muted); font-size: 15px; max-width: 330px; line-height: 1.4; text-shadow: 0 0 12px #000; }
+.play { background: var(--gold); color: #1a1406; border: 0; border-radius: 999px; font-size: 24px; padding: 0 44px; height: 66px; cursor: pointer;
+        box-shadow: 0 0 0 6px rgba(255,204,51,.15), 0 0 50px rgba(255,190,60,.35); display: inline-flex; align-items: center; gap: 10px; }
+.play svg { width: 22px; height: 22px; }
+.row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: #1d1e27; border-radius: 12px; min-height: 48px; padding: 0 18px; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.btn.gold { background: var(--gold); color: #1a1406; border-color: var(--gold); }
+a.btn { color: var(--text); text-decoration: none; }
+.lv { background: rgba(0,0,0,.92); justify-content: flex-start; overflow-y: auto; padding: 18px 14px; touch-action: pan-y; }
+.lv h2 { margin: 4px 0 4px; font-size: 22px; }
+.lv .tot { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 440px; }
+.tile { aspect-ratio: 1; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px; }
+.tile b { font-size: 22px; }
+.tile .st { display: flex; gap: 1px; }
+.tile .st i { width: 11px; height: 11px; background: #3a3c48; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.tile .st i.on { background: var(--gold); }
+.tile small { font-size: 10px; color: var(--dim); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile.locked { opacity: .35; cursor: default; }
+.tile.cur { border-color: var(--gold); }
+.tile.sand { grid-column: span 4; aspect-ratio: auto; height: 56px; flex-direction: row; gap: 10px; font-size: 16px; border-color: var(--lime); color: var(--lime); }
+.res { justify-content: flex-end; padding-bottom: 18px; background: linear-gradient(to top, rgba(0,0,0,.92) 0, rgba(0,0,0,.7) 55%, rgba(0,0,0,0) 100%); pointer-events: none; }
+.res .card { pointer-events: auto; width: min(360px, 96%); background: rgba(14,14,20,.94); border: 1px solid var(--line); border-radius: 20px; padding: 16px 16px 14px; box-shadow: 0 0 60px rgba(0,0,0,.6); }
+.res .card.win { border-color: rgba(255,204,51,.6); box-shadow: 0 0 60px rgba(255,190,60,.22); }
+.res .bigstars { display: flex; justify-content: center; gap: 8px; margin-bottom: 6px; }
+.res .bigstars i { width: 40px; height: 40px; background: #2e3039; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); transform: scale(.6); transition: transform .3s, background .3s; }
+.res .bigstars i.on { background: var(--gold); transform: scale(1); }
+.res .rn { font-size: 46px; line-height: 1.05; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.res .card.win .rn { color: var(--gold); }
+.res .rl { color: var(--muted); font-size: 14px; margin: 4px 0 12px; }
+.res .row .btn { flex: 1; min-width: 0; padding: 0 10px; }
+.modal { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.86); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
+.modal[hidden] { display: none; }
+.modal img { max-width: min(92vw, 420px); max-height: 66vh; border-radius: 14px; border: 1px solid var(--line); }
+.toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(20px); opacity: 0; background: #2a2c38; color: var(--text);
+         padding: 10px 16px; border-radius: 10px; font-size: 14px; transition: .25s; pointer-events: none; z-index: 30; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* below the game */
+.below { max-width: 760px; margin: 0 auto; }
+.ad-wrap { margin: 18px 0 0; }
+.ad-slot { min-height: 0; }
+footer { color: var(--dim); font-size: 13px; text-align: center; padding: 22px 14px calc(22px + env(safe-area-inset-bottom)); line-height: 1.6; }
+footer a { color: var(--text); }
+footer .links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+footer .yt { display: inline-flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; background: var(--panel); }
+footer .yt svg { width: 20px; height: 20px; }
+footer p { margin: 12px auto 0; max-width: 620px; }
+footer h2 { font-size: 16px; color: var(--text); margin: 22px 0 0; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3532470064725978" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="ib" id="bLevels" aria-label="Levels">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </button>
+    <div class="ttl" id="ttl">1 Ball → 10,000</div>
+    <button class="ib" id="bHint" aria-label="Show a hint" hidden>Hint</button>
+    <button class="ib" id="bMute" aria-label="Sound on or off" aria-pressed="false">
+      <svg id="sndOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14"/></svg>
+      <svg id="sndOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+    </button>
+  </header>
+
+  <section class="stage" id="stage" aria-label="Game board. Drag pieces from the tray onto the board, tap a piece to turn it, then press Drop.">
+    <canvas id="cv2d"></canvas>
+    <canvas id="cvgl"></canvas>
+    <div class="hud" id="hud">
+      <div class="num" id="num"><span class="from" id="from"></span><span id="cnt">1</span></div>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="tip hide" id="tip"></div>
+    <div id="fps"></div>
+
+    <div class="ov menu" id="menu">
+      <div class="mark">BUMP THEORY</div>
+      <h1>1 Ball → <span>10,000</span></h1>
+      <p>Place the gates. Drop one ball. Watch it multiply into thousands.</p>
+      <button class="play" id="bPlay"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><span id="playLab">Play</span></button>
+      <div class="row"><button class="btn" id="bMenuLevels">Levels</button><button class="btn" id="bMenuSand">Sandbox</button></div>
+    </div>
+
+    <div class="ov lv" id="levels" hidden>
+      <h2>Levels</h2>
+      <div class="tot" id="tot"></div>
+      <div class="grid" id="grid"></div>
+      <div class="row" style="margin-top:14px"><button class="btn" id="bLvClose">Close</button></div>
+    </div>
+
+    <div class="ov res" id="result" hidden>
+      <div class="card" id="rcard">
+        <div class="bigstars" id="rstars"><i></i><i></i><i></i></div>
+        <div class="rn" id="rnum">0</div>
+        <div class="rl" id="rlab"></div>
+        <div class="row"><button class="btn" id="bRetry">Retry</button><button class="btn" id="bShare">Share</button><button class="btn gold" id="bNext">Next</button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tray" id="tray">
+    <div class="inv" id="inv"></div>
+    <button class="sq" id="bClear" aria-label="Take all pieces back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg></button>
+    <button class="drop" id="bDrop">DROP</button>
+  </div>
+</div>
+
+<div class="below">
+  <!-- AdSense slot -->
+  <div class="ad-wrap"><div class="ad-slot" id="ad-slot" aria-hidden="true"></div></div>
+  <footer>
+    <div class="links">
+      <a class="yt" href="https://www.youtube.com/@bumptheory" rel="noopener" target="_blank">
+        <svg viewBox="0 0 24 24"><path fill="#ff3d3d" d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.6 12a31 31 0 00.4 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.4-4.8 31 31 0 00-.4-4.8z"/><path fill="#fff" d="M9.8 15.1L15.6 12 9.8 8.9z"/></svg>
+        Watch Bump Theory on YouTube</a>
+      <a class="yt" href="/metronomes/">Play the Metronome Sync Game</a>
+    </div>
+    <h2>How to play</h2>
+    <p>Drag gates, walls and bumpers from the tray onto the board. Tap a piece to turn it, drag it back to the tray to remove it. Press Drop: every ball that goes through a xN gate becomes N balls (each ball can use each gate once). Lava eats balls. Beat the target for a star, and reach the 3-star score to master the level.</p>
+    <p>The counter is exact: it is 1 ball times every split, minus the balls lost in lava. Sound is made live in your browser.</p>
+  </footer>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <img id="cardImg" alt="Your result card">
+  <div class="row"><button class="btn gold" id="mShare">Share</button><a class="btn" id="mSave" download="bump-theory-result.png">Save image</a><button class="btn" id="mCopy">Copy link</button></div>
+  <button class="btn" id="mClose">Close</button>
+</div>
+<div class="toast" id="toast"></div>
+<script src="sim.js?v=1"></script>
+<script src="levels.js?v=1"></script>
+<script src="game.js?v=1"></script>
+</body>
+</html>

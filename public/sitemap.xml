@@ -22,6 +22,11 @@
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
+    <url>
+        <loc>https://saagarverma.com/bump-theory/</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
 
     <!-- Project Details -->
     <url>
