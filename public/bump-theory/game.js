@@ -81,7 +81,19 @@
     cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
     cg.width = cv.width; cg.height = cv.height;
     if (gl) gl.viewport(0, 0, cg.width, cg.height);
+    $('hud').style.top = Math.round(view.oy + 4) + 'px';
   }
+  // in-app browsers (Instagram, Facebook) report 100vh taller than what is visible: size the app to the real viewport
+  function setAppH() {
+    var a = document.activeElement;
+    if (a && /INPUT|TEXTAREA/.test(a.tagName)) return; // keyboard open: keep the board size
+    var h = window.innerHeight;
+    if (h > 0) document.querySelector('.app').style.setProperty('--app-h', h + 'px');
+  }
+  setAppH();
+  window.addEventListener('resize', setAppH);
+  window.addEventListener('orientationchange', function () { setTimeout(setAppH, 300); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppH);
 
   var gl = null, glp = null, glbuf = null, gldata = null, glLoc = {};
   function initGL() {
@@ -176,9 +188,9 @@
     G.fixed = G.L.fixed.map(function (d) { return S.makeItem(d, true); });
     G.placed = [];
     G.fixed.forEach(function (it) { S.pose(it, 0); });
-    hideAll(); $('bHint').hidden = false; $('bHint').classList.remove('on');
-    $('ttl').innerHTML = '<small>LEVEL ' + (i + 1) + '</small>' + esc(G.L.name);
-    showTip(G.L.tip);
+    hideAll(); $('bHint').hidden = false; $('bHint').classList.remove('on'); setNav(true);
+    $('ttl').innerHTML = '<small>LEVEL ' + (i + 1) + '</small><span>' + esc(G.L.name) + '</span>';
+    showTip(i === 0 ? 'Drag x2 under the ball, then tap DROP' : G.L.tip);
     buildTray(); updateHud(true);
     try { history.replaceState(null, '', '?level=' + (i + 1)); } catch (e) { /* file:// etc. */ }
   }
@@ -186,15 +198,37 @@
     G.mode = 'sandbox'; G.L = null; G.phase = 'run'; G.hint = false; G.sel = null;
     G.fixed = []; G.placed = [];
     G.sim = new S.Sim(G.placed.slice(), { alloc: 14000, cap: 14000, recycle: G.recycle, seed: (Math.random() * 1e9) | 0, tmax: 1e9 });
-    hideAll(); $('bHint').hidden = true;
-    $('ttl').innerHTML = '<small>SANDBOX</small>No limits';
-    showTip('Build anything. Recycle sends balls back to the top so they can split again.');
+    hideAll(); $('bHint').hidden = true; setNav(true);
+    $('ttl').innerHTML = '<small>SANDBOX</small><span>No limits</span>';
+    showTip('Build anything, then tap DROP');
     buildTray(); updateHud(true);
     try { history.replaceState(null, '', '?sandbox=1'); } catch (e) { /* ignore */ }
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function hideAll() { $('menu').hidden = true; $('levels').hidden = true; $('result').hidden = true; G.attract = null; $('tray').style.visibility = ''; }
-  function showTip(t) { var e = $('tip'); e.textContent = t; e.classList.toggle('hide', !t); }
+  function showTip(t) { var e = $('tip'); e.textContent = t; e.classList.toggle('hide', !t); $('hud').classList.toggle('tipping', !!t); }
+  // header: "< Games" link on the menu, "<" back-to-menu button in a level or the sandbox
+  function firstAction() { if (!(G.mode === 'level' && G.li === 0 && !G.placed.length)) showTip(''); }
+  function setNav(inGame) {
+    var b = $('bBack');
+    b.classList.toggle('icon', inGame); b.setAttribute('aria-label', inGame ? 'Back to menu' : 'All games');
+    $('bLevels').hidden = !inGame;
+  }
+  function goMenu() {
+    hideAll(); G.mode = 'menu'; G.phase = 'edit'; G.sel = null; G.hint = false;
+    $('bHint').hidden = true; setNav(false);
+    $('ttl').innerHTML = '<span>1 Ball → 10,000</span>';
+    $('playLab').textContent = save.stars.some(function (s) { return s > 0; }) ? 'Continue' : 'Play';
+    $('menu').hidden = false; $('tray').style.visibility = 'hidden'; showTip('');
+    startAttract(); updateHud(true);
+    try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
+  }
+  function nudges() {
+    var l1 = G.mode === 'level' && G.li === 0 && G.phase === 'edit' && starsOf(0) === 0;
+    var chip = $('inv').querySelector('.chip[data-t]');
+    if (chip) chip.classList.toggle('nudge', l1 && !G.placed.length);
+    $('bDrop').classList.toggle('nudge', l1 && G.placed.length > 0);
+  }
 
   function syncSandboxItems() { if (G.mode === 'sandbox' && G.sim) G.sim.setItems(allItems()); }
 
@@ -237,6 +271,7 @@
     if (G.mode === 'sandbox') { drop.textContent = 'DROP'; drop.classList.remove('stop'); }
     else if (G.phase === 'edit') { drop.textContent = 'DROP'; drop.classList.remove('stop'); }
     else { drop.textContent = 'STOP'; drop.classList.add('stop'); }
+    nudges();
   }
 
   /* ---------------- HUD ---------------- */
@@ -279,7 +314,7 @@
     Snd.play('mar', 9, 0.25);
   }
   function stopRun() {
-    G.sim = null; G.phase = 'edit'; $('result').hidden = true;
+    G.sim = null; G.phase = 'edit'; $('result').hidden = true; $('tray').style.visibility = '';
     G.allItemsReset();
     refreshTray(); updateHud(true);
   }
@@ -299,9 +334,12 @@
       var ss = $('rstars').children; for (var k = 0; k < 3; k++) ss[k].classList.remove('on');
       $('rnum').textContent = fmt(c);
       $('rlab').textContent = got > 0 ? (got === 3 ? 'Perfect! ' : '') + 'Balls from 1 ball' + (newBest && prevStars ? ' · new best' : '') + (got < 3 ? ' · 3 stars at ' + fmt(st[2]) : '') : 'Target ' + fmt(st[0]) + '. Move things and try again!';
-      $('bNext').disabled = !(got > 0 || starsOf(i0) > 0) || i0 >= LEVELS.length - 1;
-      $('bNext').textContent = i0 >= LEVELS.length - 1 ? 'Done!' : 'Next';
-      $('result').hidden = false;
+      var canNext = (got > 0 || starsOf(i0) > 0) && i0 < LEVELS.length - 1;
+      G.nextAct = canNext ? 'next' : (got > 0 ? 'levels' : 'retry');
+      $('nextLab').textContent = canNext ? 'Next level' : got > 0 ? 'All levels' : 'Try again';
+      $('bNext').querySelector('svg').style.display = G.nextAct === 'retry' ? 'none' : '';
+      $('bRetry').querySelector('span').textContent = G.nextAct === 'retry' ? 'Hint' : 'Retry';
+      $('result').hidden = false; $('tray').style.visibility = 'hidden';
       for (var s2 = 0; s2 < got; s2++) (function (s3) {
         setTimeout(function () { ss[s3].classList.add('on'); Snd.play('bell', 7 + s3 * 2, 0.4); }, 250 + s3 * 260);
       })(s2);
@@ -338,7 +376,7 @@
     if (!editable() || !$('menu').hidden || !$('levels').hidden) return;
     var p = toWorld(e.clientX, e.clientY), it = hitItem(p);
     if (!it) { G.sel = null; return; }
-    e.preventDefault();
+    e.preventDefault(); firstAction();
     G.sel = it;
     drag = { it: it, isNew: false, ox: it.x - p.x, oy: it.y - p.y, sx: e.clientX, sy: e.clientY, t0: performance.now(), moved: false, px: it.x, py: it.y, pid: e.pointerId, touch: e.pointerType === 'touch' };
     try { stage.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
@@ -347,6 +385,7 @@
     Snd.init();
     if (!editable()) return;
     if (invLeft(invKey(d)) <= 0) { toast('None left'); return; }
+    firstAction();
     if (G.mode === 'sandbox' && G.placed.length >= 40) { toast('Sandbox is full (40 pieces)'); return; }
     if (G.mode === 'sandbox' && d.t === 'gate' && G.placed.filter(function (x) { return x.t === 'gate'; }).length >= 30) { toast('30 gates max'); return; }
     e.preventDefault();
@@ -444,9 +483,27 @@
   $('bMenuLevels').addEventListener('click', function () { Snd.init(); openLevels(); });
   $('bMenuSand').addEventListener('click', function () { Snd.init(); loadSandbox(); });
   $('bLevels').addEventListener('click', function () { Snd.init(); openLevels(); });
-  $('bLvClose').addEventListener('click', function () { $('levels').hidden = true; if (G.mode === 'menu') $('menu').hidden = false; else if (G.mode === 'level' && G.phase === 'result') $('result').hidden = false; });
-  $('bRetry').addEventListener('click', function () { stopRun(); });
-  $('bNext').addEventListener('click', function () { if (G.li < LEVELS.length - 1) loadLevel(G.li + 1); });
+  $('bLvClose').addEventListener('click', function () {
+    $('levels').hidden = true;
+    if (G.mode === 'menu') $('menu').hidden = false;
+    else if (G.mode === 'level' && G.phase === 'result') $('result').hidden = false;
+  });
+  $('bRetry').addEventListener('click', function () {
+    stopRun();
+    if (G.nextAct === 'retry') { G.hint = true; $('bHint').classList.add('on'); toast('Ghosts show one good layout'); }
+  });
+  $('bNext').addEventListener('click', function () {
+    if (G.nextAct === 'retry') stopRun();
+    else if (G.nextAct === 'levels') openLevels();
+    else if (G.li < LEVELS.length - 1) loadLevel(G.li + 1);
+  });
+  $('bBack').addEventListener('click', function (e) {
+    if (G.mode === 'menu' && $('levels').hidden) return; // plain link to /games
+    e.preventDefault(); Snd.init();
+    if (!$('levels').hidden && G.mode === 'menu') { $('levels').hidden = true; $('menu').hidden = false; return; }
+    goMenu();
+  });
+  $('bLvMenu').addEventListener('click', function () { goMenu(); });
   $('bShare').addEventListener('click', function () { openCard(); });
 
   function openLevels() {
@@ -456,7 +513,8 @@
       tot += starsOf(i);
       var b = document.createElement('button'), un = unlocked(i), st = starsOf(i);
       b.className = 'tile' + (un ? '' : ' locked') + (G.mode === 'level' && G.li === i ? ' cur' : '');
-      b.innerHTML = '<b>' + (i + 1) + '</b><span class="st">' + [0, 1, 2].map(function (k) { return '<i class="' + (k < st ? 'on' : '') + '"></i>'; }).join('') + '</span><small>' + (save.best[i] ? fmt(save.best[i]) : esc(L.name)) + '</small>';
+      b.innerHTML = '<b>' + (i + 1) + '</b>' + (un ? '<span class="st">' + [0, 1, 2].map(function (k) { return '<i class="' + (k < st ? 'on' : '') + '"></i>'; }).join('') + '</span>'
+        : '<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>') + '<small>' + (save.best[i] ? fmt(save.best[i]) : esc(L.name)) + '</small>';
       b.setAttribute('aria-label', 'Level ' + (i + 1) + ': ' + L.name + (un ? ', ' + st + ' stars' : ', locked'));
       b.addEventListener('click', function () { if (!un) { toast('Get a star on level ' + i + ' first'); return; } loadLevel(i); });
       grid.appendChild(b);
@@ -464,7 +522,11 @@
     var sb = document.createElement('button'); sb.className = 'tile sand'; sb.textContent = 'Sandbox: build anything';
     sb.addEventListener('click', loadSandbox); grid.appendChild(sb);
     $('tot').textContent = tot + ' / ' + LEVELS.length * 3 + ' stars';
+    var inGame = G.mode !== 'menu';
+    $('bLvMenu').hidden = !inGame; $('bLvClose').textContent = inGame ? 'Back to game' : 'Close';
+    $('bLvClose').classList.toggle('gold', inGame);
     $('levels').hidden = false; $('menu').hidden = true; $('result').hidden = true;
+    $('levels').scrollTop = 0;
   }
 
   /* ---------------- share card ---------------- */
@@ -552,10 +614,11 @@
 
   /* ---------------- drawing the board ---------------- */
   function rgba(hex, a) { return 'rgba(' + parseInt(hex.substr(1, 2), 16) + ',' + parseInt(hex.substr(3, 2), 16) + ',' + parseInt(hex.substr(5, 2), 16) + ',' + a + ')'; }
-  function drawItem(c, it, ghost) {
+  function drawItem(c, it, ghost, am) {
     var col, f = it.flash || 0;
+    if (am == null) am = 1;
     c.save();
-    if (ghost) c.globalAlpha = 0.45;
+    if (ghost) c.globalAlpha = 0.45 * am;
     if (it.t === 'gate') {
       col = PAL[S.GATE_COL[it.n] || 1];
       c.translate(it.cx, it.cy); c.rotate(Math.atan2(it.uy, it.ux));
@@ -566,8 +629,8 @@
       c.shadowColor = col; c.shadowBlur = ghost ? 0 : 10 + f * 22; c.stroke(); c.setLineDash([]);
       c.shadowBlur = 0; c.fillStyle = col;
       c.beginPath(); c.arc(-hl, 0, 5, 0, 7); c.arc(hl, 0, 5, 0, 7); c.fill();
-      c.setTransform(1, 0, 0, 1, 0, 0); c.restore(); c.save(); if (ghost) c.globalAlpha = 0.5; setWorld(c);
-      var fs = 28 + f * 6;
+      c.setTransform(1, 0, 0, 1, 0, 0); c.restore(); c.save(); if (ghost) c.globalAlpha = 0.5 * am; setWorld(c);
+      var fs = 32 + f * 6;
       c.font = '700 ' + fs + 'px InterB, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.lineWidth = 6; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText('x' + it.n, it.cx, it.cy + 1);
       c.fillStyle = f > 0.5 ? '#fff' : col; c.fillText('x' + it.n, it.cx, it.cy + 1);
@@ -597,12 +660,63 @@
   function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
   function setWorld(c) { var k = view.dpr * view.s; c.setTransform(k, 0, 0, k, view.dpr * view.ox, view.dpr * view.oy); }
 
+  // arena: soft lit floor, faint dot grid, glowing side rails (the real walls at x = 0 and x = W), no hard box
+  var arenaBg = null, arenaKey = '';
+  function drawArena(c) {
+    var key = view.w + 'x' + view.h + '@' + view.dpr;
+    if (key !== arenaKey || !arenaBg) {
+      arenaKey = key; arenaBg = document.createElement('canvas'); arenaBg.width = cv.width; arenaBg.height = cv.height;
+      var b = arenaBg.getContext('2d'), k = view.dpr * view.s;
+      b.setTransform(k, 0, 0, k, view.dpr * view.ox, view.dpr * view.oy);
+      var fl = b.createLinearGradient(0, 0, 0, H); fl.addColorStop(0, '#0a0b12'); fl.addColorStop(0.5, '#07080d'); fl.addColorStop(1, '#040407');
+      b.fillStyle = fl; b.fillRect(0, -2, W, H + 4);
+      var gl2 = b.createRadialGradient(W / 2, 160, 20, W / 2, 160, 620); gl2.addColorStop(0, 'rgba(70,120,255,.10)'); gl2.addColorStop(1, 'rgba(70,120,255,0)');
+      b.fillStyle = gl2; b.fillRect(0, 0, W, H);
+      b.fillStyle = 'rgba(255,255,255,.075)';
+      for (var gy = 40; gy < H; gy += 40) for (var gx = 40; gx < W; gx += 40) b.fillRect(gx - 1.6, gy - 1.6, 3.2, 3.2);
+      [0, W].forEach(function (x) {
+        var d = x ? -1 : 1, g = b.createLinearGradient(x, 0, x + d * 34, 0);
+        g.addColorStop(0, 'rgba(110,170,255,.16)'); g.addColorStop(1, 'rgba(110,170,255,0)');
+        b.fillStyle = g; b.fillRect(Math.min(x, x + d * 34), 0, 34, H);
+        var v = b.createLinearGradient(0, 0, 0, H); v.addColorStop(0, 'rgba(150,200,255,.15)'); v.addColorStop(0.25, 'rgba(150,200,255,.5)'); v.addColorStop(0.85, 'rgba(150,200,255,.4)'); v.addColorStop(1, 'rgba(150,200,255,0)');
+        b.fillStyle = v; b.fillRect(x - 2.5, 0, 5, H);
+      });
+      var ex = b.createLinearGradient(0, H - 90, 0, H); ex.addColorStop(0, 'rgba(0,0,0,0)'); ex.addColorStop(1, 'rgba(0,0,0,.6)');
+      b.fillStyle = ex; b.fillRect(0, H - 90, W, 90);
+    }
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(arenaBg, 0, 0); c.restore();
+  }
+  // level 1 coach: dashed fall line, pulsing target and a finger dragging a ghost gate up from the tray
+  function drawCoach(c, dp) {
+    var sol = G.L.sol && G.L.sol[0]; if (!sol) return;
+    var tx = sol.x, ty = sol.y, t = G.clock;
+    c.save();
+    c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = 3; c.setLineDash([3, 14]); c.lineDashOffset = -t * 40;
+    c.beginPath(); c.moveTo(dp.x, dp.y + 24); c.lineTo(tx, ty - 30); c.stroke(); c.setLineDash([]);
+    var tg = S.makeItem(sol, false); S.pose(tg, 0);
+    drawItem(c, tg, true, 0.7 + 0.3 * Math.sin(t * 4));
+    // finger loop: 0-0.25 rest at tray, 0.25-0.75 move, 0.75-1 hold + fade
+    var chip = $('inv').querySelector('.chip[data-t]');
+    if (chip) {
+      var cr = chip.getBoundingClientRect(), p0 = toWorld(cr.left + cr.width / 2, cr.top + cr.height / 2);
+      var ph = (t / 2.4) % 1, m = ph < 0.2 ? 0 : ph > 0.75 ? 1 : (ph - 0.2) / 0.55;
+      m = m < 0.5 ? 2 * m * m : 1 - Math.pow(-2 * m + 2, 2) / 2;
+      var fx = p0.x + (tx - p0.x) * m, fy = p0.y + (ty - p0.y) * m;
+      var al = ph > 0.85 ? 1 - (ph - 0.85) / 0.15 : ph < 0.08 ? ph / 0.08 : 1;
+      var gh = S.makeItem({ t: 'gate', n: sol.n, x: fx, y: fy, a: 0 }, false); S.pose(gh, 0); drawItem(c, gh, true, al * 1.6);
+      c.globalAlpha = al; var fr = 20 / view.s;
+      c.shadowColor = 'rgba(255,255,255,.8)'; c.shadowBlur = 16;
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.arc(fx + 8, fy + 30 + fr * 0.4, fr, 0, 7); c.fill();
+      c.shadowBlur = 0; c.strokeStyle = '#fff'; c.lineWidth = 2.5 / view.s; c.stroke();
+    }
+    c.restore();
+  }
+
   function drawBoard() {
     var c = ctx;
     c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#000'; c.fillRect(0, 0, cv.width, cv.height);
     setWorld(c);
-    c.fillStyle = '#050508'; c.fillRect(0, 0, W, H);
-    c.strokeStyle = '#1b1c26'; c.lineWidth = 2; c.strokeRect(1, 1, W - 2, H - 2);
+    drawArena(c);
     var edit = editable() && G.mode === 'level' && G.phase === 'edit';
     // zones
     if ((edit || (drag && G.mode === 'level')) && G.L) {
@@ -651,11 +765,14 @@
     }
     // dropper
     var dp = dropPt();
-    c.fillStyle = 'rgba(255,255,255,.1)'; c.beginPath(); c.moveTo(dp.x - 26, dp.y - 34); c.lineTo(dp.x + 26, dp.y - 34); c.lineTo(dp.x + 9, dp.y - 12); c.lineTo(dp.x - 9, dp.y - 12); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.16)'; c.beginPath(); c.moveTo(dp.x - 30, dp.y - 38); c.lineTo(dp.x + 30, dp.y - 38); c.lineTo(dp.x + 10, dp.y - 14); c.lineTo(dp.x - 10, dp.y - 14); c.closePath(); c.fill();
     if ((G.mode === 'level' && G.phase === 'edit') || (G.mode === 'sandbox' && (!G.sim || !G.sim.n))) {
-      var pulse = 1 + 0.12 * Math.sin(G.clock * 5);
-      c.shadowColor = '#fff'; c.shadowBlur = 16; c.fillStyle = '#fff'; c.beginPath(); c.arc(dp.x, dp.y, R * pulse, 0, 7); c.fill(); c.shadowBlur = 0;
+      var ph = (G.clock * 0.9) % 1;
+      c.strokeStyle = 'rgba(255,255,255,' + (0.5 * (1 - ph)).toFixed(3) + ')'; c.lineWidth = 2.5; c.beginPath(); c.arc(dp.x, dp.y, R * (1.6 + ph * 2.6), 0, 7); c.stroke();
+      var pulse = 1 + 0.08 * Math.sin(G.clock * 5);
+      c.shadowColor = '#fff'; c.shadowBlur = 18; c.fillStyle = '#fff'; c.beginPath(); c.arc(dp.x, dp.y, R * 1.35 * pulse, 0, 7); c.fill(); c.shadowBlur = 0;
     }
+    if (G.mode === 'level' && G.li === 0 && G.phase === 'edit' && !G.placed.length && !(drag && drag.moved)) drawCoach(c, dp);
     // bursts
     for (var b = G.bursts.length - 1; b >= 0; b--) {
       var u = G.bursts[b]; u.t += 1 / 60;
