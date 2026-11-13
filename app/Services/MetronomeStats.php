@@ -422,7 +422,7 @@ class MetronomeStats
     /**
      * Games that may receive suggestions, keyed by the value the page sends.
      */
-    public const SUGGESTION_GAMES = ['metronomes' => 'Metronome Sync Game', 'bump-theory' => 'Bump Theory: 1 Ball → 10,000'];
+    public const SUGGESTION_GAMES = ['metronomes' => 'Metronome Sync Game', 'bump-theory' => 'Bump Theory: 1 Ball → 10,000', 'swipe-theory' => 'Swipe Theory: Protect Pumpkin!'];
 
     public const SUGGESTIONS_PER_HOUR = 5;
 

@@ -31,4 +31,13 @@ return [
         'tags' => ['Simulation', 'Real physics'],
         'accent' => '#ffcc66',
     ],
+    [
+        'slug' => 'swipe-theory',
+        'url' => '/swipe-theory/',
+        'title' => 'Protect Pumpkin!',
+        'channel' => 'Swipe Theory',
+        'description' => 'Put your finger on the screen and keep Pumpkin the cat safe from rain, meteors, lava and a dragon. 24 levels with a twist in every world, plus Endless.',
+        'tags' => ['Arcade', 'Kids'],
+        'accent' => '#ffa24c',
+    ],
 ];
