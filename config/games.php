@@ -32,6 +32,15 @@ return [
         'accent' => '#ffcc66',
     ],
     [
+        'slug' => 'quiet-worlds',
+        'url' => '/quiet-worlds/',
+        'title' => 'Choose Your Planet',
+        'channel' => 'Quiet Worlds',
+        'description' => 'Four cosy planets, every one with a secret. Pick a world, survive a year and see what it was hiding. 72 worlds plus a daily challenge.',
+        'tags' => ['Choice', 'Mystery'],
+        'accent' => '#f4c86e',
+    ],
+    [
         'slug' => 'swipe-theory',
         'url' => '/swipe-theory/',
         'title' => 'Protect Pumpkin!',

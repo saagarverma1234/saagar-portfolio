@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Choose Your Planet: Quiet Worlds Survival Game</title>
+<meta name="description" content="Four cosy planets. Every one has a secret. Pick a world, survive a year, and see what it was hiding. A free browser game from the Quiet Worlds channel, with a new daily challenge every day.">
+<link rel="canonical" href="https://saagarverma.com/quiet-worlds/">
+<meta name="theme-color" content="#0a0b1a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Quiet Worlds">
+<meta property="og:title" content="Choose Your Planet: Quiet Worlds Survival Game">
+<meta property="og:description" content="Four cosy planets. Every planet has a secret. How many worlds can you survive a year on?">
+<meta property="og:url" content="https://saagarverma.com/quiet-worlds/">
+<meta property="og:image" content="https://saagarverma.com/quiet-worlds/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Choose Your Planet: Quiet Worlds Survival Game">
+<meta name="twitter:description" content="Four cosy planets. Every planet has a secret. How many can you survive?">
+<meta name="twitter:image" content="https://saagarverma.com/quiet-worlds/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="vt323.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="inter-700.woff2" as="font" type="font/woff2" crossorigin>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Choose Your Planet: Quiet Worlds Survival Game","url":"https://saagarverma.com/quiet-worlds/","description":"A calm choose-a-planet survival game: pick one of four cosy worlds, survive a year, and discover the secret every planet hides. Based on the Quiet Worlds YouTube channel.","genre":["Choice","Mystery"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","isAccessibleForFree":true,"author":{"@type":"Person","name":"Saagar Verma","url":"https://saagarverma.com/"},"sameAs":"https://www.youtube.com/@myquietworlds"}
+</script>
+<style>
+/* VT323 (SIL OFL 1.1, Peter Hull) and Inter 700 (SIL OFL 1.1, The Inter Project Authors), self-hosted */
+@font-face { font-family: VT; src: url('vt323.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: InterB; src: url('inter-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+:root {
+  --bg: #0a0b1a; --panel: #121327; --panel2: #1b1c36; --line: #2d2f52; --text: #f5efe3; --muted: #c9c3d8; --dim: #8d89a6;
+  --gold: #f4c86e; --rose: #ee8f9b; --teal: #7fd6c6; --lav: #b7a6ee; --red: #ff6b6b; --green: #8fe39a; --amber: #ffb35c;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font-family: InterB, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 700; overflow-x: hidden; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+#sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: block; }
+.app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; max-width: 860px; margin: 0 auto;
+       padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
+header.top { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; height: 54px; }
+.brand { display: flex; align-items: center; min-height: 44px; gap: 8px; font-family: VT, monospace; font-size: 22px; letter-spacing: 2px; color: var(--gold); text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
+.brand svg { width: 28px; height: 28px; }
+.prog { flex: 1; min-width: 0; text-align: center; font-family: VT, monospace; font-size: 22px; color: var(--muted); white-space: nowrap; }
+.prog b { color: var(--text); font-weight: 400; }
+@media (max-width: 560px) { body.ingame .brand span { display: none; } }
+.ib { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; height: 44px; min-width: 44px; padding: 0 12px;
+      display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto; }
+.ib svg { width: 19px; height: 19px; }
+main.scr { flex: 1 0 auto; display: flex; flex-direction: column; padding-bottom: 18px; }
+.panel { background: rgba(14, 15, 32, .94); border: 1px solid var(--line); border-radius: 16px; }
+.btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; min-height: 50px; padding: 0 20px; cursor: pointer; font-size: 16px;
+       display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--text); text-decoration: none; }
+.btn:hover { border-color: var(--lav); }
+.btn.gold { background: var(--gold); color: #241a06; border-color: var(--gold); }
+.btn.gold:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn:focus-visible, .ib:focus-visible, .card:focus-visible, .brand:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* menu */
+#menu { justify-content: center; align-items: center; text-align: center; gap: 18px; padding-top: 6px; }
+.globes { width: min(100%, 360px, 42dvh); aspect-ratio: 1 / 1; position: relative; }
+.globes canvas { width: 100%; height: 100%; display: block; }
+.hero { padding: 20px 18px 22px; width: min(100%, 480px); }
+.hero .kick { font-family: VT, monospace; font-size: 22px; letter-spacing: 3px; color: var(--gold); }
+.hero h1 { font-family: VT, monospace; font-weight: 400; font-size: clamp(46px, 13vw, 64px); line-height: .95; margin: 6px 0 10px; letter-spacing: 1px; }
+.hero p { margin: 0 auto 18px; color: var(--muted); font-size: 16px; line-height: 1.45; max-width: 380px; }
+.hero .btn { width: 100%; max-width: 320px; }
+.hero .stack { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.hero .daily small { color: inherit; opacity: .75; font-size: 13px; margin-left: 4px; }
+.hero .best { margin-top: 14px; color: var(--dim); font-size: 14px; min-height: 18px; }
+
+/* round */
+.ask { text-align: center; margin: 4px 0 12px; }
+.ask .l1 { font-family: VT, monospace; font-size: clamp(30px, 8.6vw, 40px); line-height: 1; }
+.ask .l2 { font-family: VT, monospace; font-size: clamp(20px, 5.4vw, 24px); color: var(--gold); margin-top: 2px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.card { position: relative; display: flex; flex-direction: column; text-align: left; padding: 0; border-radius: 16px; overflow: hidden; cursor: pointer;
+        background: var(--panel); border: 2px solid var(--line); transition: transform .18s, border-color .18s, opacity .25s; }
+.card:hover { border-color: #4a4c7c; }
+.card .pic { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #15162c; overflow: hidden; }
+.card .pic img, .card .pic canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .num { position: absolute; left: 8px; top: 8px; font-family: VT, monospace; font-size: 22px; line-height: 1; padding: 4px 8px 2px; border-radius: 8px; background: rgba(8, 9, 20, .82); color: var(--text); }
+.card .txt { padding: 9px 10px 11px; background: var(--panel); flex: 1; }
+.card .nm { font-family: VT, monospace; font-size: 25px; line-height: 1; color: var(--gold); }
+.card .pr { margin-top: 5px; font-size: 13.5px; line-height: 1.35; color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 500; }
+.card.sel { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(244, 200, 110, .25), 0 0 34px rgba(244, 200, 110, .25); transform: translateY(-2px); }
+.grid.picked .card:not(.sel) .pic { opacity: .55; }
+.go { position: sticky; bottom: 0; z-index: 3; margin: 10px -16px 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: flex; justify-content: center;
+      background: linear-gradient(rgba(10,11,26,0), rgba(10,11,26,.96) 30%); }
+.go .btn { width: 100%; max-width: 420px; min-height: 56px; font-size: 18px; }
+.cd { text-align: center; color: var(--dim); font-size: 14px; margin-top: 2px; min-height: 18px; }
+
+/* reveal */
+#reveal { align-items: center; }
+.rv { width: min(100%, 520px); overflow: hidden; }
+.rv .pic { position: relative; width: 100%; aspect-ratio: 4 / 5; max-height: 40vh; background: #15162c; overflow: hidden; }
+.rv .pic img, .rv .pic canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.rv .pic .a { transition: opacity 1.6s ease; }
+.rv .pic .b { opacity: 0; transition: opacity 1.6s ease; }
+.rv .pic.secret .a { opacity: 0; }
+.rv .pic.secret .b { opacity: 1; animation: drift 9s ease-out forwards; }
+@keyframes drift { from { transform: scale(1.0); } to { transform: scale(1.07); } }
+.rv .pic .tag { position: absolute; left: 10px; top: 10px; font-family: VT, monospace; font-size: 22px; padding: 4px 10px 2px; border-radius: 8px; background: rgba(8, 9, 20, .85); }
+.rv .body { padding: 14px 16px 16px; }
+.rv .nm { font-family: VT, monospace; font-size: 34px; line-height: 1; color: var(--gold); }
+.rv .pr { margin: 6px 0 0; color: var(--muted); font-size: 15px; line-height: 1.4; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 500; }
+.rv .but { font-family: VT, monospace; font-size: 30px; margin-top: 10px; color: var(--rose); opacity: 0; transition: opacity .5s; }
+.rv .sec { margin: 4px 0 0; font-size: 17px; line-height: 1.45; min-height: 3em; }
+.rv .sec span { opacity: 0; transition: opacity .6s; }
+.rv .sec span.on { opacity: 1; }
+.rv .rule { margin-top: 8px; font-family: VT, monospace; font-size: 26px; color: var(--teal); opacity: 0; transition: opacity .5s; }
+.on1 { opacity: 1 !important; }
+.meter { display: flex; align-items: center; gap: 10px; margin-top: 12px; opacity: 0; transition: opacity .4s; }
+.meter .lab { font-family: VT, monospace; font-size: 22px; color: var(--muted); width: 74px; }
+.meter .blocks { display: flex; gap: 5px; }
+.meter .blocks i { width: 26px; height: 16px; border-radius: 3px; background: #2a2b47; transition: background .15s; }
+.meter .blocks i.f1 { background: #8fe39a; } .meter .blocks i.f2 { background: #d8e37a; } .meter .blocks i.f3 { background: #ffcf5c; }
+.meter .blocks i.f4 { background: #ff9a52; } .meter .blocks i.f5 { background: #ff5e5e; }
+.stamp { margin-top: 14px; padding: 10px 12px; border-radius: 12px; text-align: center; opacity: 0; transform: scale(1.12); transition: opacity .35s, transform .35s; }
+.stamp.on1 { transform: scale(1); }
+.stamp .st { font-family: VT, monospace; font-size: 34px; line-height: 1; letter-spacing: 1px; }
+.stamp .vd { margin-top: 6px; font-size: 15px; line-height: 1.4; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 500; color: var(--text); }
+.stamp.thrive { background: rgba(143, 227, 154, .12); border: 1px solid rgba(143, 227, 154, .5); } .stamp.thrive .st { color: var(--green); }
+.stamp.barely { background: rgba(255, 179, 92, .12); border: 1px solid rgba(255, 179, 92, .5); } .stamp.barely .st { color: var(--amber); }
+.stamp.doomed { background: rgba(255, 107, 107, .12); border: 1px solid rgba(255, 107, 107, .5); } .stamp.doomed .st { color: var(--red); }
+.others { margin-top: 12px; opacity: 0; transition: opacity .4s; }
+.others summary { cursor: pointer; color: var(--muted); font-size: 14px; padding: 6px 0; }
+.others ul { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.others li { background: var(--panel2); border-radius: 10px; padding: 8px 10px; font-size: 14px; line-height: 1.4; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 500; color: var(--muted); }
+.others li b { font-family: VT, monospace; font-weight: 400; font-size: 21px; color: var(--text); margin-right: 6px; }
+.others li .o { font-family: InterB, system-ui, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1px; margin-left: 6px; }
+.o.thrive { color: var(--green); } .o.barely { color: var(--amber); } .o.doomed { color: var(--red); }
+.next { margin-top: 14px; display: flex; justify-content: center; opacity: 0; transition: opacity .4s; pointer-events: none; }
+.next.on1 { pointer-events: auto; }
+.next .btn { width: 100%; min-height: 54px; font-size: 17px; }
+.skip { position: absolute; right: 10px; top: 10px; background: rgba(8, 9, 20, .85); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--muted); }
+
+/* end */
+#end { align-items: center; justify-content: center; text-align: center; }
+.endc { width: min(100%, 520px); padding: 20px 16px; }
+.endc .kick { font-family: VT, monospace; font-size: 22px; letter-spacing: 3px; color: var(--gold); }
+.endc .big { font-family: VT, monospace; font-size: clamp(44px, 12vw, 60px); line-height: 1; margin: 8px 0 4px; }
+.endc .rank { font-family: VT, monospace; font-size: 28px; color: var(--teal); }
+.endc .rd { color: var(--muted); font-size: 15px; line-height: 1.45; margin: 6px auto 14px; max-width: 380px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 500; }
+.trail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 16px; }
+.trail div { position: relative; aspect-ratio: 1 / 1; border-radius: 10px; overflow: hidden; background: #15162c; border: 2px solid var(--line); }
+.trail div img, .trail div canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+.trail div i { position: absolute; left: 0; right: 0; bottom: 0; font-style: normal; font-size: 10px; letter-spacing: .5px; padding: 3px 0 2px; background: rgba(8, 9, 20, .88); }
+.trail div.thrive { border-color: var(--green); } .trail div.thrive i { color: var(--green); }
+.trail div.barely { border-color: var(--amber); } .trail div.barely i { color: var(--amber); }
+.trail div.doomed { border-color: var(--red); } .trail div.doomed i { color: var(--red); }
+.endc .stack { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+
+.modal { position: fixed; inset: 0; z-index: 40; background: rgba(5, 5, 14, .9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
+.modal img { max-width: min(92vw, 420px); max-height: 66vh; border-radius: 14px; border: 1px solid var(--line); }
+.toast { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(20px); opacity: 0; background: #2a2c48; color: var(--text);
+         padding: 10px 16px; border-radius: 10px; font-size: 14px; transition: .25s; pointer-events: none; z-index: 50; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* below the game */
+.below { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; background: var(--bg); }
+.ad-wrap { margin: 18px 0 0; }
+.ad-slot { min-height: 0; }
+/* suggestions box */
+.suggest { max-width: 720px; margin: 20px auto 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+.suggest summary { cursor: pointer; padding: 14px 16px; font-family: InterB, system-ui, sans-serif; font-weight: 700; font-size: 15px; color: var(--text); list-style-position: inside; }
+.suggest form { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 6px; }
+.suggest label { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.suggest label span { color: var(--dim); }
+.suggest textarea, .suggest input { width: 100%; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #0b0c1c; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.suggest textarea { resize: vertical; min-height: 96px; }
+.suggest textarea:focus, .suggest input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.suggest .sg-count { align-self: flex-end; font-size: 12px; color: var(--dim); }
+.suggest .sg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.suggest .sg-send { align-self: flex-start; margin-top: 8px; background: var(--gold); color: #241a06; border: 0; border-radius: 12px; min-height: 46px; padding: 0 26px; font: 700 16px InterB, system-ui, sans-serif; cursor: pointer; }
+.suggest .sg-send:disabled { opacity: .5; cursor: default; }
+.suggest .sg-status { margin: 4px 0 0; font-size: 14px; color: var(--text); min-height: 1px; }
+.suggest .sg-note { margin: 2px 0 0; font-size: 12px; color: var(--dim); }
+.suggest .sg-note a { color: var(--muted); }
+.suggest .sg-thanks { margin: 4px 0 6px; color: var(--gold); font-size: 15px; }
+.below .suggest { margin-left: 16px; margin-right: 16px; }
+.guide { max-width: 720px; margin: 28px auto 0; padding: 0 16px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400;
+         font-size: 16px; line-height: 1.65; color: var(--muted); overflow-wrap: break-word; }
+.guide h2 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 22px; line-height: 1.25; margin: 0 0 12px; }
+.guide h3 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 17px; margin: 24px 0 6px; }
+.guide p, .guide ul, .guide ol { margin: 0 0 12px; }
+.guide ul, .guide ol { padding-left: 20px; }
+.guide li { margin-bottom: 6px; }
+.guide strong { color: var(--text); font-weight: 600; }
+.guide a { color: var(--gold); }
+footer { color: var(--dim); font-size: 13px; text-align: center; padding: 22px 14px calc(22px + env(safe-area-inset-bottom)); line-height: 1.6; }
+footer a { color: var(--text); }
+footer .links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+footer .yt { display: inline-flex; align-items: center; min-height: 46px; gap: 8px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; background: var(--panel); }
+footer .yt svg { width: 20px; height: 20px; }
+footer nav.site { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin-top: 18px; font-size: 13px; }
+footer nav.site a { color: var(--muted); }
+
+@media (min-width: 700px) {
+  .go { position: static; margin: 16px 0 0; padding: 0; background: none; }
+  #round { justify-content: center; }
+  .card .pic { aspect-ratio: 4 / 5; }
+  .card .pr { font-size: 15px; }
+  .card .nm { font-size: 28px; }
+}
+@media (min-width: 840px) {
+  .rv { width: 100%; max-width: 860px; display: grid; grid-template-columns: 5fr 6fr; align-items: stretch; }
+  .rv .pic { max-height: none; aspect-ratio: 4 / 5; align-self: start; }
+  .rv .body { padding: 22px 22px 22px; }
+  #reveal { justify-content: center; }
+}
+@media (min-width: 900px) and (min-height: 760px) {
+  .grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 699px) { .cd { display: none; } }
+@media (max-width: 699px) and (min-height: 900px) { .card .pic { aspect-ratio: 7 / 8; } }
+@media (max-width: 370px) { .card .pr { font-size: 12.5px; } .card .nm { font-size: 22px; } }
+@media (max-width: 699px) and (max-height: 800px) { .card .pic { aspect-ratio: 5 / 4; } }
+@media (max-width: 699px) and (max-height: 700px) {
+  .card .pic { aspect-ratio: 16 / 10; }
+  .ask { margin: 0 0 8px; } .ask .l1 { font-size: 30px; } .ask .l2 { font-size: 20px; }
+  .card .txt { padding: 7px 9px 9px; } .card .nm { font-size: 23px; }
+  .rv .pic { max-height: 32vh; }
+  .hero { padding: 16px 16px 18px; } .hero h1 { font-size: 46px; margin-bottom: 8px; } .hero p { margin-bottom: 14px; font-size: 15px; }
+  #menu { gap: 12px; }
+  .globes { width: min(100%, 300px, 28dvh); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv .pic.secret .b { animation: none; }
+  * { transition-duration: .01s !important; }
+}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3532470064725978" crossorigin="anonymous"></script>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="app">
+  <header class="top">
+    <button class="brand" id="bHome" aria-label="Quiet Worlds: back to the start">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="#f4c86e"/><path d="M16 7a9 9 0 010 18" fill="#c98f3e"/><ellipse cx="16" cy="16" rx="15" ry="4.5" fill="none" stroke="#f5efe3" stroke-width="1.6" transform="rotate(-18 16 16)"/></svg>
+      <span>QUIET WORLDS</span>
+    </button>
+    <div class="prog" id="prog" aria-live="polite"></div>
+    <button class="ib" id="bMute" aria-label="Sound on or off" aria-pressed="true">
+      <svg id="sndOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14"/></svg>
+      <svg id="sndOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+    </button>
+  </header>
+
+  <main class="scr" id="menu">
+    <div class="globes" aria-hidden="true"><canvas id="globes"></canvas></div>
+    <div class="hero panel">
+      <div class="kick">EVERY PLANET HAS A SECRET</div>
+      <h1>Choose Your Planet</h1>
+      <p>Four cosy worlds. You must survive one year on the one you pick. Read the promise, trust your gut, and find out what it was hiding.</p>
+      <div class="stack">
+        <button class="btn gold" id="bPlay">Play 10 worlds</button>
+        <button class="btn daily" id="bDaily">Daily challenge <small id="dailyLab"></small></button>
+      </div>
+      <div class="best" id="best"></div>
+    </div>
+  </main>
+
+  <main class="scr" id="round" hidden>
+    <div class="ask"><div class="l1" id="askL1">Choose a Planet</div><div class="l2" id="askL2">You must survive 1 year here</div></div>
+    <div class="grid" id="grid" role="radiogroup" aria-label="Four planets"></div>
+    <div class="go"><button class="btn gold" id="bChoose" disabled>Pick a planet</button></div>
+    <div class="cd" id="hint">Tap a planet to read it, then confirm.</div>
+  </main>
+
+  <main class="scr" id="reveal" hidden>
+    <div class="rv panel">
+      <div class="pic" id="rvPic"><span class="tag" id="rvTag">01</span><button class="skip" id="bSkip">Skip</button></div>
+      <div class="body">
+        <div class="nm" id="rvName"></div>
+        <p class="pr" id="rvPromise"></p>
+        <div class="but" id="rvBut">But...</div>
+        <p class="sec" id="rvSecret"></p>
+        <div class="rule" id="rvRule"></div>
+        <div class="meter" id="rvMeter"><span class="lab">DANGER</span><span class="blocks"><i></i><i></i><i></i><i></i><i></i></span></div>
+        <div class="stamp" id="rvStamp"><div class="st" id="rvSt"></div><div class="vd" id="rvVerdict"></div></div>
+        <details class="others" id="rvOthers"><summary>What the other three planets were hiding</summary><ul id="rvOtherList"></ul></details>
+        <div class="next" id="rvNext"><button class="btn gold" id="bNext">Next planet</button></div>
+      </div>
+    </div>
+  </main>
+
+  <main class="scr" id="end" hidden>
+    <div class="endc panel">
+      <div class="kick" id="endKick">ONE YEAR LATER</div>
+      <div class="big" id="endBig"></div>
+      <div class="rank" id="endRank"></div>
+      <p class="rd" id="endDesc"></p>
+      <div class="trail" id="endTrail"></div>
+      <div class="stack">
+        <button class="btn gold" id="bShare">Share my result</button>
+        <div class="row"><button class="btn" id="bAgain" style="flex:1">Play again</button><button class="btn" id="bEndDaily" style="flex:1">Daily challenge</button></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="below">
+  <!-- AdSense slot -->
+  <div class="ad-wrap"><div class="ad-slot" id="ad-slot" aria-hidden="true"></div></div>
+  <!-- Suggestions box (posts to /game-feedback) -->
+  <details class="suggest" id="suggestions">
+    <summary>Suggestions: tell us what to improve</summary>
+    <form id="sgForm" method="post" action="/game-feedback" novalidate>
+      <label for="sgMsg">What should we add, fix or change?</label>
+      <textarea id="sgMsg" name="message" maxlength="500" rows="4" required placeholder="A planet idea, a bug, a feature..."></textarea>
+      <div class="sg-count"><span id="sgCount">0</span>/500</div>
+      <label for="sgContact">Name or email <span>(optional, only if you want a reply)</span></label>
+      <input id="sgContact" name="contact" maxlength="120" autocomplete="email">
+      <input class="sg-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <input type="hidden" name="game" value="quiet-worlds">
+      <button type="submit" class="sg-send">Send</button>
+      <p class="sg-status" role="status" aria-live="polite"></p>
+      <p class="sg-note">Suggestions are stored privately on this site and read only by us. See the <a href="/privacy">privacy policy</a>.</p>
+    </form>
+  </details>
+  <article class="guide" id="how-it-works">
+    <h2>How to play Choose Your Planet</h2>
+    <p>Every round shows four planets, each with a picture and one cosy promise: a warm cottage, a full pantry, a friendly neighbour. You have to live on one of them for a whole year. Pick the one you trust. Then the planet tells you its secret, and you find out how your year went.</p>
+    <ol>
+      <li><strong>Read the four promises.</strong> Tap a planet to select it, then press the button to move in. Number keys 1 to 4 and Enter work too.</li>
+      <li><strong>Watch the secret.</strong> Every world is hiding something. Some secrets are dangerous, some are only strange, and a few are the sweetest thing about the planet.</li>
+      <li><strong>See your year.</strong> You either <strong>thrive</strong>, <strong>barely survive</strong>, or <strong>don't make it</strong>. The danger meter shows how risky the planet really was, and the rule tells you how people survive there.</li>
+      <li><strong>Keep going.</strong> A full game is ten rounds. Your score counts every year you survived, and your streak counts years in a row.</li>
+    </ol>
+    <h3>Daily challenge</h3>
+    <p>The daily challenge is five rounds, and everybody in the world gets the same planets that day (it changes at midnight UTC). Play it once, share your result and compare with friends.</p>
+    <h3>Tips</h3>
+    <ul>
+      <li><strong>Every round has exactly one safe planet.</strong> It is not always the one that sounds the nicest.</li>
+      <li><strong>Too perfect is a warning sign.</strong> A promise that sounds flawless often is not. A world that already sounds a little odd is sometimes the gentle one.</li>
+      <li><strong>Learn the rules.</strong> Many planets can be survived if you follow one simple rule. The reveal always tells you what it was.</li>
+    </ul>
+    <h3>About Quiet Worlds</h3>
+    <p>Quiet Worlds is a YouTube channel of calm, slightly eerie "choose a planet to survive on for one year" videos. Every episode shows four little low-poly worlds, each with a cosy promise and a hidden secret, and the comments argue about which one is really safe. Most planets in this game come straight from the episodes, with their pictures rendered from the same 3D scenes, plus a few new worlds made just for the game.</p>
+    <h3>FAQ</h3>
+    <p><strong>Is it free?</strong> Yes, with no download or account. Ads below the game help pay for it.</p>
+    <p><strong>Where is my score saved?</strong> In your browser only (local storage): your best score, streak and which planets you have already seen, so new games show you new worlds first. Nothing is sent to a server; see the <a href="/privacy">privacy policy</a>.</p>
+    <p><strong>Is there sound?</strong> A soft ambient soundtrack is made live in your browser after your first tap. Use the speaker button to turn it off.</p>
+  </article>
+  <footer>
+    <div class="links">
+      <a class="yt" href="https://www.youtube.com/@myquietworlds" rel="noopener" target="_blank">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#ff3d3d" d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.6 12a31 31 0 00.4 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.4-4.8 31 31 0 00-.4-4.8z"/><path fill="#fff" d="M9.8 15.1L15.6 12 9.8 8.9z"/></svg>
+        Watch Quiet Worlds on YouTube</a>
+      <a class="yt" href="/games">More games</a>
+    </div>
+    <nav class="site" aria-label="Site">
+      <a href="/games">Games</a><a href="/">Home</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a>
+    </nav>
+  </footer>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <img id="cardImg" alt="Your Quiet Worlds result card">
+  <div class="row"><button class="btn gold" id="mShare">Share</button><a class="btn" id="mSave" download="quiet-worlds-result.png">Save image</a><button class="btn" id="mCopy">Copy link</button></div>
+  <button class="btn" id="mClose">Close</button>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="worlds.js?v=1"></script>
+<script src="game.js?v=1"></script>
+<script src="/game-feedback.js?v=1" defer></script>
+</body>
+</html>
