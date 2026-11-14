@@ -83,7 +83,11 @@ class AdminController extends Controller
 
     public function logout(Request $request): Response
     {
-        return $this->go(self::PATH, $this->cookie($request, '', 1));
+        $response = $this->go(self::PATH, $this->cookie($request, '', 1));
+        // also expire the pre-14-Nov cookie that was scoped to /admin
+        $response->headers->setCookie(Cookie::create(self::COOKIE, '', 1, self::PATH, null, true, true, false, Cookie::SAMESITE_LAX));
+
+        return $response;
     }
 
     public function deleteTest(Request $request): Response
@@ -194,7 +198,7 @@ class AdminController extends Controller
         return hash_hmac('sha256', 'metronome-admin|'.$expires.'|'.substr($this->hash(), -22).'|'.$this->emailHash(), (string) config('app.key'));
     }
 
-    private function isAuthenticated(Request $request): bool
+    public function isAuthenticated(Request $request): bool
     {
         $value = (string) $request->cookies->get(self::COOKIE, '');
         if (! preg_match('/^(\d{10})\.([0-9a-f]{64})$/', $value, $match)) {
@@ -220,7 +224,8 @@ class AdminController extends Controller
             || $request->header('X-Forwarded-Proto') === 'https'
             || str_contains((string) $request->header('CF-Visitor'), 'https');
 
-        return Cookie::create(self::COOKIE, $value, $expires, self::PATH, null, $secure, true, false, Cookie::SAMESITE_LAX);
+        // Path '/' (14 Nov 2026) so site pages can show the Admin nav link to a logged-in admin.
+        return Cookie::create(self::COOKIE, $value, $expires, '/', null, $secure, true, false, Cookie::SAMESITE_LAX);
     }
 
     private function go(string $path, ?Cookie $cookie = null): Response

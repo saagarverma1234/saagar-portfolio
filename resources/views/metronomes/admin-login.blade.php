@@ -6,6 +6,7 @@
 <div class="wrap" style="max-width:420px;padding-top:12vh">
   <div class="card" style="padding:22px">
     <h1>Game stats</h1>
+    <p><a href="/games">&larr; Back to site</a></p>
     <p class="muted" style="margin:6px 0 18px">Private. Log in with the admin email and password.</p>
     @if ($error)
       <p role="alert" style="color:var(--bad);margin:0 0 12px">{{ $error }}</p>

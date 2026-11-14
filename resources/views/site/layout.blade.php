@@ -53,6 +53,7 @@ a:hover { text-decoration-color: currentColor; }
 .top nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 999px; color: var(--muted); text-decoration: none; font: 700 15px/1 var(--head); }
 @media (hover: hover) { .top nav a:hover { color: var(--text); background: var(--panel); } }
 .top nav a[aria-current="page"] { color: var(--text); background: var(--panel2); }
+.top nav a.nav-admin { color: #111; background: #ffd21f; margin-left: 4px; }
 @media (max-width: 439px) { .brand span { display: none; } }
 @media (max-width: 340px) { .top nav a { padding: 0 9px; } }
 
@@ -116,6 +117,8 @@ code { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; background: va
       <a href="/games" @if(request()->is('games')) aria-current="page" @endif>Games</a>
       <a href="/about" @if(request()->is('about')) aria-current="page" @endif>About</a>
       <a href="/contact" @if(request()->is('contact')) aria-current="page" @endif>Contact</a>
+      @php($siteAdmin = rescue(fn () => app(\App\Http\Controllers\Metronomes\AdminController::class)->isAuthenticated(request()), false, false))
+      @if($siteAdmin)<a href="/admin" class="nav-admin">Admin</a>@endif
     </nav>
   </div>
 </header>

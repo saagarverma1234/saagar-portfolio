@@ -95,6 +95,7 @@ tr.sel td { font-weight: 700; }
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span class="live" title="Sessions with any activity in the last 2 minutes"><i></i><b>{{ $live }}</b> live now</span>
       <a class="btn" href="{{ request()->fullUrl() }}">Refresh</a>
+      <a class="btn" href="/games">&larr; Back to site</a>
     </div>
   </header>
 
