@@ -716,11 +716,11 @@
     var s = $('start'), intro = kind === 'intro';
     $('sRow').hidden = intro; $('sMeta').hidden = !intro;
     $('play').lastChild.textContent = intro ? (spec ? (spec.kind === 'daily' ? 'Start' : 'Play level') : 'Play') : 'Play';
-    $('toChallenges').textContent = intro ? 'Back to free play' : 'or pick a challenge';
+    $('toChallenges').textContent = intro ? 'Back to free play' : 'Challenges';
     if (!intro) {
       $('sKick').textContent = 'CHAOS TO ORDER';
       setStartTitle('Can 100 metronomes', 'sync up?');
-      $('sText').textContent = 'They share one board on rollers. That’s their only link. Nudge it, shake it, flip a few, and watch chaos turn into order.';
+      $('sText').textContent = 'Tap to flip. Watch chaos turn into order.';
       renderDailyBits();
     } else if (spec && spec.kind === 'daily') {
       var p = LV.loadProgress(), today = LV.dayNumber(), st = LV.currentStreak(p, today), best = p.best[spec.day];
@@ -753,6 +753,7 @@
   });
   $('toChallenges').addEventListener('click', function () {
     if (startMode === 'intro') { setSpec(null); setChallenge(null); showStart('home'); return; }
+    closeStart();
     var pCh = $('pCh');
     pCh.scrollIntoView({ behavior: 'smooth', block: 'start' });
     pCh.classList.add('flash'); setTimeout(function () { pCh.classList.remove('flash'); }, 1600);

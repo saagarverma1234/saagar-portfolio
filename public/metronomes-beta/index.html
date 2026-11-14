@@ -107,6 +107,23 @@ html.vh .screen { height: calc(var(--vh) - var(--topH) - var(--safeT)); }
 .play:active { transform: scale(.97); }
 .start .alt { background: none; border: 0; color: var(--text); font-size: 15px; min-height: 44px; padding: 0 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(255,255,255,.35); }
 
+/* 15 Nov (Saagar): minimal first screen. Home = title, one line, Play, one quiet row of links. No controls behind it on phones. */
+.start:not(.intro) .kick { display: none; }
+.start:not(.intro) { background: radial-gradient(ellipse at 50% 50%, rgba(10,10,14,.72), rgba(10,10,14,.95)); gap: 18px; }
+.start:not(.intro) p { max-width: 340px; text-wrap: balance; }
+.start:not(.intro) > h2 { margin-top: auto; }
+.start:not(.intro) .s-row { display: flex; justify-content: center; gap: 6px; width: auto; }
+.start:not(.intro) .s-btn { min-height: 44px; padding: 0 12px; background: none; border: 0; border-radius: 10px; gap: 6px; }
+.start:not(.intro) .s-btn.daily { background: none; }
+.start:not(.intro) .s-btn small { display: none; }
+.start:not(.intro) .s-btn svg { width: 18px; height: 18px; }
+.start:not(.intro) .s-btn b { font-size: 15px; font-weight: 600; color: var(--muted); }
+.start:not(.intro) .s-btn.daily b { color: var(--gold); }
+.start:not(.intro) .alt { font-size: 14px; color: var(--muted); text-decoration: none; min-height: 40px; }
+@media (max-width: 899px) and (orientation: portrait) {
+  .screen:has(.start:not(.hide)) .dock, main.game:has(.start:not(.hide)) .below { display: none; }
+}
+
 /* ---- controls ---- */
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px; }
 .panel h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: 3px; color: var(--dim); }
@@ -475,14 +492,14 @@ body.og .timer { display: none; }
           <button class="start-x" id="startX" type="button" aria-label="Back to the board" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           <div class="kick" id="sKick">CHAOS TO ORDER</div>
           <h2 id="sTitle">Can 100 metronomes<br><span>sync up?</span></h2>
-          <p id="sText">They share one board on rollers. That's their only link. Nudge it, shake it, flip a few, and watch chaos turn into order.</p>
+          <p id="sText">Tap to flip. Watch chaos turn into order.</p>
           <div class="s-meta" id="sMeta" hidden></div>
           <button class="play" id="play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg><span>Play</span></button>
           <div class="s-row" id="sRow">
             <button class="s-btn daily" id="bDaily" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4"/></svg><span><b id="dailyName">Daily</b><small id="dailySub">New puzzle every day</small></span></button>
             <button class="s-btn" id="bCreate" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span><b>Create level</b><small>share it as a link</small></span></button>
           </div>
-          <button class="alt" id="toChallenges" type="button">or pick a challenge</button>
+          <button class="alt" id="toChallenges" type="button">Challenges</button>
         </div>
         <div class="ogtitle">Can 100 metronomes <span>sync?</span><small>CHAOS TO ORDER · PLAY IT</small></div>
       </section>
