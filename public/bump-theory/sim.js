@@ -25,7 +25,7 @@
     return {
       t: d.t, x: d.x, y: d.y, a: d.a || 0, n: d.n || 0, fixed: !!fixed,
       w: d.w || (d.t === 'gate' ? 160 : 0), h: d.h || 0, len: d.len || 170,
-      r: d.r || (d.t === 'bump' ? 30 : 10), move: d.move || null, spin: d.spin || 0,
+      r: d.r || (d.t === 'bump' ? 30 : 10), move: d.move || null, spin: d.spin || 0, grow: d.grow || null,
       flash: 0, hits: 0, bit: 0, cx: d.x, cy: d.y, ux: 1, uy: 0, hl: 0
     };
   }
@@ -40,6 +40,7 @@
     var ar = a * Math.PI / 180;
     it.cx = x; it.cy = y; it.ux = Math.cos(ar); it.uy = Math.sin(ar);
     it.hl = it.t === 'gate' ? it.w / 2 : it.t === 'wall' ? it.len / 2 : 0;
+    if (it.grow) { var g = it.grow; it.hl *= 1 + (g.k || 0) * Math.sin(2 * Math.PI * (g.f || 0.3) * t + (g.ph || 0)); }   // growing wall / shrinking gate
   }
 
   function Sim(items, opts) {
@@ -68,7 +69,7 @@
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       if (it.t === 'gate') { it.bit = (1 << (b % 32)) >>> 0; b++; }
-      if (it.move || it.spin) this.moving = true;
+      if (it.move || it.spin || it.grow) this.moving = true;
     }
     this.pose(this.t);
     this.grid();
@@ -265,7 +266,7 @@
 
   function capsule(it) {
     pose(it, 0);
-    var hl = it.hl, r;
+    var hl = it.grow ? (it.t === 'gate' ? it.w : it.len) / 2 * (1 + Math.abs(it.grow.k || 0)) : it.hl, r;
     if (it.t === 'gate') r = 16; else if (it.t === 'wall') r = WALL_T + 2;
     else if (it.t === 'lava') {
       if (it.w >= it.h) return { ax: it.cx - (it.w - it.h) / 2, ay: it.cy, bx: it.cx + (it.w - it.h) / 2, by: it.cy, r: it.h / 2 };

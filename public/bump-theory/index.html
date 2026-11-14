@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>1 Ball → 10,000: Bump Theory Multiplier Game</title>
-<meta name="description" content="Place multiplier gates, walls and bumpers, drop one ball and watch it multiply into thousands. 24 levels from easy to impossible, plus a sandbox. Free browser game from the Bump Theory channel.">
+<title>1 Ball → 10,000: Ball Multiplier Game (Bump Theory)</title>
+<meta name="description" content="Free ball multiplier game: place x2, x5 and x10 gates, mirrors and walls, drop one ball and watch it multiply into thousands. 36 physics puzzle levels, a daily challenge and a sandbox. Play in your browser, from the Bump Theory channel.">
 <link rel="canonical" href="https://saagarverma.com/bump-theory/">
 <meta name="theme-color" content="#000000">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Bump Theory">
-<meta property="og:title" content="1 Ball → 10,000: Bump Theory Multiplier Game">
-<meta property="og:description" content="Drop one ball. Place the gates. Watch it turn into 10,000. How many balls can you make?">
+<meta property="og:title" content="1 Ball → 10,000: Ball Multiplier Game">
+<meta property="og:description" content="Drop one ball. Place the gates. Watch it turn into 10,000. 36 levels and a new daily challenge. How many balls can you make?">
 <meta property="og:url" content="https://saagarverma.com/bump-theory/">
 <meta property="og:image" content="https://saagarverma.com/bump-theory/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="1 Ball → 10,000: Bump Theory Multiplier Game">
+<meta name="twitter:title" content="1 Ball → 10,000: Ball Multiplier Game">
 <meta name="twitter:description" content="Drop one ball. Place the gates. Watch it turn into 10,000.">
 <meta name="twitter:image" content="https://saagarverma.com/bump-theory/og.png">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -24,7 +24,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preload" href="inter-700.woff2" as="font" type="font/woff2" crossorigin>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"VideoGame","name":"1 Ball → 10,000: Bump Theory Multiplier Game","url":"https://saagarverma.com/bump-theory/","description":"A browser physics puzzle: place multiplier gates, walls and bumpers, drop one ball and watch it multiply into thousands. Based on the Bump Theory YouTube channel.","genre":["Puzzle","Simulation"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","isAccessibleForFree":true,"author":{"@type":"Person","name":"Saagar Verma","url":"https://saagarverma.com/"},"sameAs":"https://www.youtube.com/@bumptheory"}
+{"@context":"https://schema.org","@type":"VideoGame","name":"1 Ball → 10,000: Bump Theory Ball Multiplier Game","url":"https://saagarverma.com/bump-theory/","description":"A browser physics puzzle and ball multiplier game: place multiplier gates, mirror walls and bumpers, drop one ball and watch it multiply into thousands. 36 levels, a daily challenge and a sandbox. Based on the Bump Theory YouTube channel.","genre":["Puzzle","Simulation"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","isAccessibleForFree":true,"author":{"@type":"Person","name":"Saagar Verma","url":"https://saagarverma.com/"},"sameAs":"https://www.youtube.com/@bumptheory"}
 </script>
 <style>
 /* Inter 700 (SIL Open Font License 1.1, The Inter Project Authors), self-hosted */
@@ -104,6 +104,20 @@ header.top .ttl span { max-width: 100%; overflow: hidden; text-overflow: ellipsi
 .drop:active, .btn:active, .ib:active { transform: scale(.97); }
 .sq { flex: 0 0 auto; width: 48px; height: 60px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .sq svg { width: 20px; height: 20px; }
+
+/* 15 Nov (Saagar): minimal first screen = title, one line, one Play button, one quiet row of links */
+.menu .quiet { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.lnk { background: none; border: 0; color: var(--muted); font-size: 15px; min-height: 44px; padding: 0 12px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; font-weight: 700; text-decoration: none; }
+.lnk:hover { color: var(--text); }
+#bDaily { color: var(--gold); }
+#bDaily.done { color: var(--muted); }
+#bDaily .sk { font-style: normal; font-size: 12px; background: var(--gold); color: #1a1406; border-radius: 999px; min-width: 20px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; }
+#bDaily .sk[hidden] { display: none; }
+.tile.new::after { content: 'NEW'; position: absolute; top: 4px; right: 4px; font-size: 8px; letter-spacing: 1px; color: #1a1406; background: var(--cyan); border-radius: 4px; padding: 1px 3px; }
+.tile { position: relative; }
+.tile.sand.daily { border-color: var(--gold); color: var(--gold); }
+.res .btn.share { flex: 1.6; white-space: nowrap; border-color: rgba(51,217,255,.7); color: #dff8ff; background: rgba(51,217,255,.14); min-height: 52px; font-size: 17px; }
+.res .btn[hidden] { display: none; }
 
 /* overlays */
 .ov { position: absolute; left: 0; right: 0; bottom: 0; top: calc(var(--hdr) + env(safe-area-inset-top)); z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
@@ -237,12 +251,10 @@ footer nav.site a { color: var(--muted); }
   </section>
 
     <div class="ov menu" id="menu">
-      <div class="mark">BUMP THEORY</div>
       <h1>1 Ball → <span>10,000</span></h1>
-      <p>Place the gates. Drop one ball. Watch it multiply into thousands.</p>
+      <p>Place the gates. Watch one ball multiply.</p>
       <button class="play" id="bPlay"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><span id="playLab">Play</span></button>
-      <div class="row"><button class="btn" id="bMenuLevels">Levels</button><button class="btn" id="bMenuSand">Sandbox</button></div>
-      <div class="links2"><a href="#how-it-works" id="lHow">How to play</a><a href="/games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="12" rx="4"/><path d="M7 11v4M5 13h4M15.5 12h.01M18 14h.01"/></svg>More games</a></div>
+      <div class="quiet"><button class="lnk" id="bDaily">Daily <i class="sk" id="dailySk" hidden></i></button><button class="lnk" id="bMenuLevels">Levels</button><button class="lnk" id="bMenuSand">Sandbox</button></div>
     </div>
 
     <div class="ov lv" id="levels" hidden>
@@ -257,7 +269,7 @@ footer nav.site a { color: var(--muted); }
         <div class="bigstars" id="rstars"><i></i><i></i><i></i></div>
         <div class="rn" id="rnum">0</div>
         <div class="rl" id="rlab"></div>
-        <div class="row"><button class="btn" id="bRetry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg><span>Retry</span></button><button class="btn" id="bShare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg>Share</button></div>
+        <div class="row"><button class="btn" id="bRetry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg><span>Retry</span></button><button class="btn share" id="bShare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg>Share score</button></div>
         <div class="row"><button class="btn gold big" id="bNext"><span id="nextLab">Next level</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div>
       </div>
     </div>
@@ -338,13 +350,17 @@ footer nav.site a { color: var(--muted); }
       <li><strong>Keep lava losses small.</strong> One ball lost after a x10 costs 1, but one lost before it costs 10. Protect the stream most at the top.</li>
     </ul>
 
+    <h3>Mirrors, closing walls and the daily challenge</h3>
+    <p>The newer levels borrow from Bump Theory's most-watched Shorts. Fixed walls act like mirrors: a ball bounces off at the same angle it came in, just like light in a mirror, so a ring of walls (the <strong>Mirror box</strong>) keeps balls bouncing around inside it. Some walls slide together and apart (<strong>Closing walls</strong>, <strong>Crusher</strong>), some grow and shrink (<strong>Growing wall</strong>, <strong>Shrinking gap</strong>), and one x10 gate pulses between thin and wide (<strong>Shrinking gate</strong>). Their motion is the same every time, so timing is part of the puzzle. The finale, <strong>One hundred thousand</strong>, adds x20 gates.</p>
+    <p>The <strong>Daily challenge</strong> is one puzzle a day, the same for everyone (it changes at midnight UTC). It is a level from the game, flipped left to right, with its own targets. Beat it on back-to-back days to build a streak, then share your score card.</p>
+
     <h3>Sandbox and Recycle</h3>
     <p>Sandbox mode gives you unlimited x2, x3, x5 and x10 gates, walls, bumpers and pegs (up to 40 pieces). With <strong>Recycle</strong> on, balls that fall out of the bottom come back in at the top with their gate memory cleared, so they can multiply again. That turns the board into an exponential machine: a single x2 gate doubles the count on every loop, and ten loops is 2<sup>10</sup> = 1,024.</p>
 
     <h3>FAQ</h3>
     <p><strong>Is the counter real when the screen can't show that many balls?</strong> Yes. Your device draws up to about 20,000 balls (fewer on slower phones). Past that, a ball that splits keeps the extra balls as a hidden weight instead of drawing them, so one drawn ball can stand for many. The counter always equals 1 ball times every split, minus lava losses.</p>
     <p><strong>Why don't the balls bump into each other?</strong> On purpose: skipping ball-to-ball collisions is what lets thousands of balls move smoothly in a phone browser.</p>
-    <p><strong>Is every level possible?</strong> Yes. Each of the 24 levels was checked by a solver that found a layout reaching the three-star target, and the Hint button shows one good layout.</p>
+    <p><strong>Is every level possible?</strong> Yes. Each of the 36 levels (and every daily) was checked by a solver that found a layout reaching the three-star target, and the Hint button shows one good layout. Lose a level three times and the hint turns on by itself.</p>
     <p><strong>Where is my progress saved?</strong> In your browser only (local storage). Clearing this site's data resets your stars. Your progress is never sent to a server; we only count anonymous plays (no cookies, no names). See the <a href="/privacy">privacy policy</a>.</p>
     <p><strong>Is it free?</strong> Yes, with no download or account. Ads below the game help pay for it.</p>
     <p>Read more: <a href="/articles/maths-of-1-ball-to-10000">The maths of 1 ball becoming 10,000</a> and <a href="/articles/how-bump-theory-simulations-are-made">how Bump Theory simulations are made</a>.</p>
@@ -371,11 +387,11 @@ footer nav.site a { color: var(--muted); }
   <button class="btn" id="mClose">Close</button>
 </div>
 <div class="toast" id="toast"></div>
-<script src="sim.js?v=2"></script>
-<script src="levels.js?v=2"></script>
-<script src="game.js?v=2"></script>
+<script src="sim.js?v=3"></script>
+<script src="levels.js?v=3"></script>
+<script src="game.js?v=3"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
-<script src="/game-stats.v1.js" data-game="bump-theory" defer></script>
+<script src="/game-stats.v1.js?v=2" data-game="bump-theory" defer></script>
 </body>
 </html>

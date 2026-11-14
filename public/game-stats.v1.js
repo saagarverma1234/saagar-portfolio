@@ -24,7 +24,7 @@
     var GAMES = {
       'bump-theory': {
         saveKey: 'bt1',
-        play: '#bPlay, #bMenuSand, #grid .tile:not(.locked), #bDrop, #inv',
+        play: '#bPlay, #bMenuSand, #bDaily, #grid .tile:not(.locked), #bDrop, #inv',
         share: { mShare: 'share', mCopy: 'copy', mSave: 'save' },
         setup: function (track) {
           var lastLevel = null;

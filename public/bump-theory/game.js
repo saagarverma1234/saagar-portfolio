@@ -1,7 +1,7 @@
 /* Bump Theory: 1 Ball -> 10,000. Game: rendering, input, sound, levels, sharing. */
 (function () {
   'use strict';
-  var S = window.BTSim, LEVELS = window.BTLevels.levels;
+  var S = window.BTSim, BL = window.BTLevels, LEVELS = BL.levels;
   var W = S.W, H = S.H, DT = S.DT, R = S.R;
   var URL_BASE = 'https://saagarverma.com/bump-theory/';
   var PAL = ['#ffffff', '#33d9ff', '#9ef040', '#9e73ff', '#ff5494', '#ffcc33', '#ff8c2e', '#ff4d4d'];
@@ -11,9 +11,20 @@
   var qs = new URLSearchParams(location.search);
 
   /* ---------------- storage (never required) ---------------- */
-  var save = { stars: [], best: [], muted: false, sbest: 0 };
+  var save = { stars: [], best: [], muted: false, sbest: 0, v: 0, daily: null };
   try { var raw = window.localStorage.getItem('bt1'); if (raw) { var o = JSON.parse(raw); if (o && typeof o === 'object') for (var k in save) if (o[k] !== undefined) save[k] = o[k]; } } catch (e) { /* private mode etc. */ }
   function persist() { try { window.localStorage.setItem('bt1', JSON.stringify(save)); } catch (e) { /* ignore */ } }
+  // 15 Nov 2026: 24 -> 36 levels, new ones slotted in between. Move old stars/bests to the same level's new position.
+  if (save.v < 2) {
+    var ns = [], nb = [];
+    BL.ORDER_V1.forEach(function (bi, p) { var np = BL.ORDER.indexOf(bi); if (np >= 0) { if (save.stars[p]) ns[np] = save.stars[p]; if (save.best[p]) nb[np] = save.best[p]; } });
+    save.stars = ns; save.best = nb; save.v = 2; persist();
+  }
+  /* daily challenge: UTC day, same level for everyone */
+  function today() { return Math.floor(Date.now() / 864e5); }
+  function dayLabel(day) { var d = new Date(day * 864e5); return ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][d.getUTCMonth()] + ' ' + d.getUTCDate(); }
+  function dailyInfo() { var d = save.daily || {}, t = today(); return { streak: d.last >= t - 1 ? d.streak || 0 : 0, doneToday: d.last === t }; }
+  var fails = {};
   function starsOf(i) { return save.stars[i] | 0; }
   function unlocked(i) { return i === 0 || starsOf(i - 1) > 0 || starsOf(i) > 0; }
 
@@ -182,18 +193,21 @@
   function zones() { return G.mode === 'sandbox' ? null : G.L.zones; }
   function dropPt() { return G.mode === 'sandbox' ? { x: W / 2, y: 200 } : G.L.drop; }
 
-  function loadLevel(i) {
+  function loadLevel(i, dailyL) {
     i = Math.max(0, Math.min(LEVELS.length - 1, i | 0));
-    G.mode = 'level'; G.li = i; G.L = LEVELS[i]; G.phase = 'edit'; G.sim = null; G.hint = false; G.sel = null;
+    G.daily = !!dailyL;
+    G.mode = 'level'; G.li = i; G.L = dailyL || LEVELS[i]; G.phase = 'edit'; G.sim = null; G.hint = false; G.sel = null;
     G.fixed = G.L.fixed.map(function (d) { return S.makeItem(d, true); });
     G.placed = [];
     G.fixed.forEach(function (it) { S.pose(it, 0); });
     hideAll(); $('bHint').hidden = false; $('bHint').classList.remove('on'); setNav(true);
-    $('ttl').innerHTML = '<small>LEVEL ' + (i + 1) + '</small><span>' + esc(G.L.name) + '</span>';
-    showTip(i === 0 ? 'Drag x2 under the ball, then tap DROP' : G.L.tip);
+    $('ttl').innerHTML = G.daily ? '<small>DAILY · ' + dayLabel(G.L.day) + '</small><span>' + esc(G.L.name) + '</span>' : '<small>LEVEL ' + (i + 1) + '</small><span>' + esc(G.L.name) + '</span>';
+    showTip(G.daily ? 'Daily challenge: the same puzzle for everyone today. ' + G.L.tip : i === 0 ? 'Drag x2 under the ball, then tap DROP' : G.L.tip);
+    if (!G.daily && (fails[i] || 0) >= 3) { G.hint = true; $('bHint').classList.add('on'); }
     buildTray(); updateHud(true);
-    try { history.replaceState(null, '', '?level=' + (i + 1)); } catch (e) { /* file:// etc. */ }
+    try { history.replaceState(null, '', G.daily ? '?daily' : '?level=' + (i + 1)); } catch (e) { /* file:// etc. */ }
   }
+  function loadDaily() { var L = BL.daily(today()); loadLevel(L.pos, L); }
   function loadSandbox() {
     G.mode = 'sandbox'; G.L = null; G.phase = 'run'; G.hint = false; G.sel = null;
     G.fixed = []; G.placed = [];
@@ -205,7 +219,7 @@
     try { history.replaceState(null, '', '?sandbox=1'); } catch (e) { /* ignore */ }
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function hideAll() { $('menu').hidden = true; $('levels').hidden = true; $('result').hidden = true; G.attract = null; $('tray').style.visibility = ''; }
+  function hideAll() { $('menu').hidden = true; $('levels').hidden = true; $('result').hidden = true; $('modal').hidden = true; G.attract = null; $('tray').style.visibility = ''; }
   function showTip(t) { var e = $('tip'); e.textContent = t; e.classList.toggle('hide', !t); $('hud').classList.toggle('tipping', !!t); }
   // header: "< Games" link on the menu, "<" back-to-menu button in a level or the sandbox
   function firstAction() { if (!(G.mode === 'level' && G.li === 0 && !G.placed.length)) showTip(''); }
@@ -219,9 +233,16 @@
     $('bHint').hidden = true; setNav(false);
     $('ttl').innerHTML = '<span>1 Ball → 10,000</span>';
     $('playLab').textContent = save.stars.some(function (s) { return s > 0; }) ? 'Continue' : 'Play';
+    menuDaily();
     $('menu').hidden = false; $('tray').style.visibility = 'hidden'; showTip('');
     startAttract(); updateHud(true);
     try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
+  }
+  function menuDaily() {
+    var di = dailyInfo(), sk = $('dailySk');
+    sk.textContent = di.streak || ''; sk.hidden = !di.streak;
+    $('bDaily').classList.toggle('done', di.doneToday);
+    $('bDaily').setAttribute('aria-label', 'Daily challenge' + (di.doneToday ? ', done today' : '') + (di.streak ? ', ' + di.streak + '-day streak' : ''));
   }
   function nudges() {
     var l1 = G.mode === 'level' && G.li === 0 && G.phase === 'edit' && starsOf(0) === 0;
@@ -323,22 +344,31 @@
   function finish() {
     G.phase = 'result';
     var c = G.sim.count, st = G.L.stars, got = 0; for (var i = 0; i < 3; i++) if (c >= st[i]) got++;
-    var i0 = G.li, prevStars = starsOf(i0), newBest = c > (save.best[i0] || 0);
-    if (got > prevStars) save.stars[i0] = got;
-    if (newBest) save.best[i0] = c;
+    var i0 = G.li, prevStars = G.daily ? 0 : starsOf(i0), newBest = !G.daily && c > (save.best[i0] || 0), streak = 0;
+    if (G.daily) {
+      if (got > 0) { var dd = save.daily || {}, t = today(); if (dd.last !== t) { dd.streak = dd.last === t - 1 ? (dd.streak || 0) + 1 : 1; dd.last = t; } dd.best = Math.max(dd.best || 0, dd.streak); save.daily = dd; }
+      streak = dailyInfo().streak;
+    } else {
+      if (got > prevStars) save.stars[i0] = got;
+      if (newBest) save.best[i0] = c;
+      if (got > 0) fails[i0] = 0; else fails[i0] = (fails[i0] || 0) + 1;
+    }
     persist();
-    G.lastResult = { count: c, stars: got, level: i0 };
+    G.lastResult = { count: c, stars: got, level: i0, daily: G.daily, day: G.L.day, name: G.L.name, streak: streak };
     setTimeout(function () {
       if (G.phase !== 'result') return;
       var card = $('rcard'); card.classList.toggle('win', got > 0);
       var ss = $('rstars').children; for (var k = 0; k < 3; k++) ss[k].classList.remove('on');
       $('rnum').textContent = fmt(c);
-      $('rlab').textContent = got > 0 ? (got === 3 ? 'Perfect! ' : '') + 'Balls from 1 ball' + (newBest && prevStars ? ' · new best' : '') + (got < 3 ? ' · 3 stars at ' + fmt(st[2]) : '') : 'Target ' + fmt(st[0]) + '. Move things and try again!';
-      var canNext = (got > 0 || starsOf(i0) > 0) && i0 < LEVELS.length - 1;
-      G.nextAct = canNext ? 'next' : (got > 0 ? 'levels' : 'retry');
-      $('nextLab').textContent = canNext ? 'Next level' : got > 0 ? 'All levels' : 'Try again';
-      $('bNext').querySelector('svg').style.display = G.nextAct === 'retry' ? 'none' : '';
-      $('bRetry').querySelector('span').textContent = G.nextAct === 'retry' ? 'Hint' : 'Retry';
+      var stuck = !G.daily && got === 0 && (fails[i0] || 0) >= 3;
+      $('rlab').textContent = got > 0 ? (got === 3 ? 'Perfect! ' : '') + 'Balls from 1 ball' + (newBest && prevStars ? ' · new best' : '') + (G.daily && streak > 1 ? ' · ' + streak + '-day streak' : '') + (got < 3 ? ' · 3 stars at ' + fmt(st[2]) : '')
+        : stuck ? 'Target ' + fmt(st[0]) + '. Stuck? The hint shows one good layout.' : 'Target ' + fmt(st[0]) + '. Move things and try again!';
+      var canNext = !G.daily && (got > 0 || starsOf(i0) > 0) && i0 < LEVELS.length - 1;
+      G.nextAct = G.daily ? (got > 0 ? 'play' : 'retry') : canNext ? 'next' : (got > 0 ? 'levels' : stuck ? 'hint' : 'retry');
+      $('nextLab').textContent = G.nextAct === 'play' ? 'Play levels' : canNext ? 'Next level' : got > 0 ? 'All levels' : stuck ? 'Show me a hint' : 'Try again';
+      $('bNext').querySelector('svg').style.display = G.nextAct === 'retry' || G.nextAct === 'hint' ? 'none' : '';
+      $('bRetry').querySelector('span').textContent = G.nextAct === 'hint' ? 'Try again' : G.nextAct === 'retry' ? 'Hint' : 'Retry';
+      $('bShare').hidden = got === 0; $('rcard').classList.toggle('lost', got === 0);
       $('result').hidden = false; $('tray').style.visibility = 'hidden';
       for (var s2 = 0; s2 < got; s2++) (function (s3) {
         setTimeout(function () { ss[s3].classList.add('on'); Snd.play('bell', 7 + s3 * 2, 0.4); }, 250 + s3 * 260);
@@ -488,15 +518,19 @@
     if (G.mode === 'menu') $('menu').hidden = false;
     else if (G.mode === 'level' && G.phase === 'result') $('result').hidden = false;
   });
+  function showHint() { G.hint = true; $('bHint').classList.add('on'); toast('Ghosts show one good layout'); }
   $('bRetry').addEventListener('click', function () {
     stopRun();
-    if (G.nextAct === 'retry') { G.hint = true; $('bHint').classList.add('on'); toast('Ghosts show one good layout'); }
+    if (G.nextAct === 'retry') showHint();
   });
   $('bNext').addEventListener('click', function () {
     if (G.nextAct === 'retry') stopRun();
+    else if (G.nextAct === 'hint') { stopRun(); showHint(); }
     else if (G.nextAct === 'levels') openLevels();
+    else if (G.nextAct === 'play') loadLevel(nextUnplayed());
     else if (G.li < LEVELS.length - 1) loadLevel(G.li + 1);
   });
+  $('bDaily').addEventListener('click', function () { Snd.init(); loadDaily(); });
   $('bBack').addEventListener('click', function (e) {
     if (G.mode === 'menu' && $('levels').hidden) return; // plain link to /games
     e.preventDefault(); Snd.init();
@@ -512,13 +546,15 @@
     LEVELS.forEach(function (L, i) {
       tot += starsOf(i);
       var b = document.createElement('button'), un = unlocked(i), st = starsOf(i);
-      b.className = 'tile' + (un ? '' : ' locked') + (G.mode === 'level' && G.li === i ? ' cur' : '');
+      b.className = 'tile' + (un ? '' : ' locked') + (G.mode === 'level' && !G.daily && G.li === i ? ' cur' : '') + (BL.ORDER[i] >= 24 ? ' new' : '');
       b.innerHTML = '<b>' + (i + 1) + '</b>' + (un ? '<span class="st">' + [0, 1, 2].map(function (k) { return '<i class="' + (k < st ? 'on' : '') + '"></i>'; }).join('') + '</span>'
         : '<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>') + '<small>' + (save.best[i] ? fmt(save.best[i]) : esc(L.name)) + '</small>';
       b.setAttribute('aria-label', 'Level ' + (i + 1) + ': ' + L.name + (un ? ', ' + st + ' stars' : ', locked'));
       b.addEventListener('click', function () { if (!un) { toast('Get a star on level ' + i + ' first'); return; } loadLevel(i); });
       grid.appendChild(b);
     });
+    var db = document.createElement('button'), di = dailyInfo(); db.className = 'tile sand daily'; db.textContent = 'Daily challenge' + (di.doneToday ? ' · done' : '') + (di.streak ? ' · ' + di.streak + '-day streak' : '');
+    db.addEventListener('click', loadDaily); grid.appendChild(db);
     var sb = document.createElement('button'); sb.className = 'tile sand'; sb.textContent = 'Sandbox: build anything';
     sb.addEventListener('click', loadSandbox); grid.appendChild(sb);
     $('tot').textContent = tot + ' / ' + LEVELS.length * 3 + ' stars';
@@ -565,7 +601,7 @@
     x.fillText(sand ? 'balls from ' + fmt(r.drops) + (r.drops === 1 ? ' ball!' : ' balls!') : 'balls from 1 ball!', 540, yb);
     if (!sand) {
       x.fillStyle = '#b8bac7'; x.font = '700 40px InterB, system-ui, sans-serif';
-      x.fillText('Level ' + (r.level + 1) + ' · ' + LEVELS[r.level].name, 540, yb + 80);
+      x.fillText(r.daily ? 'Daily challenge · ' + dayLabel(r.day) + (r.streak > 1 ? ' · ' + r.streak + '-day streak' : '') : 'Level ' + (r.level + 1) + ' · ' + LEVELS[r.level].name, 540, yb + 80);
       for (var s2 = 0; s2 < 3; s2++) drawStar(x, 540 + (s2 - 1) * 96, yb + 160, 40, s2 < r.stars);
     } else { x.fillStyle = '#b8bac7'; x.font = '700 40px InterB, system-ui, sans-serif'; x.fillText('Sandbox mode', 540, yb + 80); }
     x.fillStyle = '#f4f4f7'; x.font = '700 50px InterB, system-ui, sans-serif'; x.fillText('Can you beat it?', 540, 1200);
@@ -575,9 +611,10 @@
   var cardBlob = null, cardUrl = null;
   function shareText(m) {
     var u = shareUrl(m);
+    if (m.r.daily) return 'I got ' + fmt(m.r.count) + ' balls from 1 ball on today\'s Bump Theory daily challenge' + (m.r.streak > 1 ? ' (' + m.r.streak + '-day streak)' : '') + '! Can you beat it? ' + u;
     return m.sand ? 'I made ' + fmt(m.r.count) + ' balls in the Bump Theory sandbox. ' + u : 'I got ' + fmt(m.r.count) + ' balls from 1 ball on Bump Theory level ' + (m.r.level + 1) + '! Can you beat it? ' + u;
   }
-  function shareUrl(m) { return m.sand ? URL_BASE : URL_BASE + '?level=' + (m.r.level + 1); }
+  function shareUrl(m) { return m.sand ? URL_BASE : m.r.daily ? URL_BASE + '?daily' : URL_BASE + '?level=' + (m.r.level + 1); }
   var lastCard = null;
   function openCard() {
     var go = function () {
@@ -740,6 +777,7 @@
       var it = items[i];
       if (it.move) { c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = 22; c.lineCap = 'round'; c.beginPath(); c.moveTo(it.x - (it.move.ax || 0), it.y - (it.move.ay || 0)); c.lineTo(it.x + (it.move.ax || 0), it.y + (it.move.ay || 0)); c.stroke(); }
       if (it.spin) { c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 2; c.beginPath(); c.arc(it.x, it.y, it.len / 2, 0, 7); c.stroke(); }
+      if (it.grow) { var gc = S.capsule(it); c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 22; c.lineCap = 'round'; c.beginPath(); c.moveTo(gc.ax, gc.ay); c.lineTo(gc.bx, gc.by); c.stroke(); }
     }
     var order = ['lava', 'peg', 'wall', 'bump', 'gate'];
     for (var o = 0; o < order.length; o++) for (var j = 0; j < items.length; j++) if (items[j].t === order[o]) drawItem(c, items[j]);
@@ -803,7 +841,7 @@
 
   /* ---------------- attract mode behind the menu ---------------- */
   function startAttract() {
-    var L = LEVELS[22] || LEVELS[LEVELS.length - 1];
+    var L = BL.base[12];   // One thousand
     G.fixed = L.fixed.map(function (d) { return S.makeItem(d, true); });
     G.placed = L.sol.map(function (d) { return S.makeItem(d, false); });
     G.L = L;
@@ -838,7 +876,7 @@
       if (G.mode === 'level' && G.phase === 'run' && sim.done()) finish();
       if (sim.n > stats.maxBalls) stats.maxBalls = sim.n;
     } else if (G.mode === 'level' && G.phase === 'edit') {
-      G.previewT += dt; G.fixed.forEach(function (it) { if (it.move || it.spin) S.pose(it, G.previewT); });
+      G.previewT += dt; G.fixed.forEach(function (it) { if (it.move || it.spin || it.grow) S.pose(it, G.previewT); });
     }
     var items = allItems();
     for (var i = 0; i < items.length; i++) if (items[i].flash) items[i].flash = Math.max(0, items[i].flash - dt * 4);
@@ -872,6 +910,7 @@
   var ql = parseInt(qs.get('level'), 10);
   if (ql >= 1 && ql <= LEVELS.length) loadLevel(ql - 1);
   else if (qs.has('sandbox')) loadSandbox();
+  else if (qs.has('daily')) loadDaily();
   else { startAttract(); $('tray').style.visibility = 'hidden'; showTip(''); }
   raf = requestAnimationFrame(frame);
 
