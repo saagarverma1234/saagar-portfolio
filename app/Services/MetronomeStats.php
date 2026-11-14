@@ -26,7 +26,11 @@ class MetronomeStats
         'pageview', 'play', 'control', 'synced', 'challenge_start', 'challenge_complete', 'share', 'mute', 'heartbeat',
         'level', 'result',
         'level_created', 'level_played', 'daily_played', 'daily_completed', 'share_card',
+        'qw_pick', 'qw_choice', 'qw_end',
     ];
+
+    /** Events that only Quiet Worlds may send (see QuietWorldsVotes). */
+    public const QUIET_WORLDS_EVENTS = ['qw_pick', 'qw_choice', 'qw_end'];
 
     /**
      * Games that may send events, keyed by the value the tracker sends (`g`). Beacons without `g` are metronomes.
@@ -237,6 +241,10 @@ class MetronomeStats
             return;
         }
 
+        if (in_array($payload['e'], self::QUIET_WORLDS_EVENTS, true) && ! $this->validQuietWorldsVote($game, $payload['e'], $payload['d'] ?? null)) {
+            return;
+        }
+
         $userAgent = substr((string) $request->userAgent(), 0, 400);
         $isTest = ! empty($payload['test']);
         if (! $isTest && $this->isBot($userAgent)) {
@@ -258,6 +266,9 @@ class MetronomeStats
         $db = $this->db();
         $recent = $db->table('events')->where('vid', $row['vid'])->where('ts', '>=', $row['ts'] - 60)->count();
         if ($recent >= self::MAX_EVENTS_PER_MINUTE) {
+            return;
+        }
+        if (in_array($row['name'], self::QUIET_WORLDS_EVENTS, true) && $this->isRepeatVote($db, $row)) {
             return;
         }
         $db->table('events')->insert($row);
@@ -374,6 +385,21 @@ class MetronomeStats
             case 'mute':
                 $row['num'] = empty($data['on']) ? 0 : 1;
                 break;
+            case 'qw_pick':
+                $row['ctrl'] = $data['w'];
+                $row['num'] = (int) $data['day'];
+                break;
+            case 'qw_choice':
+                $row['ctrl'] = $data['w'];
+                $row['num'] = (int) $data['b'] * 10 + (int) $data['o'];
+                $extra['b'] = (int) $data['b'];
+                $extra['o'] = (int) $data['o'];
+                break;
+            case 'qw_end':
+                $row['ctrl'] = $data['w'];
+                $row['num'] = (int) $data['r'];
+                $extra['day'] = (int) $data['day'];
+                break;
             case 'heartbeat':
                 $row['num'] = $this->number($data['s'] ?? 15, 0, 60);
                 break;
@@ -381,6 +407,39 @@ class MetronomeStats
         $row['data'] = $extra ? json_encode($extra) : '';
 
         return $row;
+    }
+
+    /**
+     * One vote per browser (or per hashed visitor when no browser ID is sent) for the same world, beat and option in a day.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function isRepeatVote(Connection $db, array $row): bool
+    {
+        return $db->table('events')
+            ->where($row['cid'] !== '' ? 'cid' : 'vid', $row['cid'] !== '' ? $row['cid'] : $row['vid'])
+            ->where('game', 'quiet-worlds')->where('name', $row['name'])->where('ctrl', $row['ctrl'])->where('num', $row['num'])
+            ->where('ts', '>=', $row['ts'] - 86400)
+            ->exists();
+    }
+
+    /**
+     * A Quiet Worlds vote must come from that game and name a known world, a real beat and option,
+     * ending or drop day. Anything else is dropped, so the shares cannot be filled with junk.
+     */
+    private function validQuietWorldsVote(string $game, string $event, mixed $data): bool
+    {
+        if ($game !== 'quiet-worlds' || ! is_array($data) || ! QuietWorldsVotes::isWorld($data['w'] ?? null)) {
+            return false;
+        }
+        $isInt = fn (mixed $value, int $min, int $max): bool => is_int($value) && $value >= $min && $value <= $max;
+
+        return match ($event) {
+            'qw_pick' => $isInt($data['day'] ?? null, 1, QuietWorldsVotes::MAX_DAY),
+            'qw_choice' => $isInt($data['b'] ?? null, 1, QuietWorldsVotes::BEATS) && $isInt($data['o'] ?? null, 0, QuietWorldsVotes::OPTIONS - 1),
+            'qw_end' => $isInt($data['r'] ?? null, 0, count(QuietWorldsVotes::ENDINGS) - 1) && $isInt($data['day'] ?? null, 0, QuietWorldsVotes::MAX_DAY),
+            default => false,
+        };
     }
 
     public function visitorHash(string $ip, string $userAgent): string

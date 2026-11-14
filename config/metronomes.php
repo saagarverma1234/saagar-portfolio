@@ -17,6 +17,12 @@ return [
 
     'stats_path' => env('METRONOME_STATS_PATH', storage_path('app/metronome-stats.sqlite')),
 
+    /*
+    | Cache store for the Quiet Worlds votes endpoint (its 2-minute cache and its
+    | per-IP rate limit). "file" needs no database table.
+    */
+    'votes_cache_store' => env('QW_VOTES_CACHE_STORE', 'file'),
+
     'admin_hash' => env('GAME_ADMIN_PASSWORD_HASH', '$2y$12$gNvsLDAF7rLtiinhPBDR6edgiV/LzhjJ2KEcwB82PAbw/OmnZf56W'),
 
     'admin_email_hash' => env('GAME_ADMIN_EMAIL_HASH', '15af446990689537c83dfebd52ae0bc329549889f04354738d5880a9e404b69f'),

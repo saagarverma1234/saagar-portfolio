@@ -1,4 +1,5 @@
 User-agent: *
 Disallow: /metronomes-beta/
+Disallow: /quiet-worlds-beta/
 
 Sitemap: https://saagarverma.com/sitemap.xml

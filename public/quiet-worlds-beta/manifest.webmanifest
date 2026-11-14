@@ -1,0 +1,18 @@
+{
+  "name": "Quiet Worlds: Choose Your Planet",
+  "short_name": "Quiet Worlds",
+  "description": "Four new planets every day. Exactly one is safe. Survive a year.",
+  "id": "/quiet-worlds-beta/",
+  "start_url": "/quiet-worlds-beta/?utm_source=homescreen",
+  "scope": "/quiet-worlds-beta/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0b1a",
+  "theme_color": "#0a0b1a",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

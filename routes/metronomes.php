@@ -19,5 +19,8 @@ Route::post('/admin/delete-test', [AdminController::class, 'deleteTest']);
 Route::permanentRedirect('/metronomes-admin', '/admin');
 Route::permanentRedirect('/metronomes/admin', '/admin');
 
+// "% of players picked this" for Quiet Worlds: public, cached, 60 requests a minute per IP (see the controller).
+Route::get('/quiet-worlds-api/votes', [\App\Http\Controllers\QuietWorldsVotesController::class, 'show']);
+
 // Suggestions box on the game pages (no web middleware: no cookies; see GameFeedbackController).
 Route::post('/game-feedback', [\App\Http\Controllers\GameFeedbackController::class, 'store']);
