@@ -1,9 +1,9 @@
-/* Anonymous play stats for the Quiet Worlds preview (/quiet-worlds-beta/). Same beacon as /game-stats.v1.js,
-   but the game calls track() itself, and every event is flagged test (TEST below) so the real numbers stay clean.
+/* Anonymous play stats for the Quiet Worlds game (/quiet-worlds/). Same beacon as /game-stats.v1.js,
+   but the game calls track() itself; TEST below marks events as test (0 = real).
    No cookies, no personal data. Any error just turns it off. */
 (function () {
   'use strict';
-  var TEST = 1;   // preview build: set to 0 when this becomes /quiet-worlds/
+  var TEST = 0;   // live game: real events
   var noop = { track: function () {}, test: TEST };
   window.qwStats = noop;
   try {

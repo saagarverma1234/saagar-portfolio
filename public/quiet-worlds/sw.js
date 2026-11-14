@@ -1,8 +1,8 @@
 /* Quiet Worlds service worker, scoped to this folder. Keeps the game working offline after a visit.
    Pages: network first, cache as fallback. Game files and planet pictures: cache first (they are versioned).
    Never caches the stats beacon, the votes API, ads or other sites. No push notifications. */
-var CACHE = 'qw-beta-v1';
-var CORE = ['index.html', 'game.js?v=1', 'worlds.js?v=1', 'story.js?v=1', 'keepsakes.js?v=1', 'stats.js?v=1',
+var CACHE = 'qw-v3';
+var CORE = ['index.html', 'game.js?v=3', 'worlds.js?v=3', 'story.js?v=3', 'keepsakes.js?v=3', 'stats.js?v=3',
   'vt323.woff2', 'inter-700.woff2', 'favicon.svg', 'icon-192.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', function (e) {
@@ -10,7 +10,7 @@ self.addEventListener('install', function (e) {
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k.indexOf('qw-beta-') === 0 && k !== CACHE; }).map(function (k) { return caches.delete(k); }));
+    return Promise.all(keys.filter(function (k) { return k.indexOf('qw-') === 0 && k !== CACHE; }).map(function (k) { return caches.delete(k); }));
   }).then(function () { return self.clients.claim(); }));
 });
 self.addEventListener('fetch', function (e) {

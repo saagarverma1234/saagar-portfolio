@@ -1,21 +1,148 @@
-/* Quiet Worlds: Choose Your Planet. Static browser game, no dependencies. (c) Saagar Verma */
+/* Quiet Worlds: Choose Your Planet (daily drop, a year of choices, keepsakes). Static browser game, no dependencies. (c) Saagar Verma */
 (function () {
   'use strict';
-  var WORLDS = (window.QW_WORLDS || []).slice();
+  var WORLDS = (window.QW_WORLDS || []).slice(), STORY = window.QW_STORY || {}, KEEP = window.QW_KEEPSAKES || {};
+  var BY = {}; WORLDS.forEach(function (w) { BY[w.slug] = w; });
   var $ = function (id) { return document.getElementById(id); };
+  var stats = window.qwStats || { track: function () {}, test: 0 };
   var reduceMotion = false;
   try { reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
-  /* ---------- storage (never throws) ---------- */
-  var store = {
-    get: function (k, d) { try { var v = window.localStorage.getItem('qw-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set: function (k, v) { try { window.localStorage.setItem('qw-' + k, JSON.stringify(v)); } catch (e) {} }
-  };
+  /* ---------- settings that change when the preview goes live ---------- */
+  var PUBLIC_URL = 'https://saagarverma.com/quiet-worlds/';
+  var IMG_BASE = 'img/';
+  var VOTES_API = '/quiet-worlds-api/votes';
+  var LAUNCH = Date.UTC(2026, 10, 15);   // Day 1 of the daily drop (UTC)
+
+  var DAY_MS = 864e5, YEAR = 365;
+  var END_STAMP = ['YOU THRIVED', 'YOU SURVIVED THE YEAR', "YOU DIDN'T MAKE IT"];
+  var END_WORD = ['thrived on', 'survived the year on', "didn't make it on"];
+  var END_SHORT = ['Thrived', 'Survived', "Didn't make it"];
+  var RAR = ['Common', 'Rare', 'Epic', 'Legendary'];
+
+  /* ---------- save (one key, never throws; works in memory when storage is blocked) ---------- */
+  var SAVE_KEY = 'qw2-save', storageOk = true;
+  function blank() { return { v: 1, days: {}, ks: {}, run: null, free: { streak: 0, best: 0 }, muted: false, tip: 0, years: 0 }; }
+  function isInt(v, lo, hi) { return typeof v === 'number' && Math.floor(v) === v && v >= lo && v <= hi; }
+  function cleanDays(src) {
+    var out = {};
+    if (!src || typeof src !== 'object') return out;
+    Object.keys(src).forEach(function (k) {
+      var d = +k, r = src[k];
+      if (!isInt(d, 1, 100000) || !r || !BY[r.w] || !isInt(r.e, 0, 2)) return;
+      var c = Array.isArray(r.c) ? r.c.filter(function (x) { return isInt(x, 0, 2); }).slice(0, 3) : [];
+      out[d] = { w: r.w, e: r.e, c: c };
+    });
+    return out;
+  }
+  function cleanKs(src) {
+    var out = {};
+    if (!src || typeof src !== 'object') return out;
+    Object.keys(src).forEach(function (s) {
+      var r = src[s];
+      if (!BY[s] || !r || !isInt(r.r, 0, 3) || !isInt(r.d, 1, 100000)) return;
+      out[s] = { r: r.r, d: r.d, t: typeof r.t === 'number' ? r.t : 0 };
+    });
+    return out;
+  }
+  function cleanRun(r) {
+    if (!r || !BY[r.w] || !STORY[r.w] || !isInt(r.day, 1, 100000) || !Array.isArray(r.set) || r.set.length !== 4) return null;
+    if (!r.set.every(function (s) { return !!BY[s]; }) || !isInt(r.b, -1, 2)) return null;
+    var c = Array.isArray(r.c) ? r.c.slice(0, 3) : [];
+    for (var i = 0; i < c.length; i++) if (!isInt(c[i], 0, 2)) return null;
+    return { m: 'drop', off: true, day: r.day, set: r.set.slice(), w: r.w, k: r.set.indexOf(r.w), b: r.b, c: c };
+  }
+  function load() {
+    var d = blank();
+    try {
+      var raw = window.localStorage.getItem(SAVE_KEY), p = raw ? JSON.parse(raw) : null;
+      if (p && p.v === 1) {
+        d.days = cleanDays(p.days); d.ks = cleanKs(p.ks); d.run = cleanRun(p.run);
+        if (p.free) d.free = { streak: isInt(p.free.streak, 0, 1e6) ? p.free.streak : 0, best: isInt(p.free.best, 0, 1e6) ? p.free.best : 0 };
+        d.muted = !!p.muted; d.tip = p.tip ? 1 : 0; d.years = isInt(p.years, 0, 1e7) ? p.years : 0;
+      }
+      window.localStorage.setItem(SAVE_KEY + '-probe', '1'); window.localStorage.removeItem(SAVE_KEY + '-probe');
+    } catch (e) { storageOk = false; }
+    return d;
+  }
+  var S = load();
+  function persist() { try { window.localStorage.setItem(SAVE_KEY, JSON.stringify(S)); storageOk = true; } catch (e) { storageOk = false; } }
 
   /* ---------- random ---------- */
   function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function hashStr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function shuffle(arr, rnd) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; }
+
+  /* ---------- days (UTC) ---------- */
+  function dayOf(t) { var d = new Date(t); return Math.floor((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - LAUNCH) / DAY_MS) + 1; }
+  function today() { return Math.max(1, dayOf(Date.now())); }
+  function msToNext() { var t = Date.now(), d = new Date(t); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1) - t; }
+  function hms(ms) { var s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); s %= 60; return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
+  function dateLabel(day) {
+    var d = new Date(LAUNCH + (day - 1) * DAY_MS);
+    try { return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' }); } catch (e) { return d.toISOString().slice(0, 10); }
+  }
+
+  /* The daily drop: one safe world + three others, the same for everyone. Safe worlds cycle without
+     repeats every 24 days, the others every 16 days (3 a day), each cycle in a fresh seeded order. */
+  var SAFE = WORLDS.filter(function (w) { return w.outcome === 'thrive'; });
+  var RISKY = WORLDS.filter(function (w) { return w.outcome !== 'thrive'; });
+  function dropSet(day) {
+    var i = day - 1, perRisky = Math.floor(RISKY.length / 3);
+    var cs = Math.floor(i / SAFE.length), cr = Math.floor(i / perRisky), jr = (i % perRisky) * 3;
+    var safe = shuffle(SAFE.slice(), mulberry(hashStr('qw-drop-safe-' + cs)))[i % SAFE.length];
+    var risky = shuffle(RISKY.slice(), mulberry(hashStr('qw-drop-risky-' + cr))).slice(jr, jr + 3);
+    return shuffle([safe].concat(risky), mulberry(hashStr('qw-drop-order-' + day)));
+  }
+  var lastFree = [];
+  function freeSet() {
+    var rnd = Math.random, avoid = function (w) { return lastFree.indexOf(w.slug) < 0; };
+    var safe = shuffle(SAFE.filter(avoid), rnd)[0] || SAFE[0];
+    var risky = shuffle(RISKY.filter(avoid), rnd).slice(0, 3);
+    var set = shuffle([safe].concat(risky), rnd);
+    lastFree = set.map(function (w) { return w.slug; });
+    return set;
+  }
+
+  /* ---------- endings ---------- */
+  function mistakes(w, choices) {
+    var st = STORY[w.slug], m = 0;
+    st.beats.forEach(function (b, i) { var o = b.options[choices[i]]; if (!o || !o.ok) m++; });
+    return m;
+  }
+  /* The safe world forgives everything, risky worlds one slip, doomed worlds none. */
+  function ending(w, choices) {
+    var m = mistakes(w, choices);
+    if (w.outcome === 'thrive') return m === 0 ? 0 : 1;
+    if (w.outcome === 'barely') return m <= 1 ? 1 : 2;
+    return m === 0 ? 1 : 2;
+  }
+  function bestEnding(w) { return w.outcome === 'thrive' ? 0 : 1; }
+  function endText(w, e) {
+    var alt = STORY[w.slug].alt;
+    if (w.outcome === 'thrive') return e === 0 ? w.verdict : alt;
+    if (w.outcome === 'barely') return e === 1 ? w.verdict : alt;
+    return e === 2 ? w.verdict : alt;
+  }
+  function optOrder(slug, b, n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return shuffle(a, mulberry(hashStr('qw-opt-' + slug + '-' + b))); }
+
+  /* ---------- keepsakes ---------- */
+  function rollRarity(w) {
+    var odds = w.danger >= 4 ? [45, 33, 16, 6] : w.danger >= 2 ? [55, 29, 12, 4] : [62, 27, 9, 2], r = Math.random() * 100, acc = 0;
+    for (var i = 0; i < 4; i++) { acc += odds[i]; if (r < acc) return i; }
+    return 0;
+  }
+  function sprite(slug) {
+    var c = document.createElement('canvas'); c.width = c.height = 16;
+    var k = KEEP[slug]; if (!k || !k.px) return c;
+    var g = c.getContext('2d');
+    k.px.forEach(function (row, y) { for (var x = 0; x < row.length; x++) { var col = k.pal[row[x]]; if (col) { g.fillStyle = col; g.fillRect(x, y, 1, 1); } } });
+    c.setAttribute('role', 'img'); c.setAttribute('aria-label', k.name || 'Keepsake');
+    return c;
+  }
+  function ksName(slug) { return (KEEP[slug] && KEEP[slug].name) || 'A keepsake'; }
+  function ksNote(slug) { return (KEEP[slug] && KEEP[slug].note) || ''; }
+  function ksCount() { return Object.keys(S.ks).length; }
 
   /* ---------- globe art (code-made, dithered like the channel's look) ---------- */
   var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -45,15 +172,16 @@
     }
     return (texCache[seed] = t);
   }
-  /* Draws a dithered planet into a low-res canvas `cv` (size px square). */
+  function q(v, b) { var l = Math.round(v / 255 * 21 + b); return Math.max(0, Math.min(21, l)) * 255 / 21; }
+  function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
   function drawGlobe(cv, w, rot, eerie) {
-    var S = cv.width, g = cv.getContext('2d'), pal = (w.palette || ['#6b7fd6', '#f2c46b', '#ffe6a8']).map(hexRGB);
+    var S2 = cv.width, g = cv.getContext('2d'), pal = (w.palette || ['#6b7fd6', '#f2c46b', '#ffe6a8']).map(hexRGB);
     var seed = hashStr(w.slug || w.name), tex = globeTex(seed % 997 + 1), ring = (seed % 3) === 0;
-    var img = g.createImageData(S, S), D = img.data, c = S / 2, r = S * 0.34;
+    var img = g.createImageData(S2, S2), D = img.data, c = S2 / 2, r = S2 * 0.34;
     var L = [-0.55, -0.45, 0.7], ll = Math.hypot(L[0], L[1], L[2]); L = [L[0] / ll, L[1] / ll, L[2] / ll];
     if (eerie) pal = [mix(pal[0], [40, 20, 60], 0.55), mix(pal[1], [150, 40, 60], 0.5), [255, 90, 90]];
-    for (var py = 0; py < S; py++) for (var px = 0; px < S; px++) {
-      var nx = (px + 0.5 - c) / r, ny = (py + 0.5 - c) / r, d2 = nx * nx + ny * ny, o = (py * S + px) * 4, col, a = 255;
+    for (var py = 0; py < S2; py++) for (var px = 0; px < S2; px++) {
+      var nx = (px + 0.5 - c) / r, ny = (py + 0.5 - c) / r, d2 = nx * nx + ny * ny, o = (py * S2 + px) * 4, col, a = 255;
       if (d2 > 1) {
         var dd = Math.sqrt(d2); if (dd > 1.18) { D[o + 3] = 0; continue; }
         var gl = Math.pow(1 - (dd - 1) / 0.18, 2) * 0.55; col = pal[2]; a = 255 * gl;
@@ -63,34 +191,29 @@
         var tv = tex[Math.min(63, Math.floor(v * 64)) * 128 + Math.floor(u * 128) % 128];
         var base = tv < 0.42 ? mix(pal[0], [10, 12, 30], 0.35) : tv < 0.56 ? pal[0] : tv < 0.66 ? mix(pal[0], pal[1], 0.5) : pal[1];
         if (Math.abs(ny) > 0.86) base = mix(base, [240, 240, 250], 0.6);
-        var lit = Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]), sh = 0.16 + 0.9 * lit;
-        var rim = Math.pow(1 - nz, 3) * 0.6;
+        var lit = Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]), sh = 0.16 + 0.9 * lit, rim = Math.pow(1 - nz, 3) * 0.6;
         col = [base[0] * sh + pal[2][0] * rim, base[1] * sh + pal[2][1] * rim, base[2] * sh + pal[2][2] * rim];
         if (eerie && lit < 0.12 && tv > 0.63) col = [255, 210, 120];
       }
-      var b = (BAYER[(py & 3) * 4 + (px & 3)] / 16 - 0.5) * 0.9;
-      D[o] = q(col[0], b); D[o + 1] = q(col[1], b); D[o + 2] = q(col[2], b); D[o + 3] = a;
+      var bb = (BAYER[(py & 3) * 4 + (px & 3)] / 16 - 0.5) * 0.9;
+      D[o] = q(col[0], bb); D[o + 1] = q(col[1], bb); D[o + 2] = q(col[2], bb); D[o + 3] = a;
     }
-    g.clearRect(0, 0, S, S);
+    g.clearRect(0, 0, S2, S2);
     var ringCol = 'rgba(' + pal[2].join(',') + ',0.8)';
-    if (ring) { g.save(); g.translate(c, c); g.rotate(-0.32); g.strokeStyle = ringCol; g.lineWidth = Math.max(1, S / 48); g.beginPath(); g.ellipse(0, 0, r * 1.75, r * 0.42, 0, Math.PI, Math.PI * 2); g.stroke(); g.restore(); }
+    function ringArc(a0, a1) { g.save(); g.translate(c, c); g.rotate(-0.32); g.strokeStyle = ringCol; g.lineWidth = Math.max(1, S2 / 48); g.beginPath(); g.ellipse(0, 0, r * 1.75, r * 0.42, 0, a0, a1); g.stroke(); g.restore(); }
+    if (ring) ringArc(Math.PI, Math.PI * 2);
     var tmp = drawGlobe.tmp || (drawGlobe.tmp = document.createElement('canvas'));
-    tmp.width = S; tmp.height = S; tmp.getContext('2d').putImageData(img, 0, 0); g.drawImage(tmp, 0, 0);
-    if (ring) { g.save(); g.translate(c, c); g.rotate(-0.32); g.strokeStyle = ringCol; g.lineWidth = Math.max(1, S / 48); g.beginPath(); g.ellipse(0, 0, r * 1.75, r * 0.42, 0, 0, Math.PI); g.stroke(); g.restore(); }
+    tmp.width = S2; tmp.height = S2; tmp.getContext('2d').putImageData(img, 0, 0); g.drawImage(tmp, 0, 0);
+    if (ring) ringArc(0, Math.PI);
   }
-  function q(v, b) { var l = Math.round(v / 255 * 21 + b); return Math.max(0, Math.min(21, l)) * 255 / 21; }
-  function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
 
   /* Art element for a world: our rendered still (WebP) or a code-drawn planet. */
   var imgCache = {};
-  function loadImg(src) {
-    if (imgCache[src]) return imgCache[src];
-    var im = new Image(); im.decoding = 'async'; im.src = src; imgCache[src] = im; return im;
-  }
-  function artSrc(w, which) { return 'img/' + w.slug + '-' + which + '.webp?v=1'; }
-  function artEl(w, which, alt) {
+  function loadImg(src) { if (imgCache[src]) return imgCache[src]; var im = new Image(); im.decoding = 'async'; im.src = src; imgCache[src] = im; return im; }
+  function artSrc(w, which) { return IMG_BASE + w.slug + '-' + which + '.webp?v=1'; }
+  function artEl(w, which, alt, size) {
     if (w.img) { var im = loadImg(artSrc(w, which)).cloneNode(); im.alt = alt || ''; im.draggable = false; return im; }
-    var cv = document.createElement('canvas'); cv.width = 96; cv.height = 96; cv.style.imageRendering = 'pixelated';
+    var cv = document.createElement('canvas'); cv.width = cv.height = size || 96; cv.style.imageRendering = 'pixelated';
     cv.style.background = which === 'b' ? 'radial-gradient(circle at 50% 45%, #2a1030, #0a0714 70%)' : 'radial-gradient(circle at 50% 45%, #1d2350, #0a0b1a 70%)';
     cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', alt || w.name);
     drawGlobe(cv, w, (hashStr(w.slug) % 100) / 16, which === 'b'); return cv;
@@ -104,8 +227,10 @@
     sky.width = Math.round(skyW * dpr); sky.height = Math.round(skyH * dpr); sg.setTransform(dpr, 0, 0, dpr, 0, 0);
     var n = Math.round(skyW * skyH / 3600), rnd = mulberry(7); stars = [];
     for (var i = 0; i < n; i++) stars.push({ x: rnd() * skyW, y: rnd() * skyH, r: rnd() < 0.08 ? 1.6 : 0.6 + rnd() * 0.8, p: rnd() * 6.28, s: 0.4 + rnd() * 1.4, c: rnd() < 0.15 ? '#ffd9a0' : rnd() < 0.2 ? '#bcd0ff' : '#ffffff' });
-    if (reduceMotion) drawSky(0);
+    drawSky(0);
   }
+  function neb(x, y, r, c) { var g = sg.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)'); sg.fillStyle = g; sg.fillRect(0, 0, skyW, skyH); }
+  function mixHex(a, b, t) { var m = mix(a, b, t); return 'rgb(' + (m[0] | 0) + ',' + (m[1] | 0) + ',' + (m[2] | 0) + ')'; }
   function drawSky(t) {
     mood += (moodT - mood) * 0.02;
     var g = sg.createLinearGradient(0, 0, 0, skyH);
@@ -128,83 +253,53 @@
       }
     }
   }
-  function neb(x, y, r, c) { var g = sg.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)'); sg.fillStyle = g; sg.fillRect(0, 0, skyW, skyH); }
-  function mixHex(a, b, t) { var m = mix(a, b, t); return 'rgb(' + (m[0] | 0) + ',' + (m[1] | 0) + ',' + (m[2] | 0) + ')'; }
-
-  /* menu globes: the 2x2 intro grid from the episodes */
-  var gcv = $('globes'), gg = gcv.getContext('2d'), menuWorlds = [], lowCv = [];
-  function setupMenuGlobes() {
-    var pick = shuffle(WORLDS.slice(), mulberry(Date.now() & 0xffff)).slice(0, 4);
-    menuWorlds = pick; lowCv = pick.map(function () { var c = document.createElement('canvas'); c.width = c.height = 88; return c; });
-  }
-  function drawMenu(t) {
-    var r = gcv.getBoundingClientRect(); if (!r.width) return;
-    var dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(r.width * dpr);
-    if (gcv.width !== W) { gcv.width = W; gcv.height = W; }
-    gg.clearRect(0, 0, W, W); gg.imageSmoothingEnabled = false;
-    var h = W / 2;
-    for (var i = 0; i < 4; i++) {
-      var x = (i % 2) * h, y = Math.floor(i / 2) * h;
-      drawGlobe(lowCv[i], menuWorlds[i], t * 0.00018 * (i % 2 ? 1 : -1) + i, false);
-      var bob = reduceMotion ? 0 : Math.sin(t * 0.0012 + i * 1.7) * h * 0.02;
-      gg.drawImage(lowCv[i], x + h * 0.04, y + h * 0.02 + bob, h * 0.92, h * 0.92);
-      gg.font = Math.round(h * 0.13) + 'px VT, monospace'; gg.textAlign = 'center';
-      var lab = '0' + (i + 1), tw = gg.measureText(lab).width;
-      gg.fillStyle = 'rgba(8,9,20,0.85)'; gg.fillRect(x + h / 2 - tw / 2 - h * 0.04, y + h * 0.83, tw + h * 0.08, h * 0.13);
-      gg.fillStyle = '#f5efe3'; gg.fillText(lab, x + h / 2, y + h * 0.935);
-    }
-  }
-
   var running = true, lastFrame = 0;
   function loop(t) {
     if (!running) return;
     requestAnimationFrame(loop);
-    if (t - lastFrame < 30) return; lastFrame = t;
+    if (t - lastFrame < 33) return; lastFrame = t;
     if (!reduceMotion) drawSky(t);
-    if (!$('menu').hidden && (!reduceMotion || !drawMenu.done)) { drawMenu(t); drawMenu.done = true; }
   }
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { running = false; audio.suspend(); }
-    else if (!running) { running = true; requestAnimationFrame(loop); audio.resume(); }
+    else if (!running) { running = true; requestAnimationFrame(loop); audio.resume(); tick(); }
   });
 
   /* ---------- sound (all synthesised, starts after the first tap) ---------- */
   var audio = (function () {
-    var ctx = null, master = null, padFilter = null, verbIn = null, muted = store.get('muted', false), chimeTimer = null, padNodes = [];
+    var ctx = null, master = null, padFilter = null, verbIn = null, chimeTimer = null;
     var SCALE = [196, 220, 261.6, 293.7, 329.6, 392, 440, 523.3, 587.3];
     function init() {
-      if (ctx || muted) return;
+      if (ctx || S.muted) return;
       var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
       try { ctx = new AC(); } catch (e) { ctx = null; return; }
       master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
       master.gain.linearRampToValueAtTime(0.9, ctx.currentTime + 3);
-      // simple feedback-delay "reverb"
       verbIn = ctx.createGain(); verbIn.gain.value = 0.5;
       var d1 = ctx.createDelay(1), d2 = ctx.createDelay(1), fb = ctx.createGain(), lp = ctx.createBiquadFilter();
       d1.delayTime.value = 0.31; d2.delayTime.value = 0.47; fb.gain.value = 0.42; lp.type = 'lowpass'; lp.frequency.value = 2200;
       verbIn.connect(d1); d1.connect(d2); d2.connect(lp); lp.connect(fb); fb.connect(d1); lp.connect(master);
-      // pad
       padFilter = ctx.createBiquadFilter(); padFilter.type = 'lowpass'; padFilter.frequency.value = 520; padFilter.Q.value = 0.6;
       var padGain = ctx.createGain(); padGain.gain.value = 0.05; padFilter.connect(padGain); padGain.connect(master); padGain.connect(verbIn);
       [[98, -6], [98, 7], [146.8, 0], [196, 4], [246.9, -3]].forEach(function (f) {
         var o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = f[0]; o.detune.value = f[1];
         var lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.05 + Math.random() * 0.07; lg.gain.value = 6;
-        lfo.connect(lg); lg.connect(o.detune); o.connect(padFilter); o.start(); lfo.start(); padNodes.push(o);
+        lfo.connect(lg); lg.connect(o.detune); o.connect(padFilter); o.start(); lfo.start();
       });
       scheduleChime();
     }
     function scheduleChime() {
       clearTimeout(chimeTimer);
-      chimeTimer = setTimeout(function () { if (ctx && !muted && !document.hidden) chime(SCALE[Math.floor(Math.random() * SCALE.length)] * (Math.random() < 0.3 ? 2 : 1), 0.035, 3.5); scheduleChime(); }, 2600 + Math.random() * 5200);
+      chimeTimer = setTimeout(function () { if (ctx && !S.muted && !document.hidden) chime(SCALE[Math.floor(Math.random() * SCALE.length)] * (Math.random() < 0.3 ? 2 : 1), 0.035, 3.5); scheduleChime(); }, 2600 + Math.random() * 5200);
     }
     function chime(f, g, dur, type, when) {
-      if (!ctx || muted) return;
+      if (!ctx || S.muted) return;
       var t = ctx.currentTime + (when || 0), o = ctx.createOscillator(), a = ctx.createGain();
       o.type = type || 'sine'; o.frequency.value = f; a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(g, t + 0.02); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(a); a.connect(master); a.connect(verbIn); o.start(t); o.stop(t + dur + 0.05);
     }
     function swell(f, g, dur) {
-      if (!ctx || muted) return;
+      if (!ctx || S.muted) return;
       var t = ctx.currentTime, o = ctx.createOscillator(), o2 = ctx.createOscillator(), a = ctx.createGain();
       o.type = 'sine'; o.frequency.value = f; o2.type = 'triangle'; o2.frequency.value = f * 1.5; o2.detune.value = 12;
       a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(g, t + dur * 0.4); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -212,219 +307,542 @@
     }
     function setMood(m) { if (ctx && padFilter) padFilter.frequency.setTargetAtTime(m ? 260 : 520, ctx.currentTime, 1.2); }
     return {
-      init: init, muted: function () { return muted; },
+      init: init,
       toggle: function () {
-        muted = !muted; store.set('muted', muted);
-        if (muted) { if (ctx) { master.gain.setTargetAtTime(0, ctx.currentTime, 0.1); setTimeout(function () { if (muted && ctx) ctx.suspend(); }, 400); } }
+        S.muted = !S.muted; persist();
+        if (S.muted) { if (ctx) { master.gain.setTargetAtTime(0, ctx.currentTime, 0.1); setTimeout(function () { if (S.muted && ctx) ctx.suspend(); }, 400); } }
         else { if (!ctx) init(); else { ctx.resume(); master.gain.setTargetAtTime(0.9, ctx.currentTime, 0.4); } }
-        return muted;
       },
-      suspend: function () { if (ctx) ctx.suspend(); }, resume: function () { if (ctx && !muted) ctx.resume(); },
+      suspend: function () { if (ctx) ctx.suspend(); }, resume: function () { if (ctx && !S.muted) ctx.resume(); },
       select: function (i) { chime(SCALE[[2, 3, 4, 5][i] || 4], 0.06, 0.9); },
       confirm: function () { chime(392, 0.05, 1.2); chime(587.3, 0.04, 1.4, 'sine', 0.09); },
-      but: function () { setMood(1); swell(55, 0.16, 3.2); chime(110, 0.05, 2.5, 'triangle'); },
+      choice: function (eerie) { setMood(eerie ? 1 : 0); chime(eerie ? 233.1 : 440, 0.045, 1.4, eerie ? 'triangle' : 'sine'); if (eerie) swell(55, 0.1, 2.4); },
       tick: function (i) { chime(300 + i * 70, 0.04, 0.25, 'square'); },
-      outcome: function (o) {
+      outcome: function (e) {
         setMood(0);
-        if (o === 'thrive') { [392, 493.9, 587.3, 784].forEach(function (f, i) { chime(f, 0.06, 2.2, 'sine', i * 0.12); }); }
-        else if (o === 'barely') { chime(293.7, 0.06, 2, 'sine'); chime(392, 0.05, 2.2, 'sine', 0.22); chime(415.3, 0.03, 2, 'triangle', 0.45); }
+        if (e === 0) { [392, 493.9, 587.3, 784].forEach(function (f, i) { chime(f, 0.06, 2.2, 'sine', i * 0.12); }); }
+        else if (e === 1) { chime(293.7, 0.06, 2, 'sine'); chime(392, 0.05, 2.2, 'sine', 0.22); chime(440, 0.04, 2, 'sine', 0.45); }
         else { swell(41.2, 0.2, 3.5); chime(233.1, 0.05, 2.5, 'triangle', 0.1); chime(220, 0.05, 3, 'triangle', 0.5); }
       },
-      end: function () { [261.6, 329.6, 392, 523.3, 659.3].forEach(function (f, i) { chime(f, 0.05, 2.6, 'sine', i * 0.16); }); }
+      found: function () { [523.3, 659.3, 784, 1046.5].forEach(function (f, i) { chime(f, 0.05, 1.8, 'sine', 0.6 + i * 0.1); }); }
     };
   })();
-  function syncMuteIcon() { var m = audio.muted(); $('sndOn').style.display = m ? 'none' : ''; $('sndOff').style.display = m ? '' : 'none'; $('bMute').setAttribute('aria-pressed', String(!m)); }
+  function syncMuteIcon() { var m = S.muted; $('sndOn').style.display = m ? 'none' : ''; $('sndOff').style.display = m ? '' : 'none'; $('bMute').setAttribute('aria-pressed', String(!m)); }
   $('bMute').addEventListener('click', function () { audio.toggle(); syncMuteIcon(); });
   document.addEventListener('pointerdown', function first() { audio.init(); document.removeEventListener('pointerdown', first, true); }, true);
   document.addEventListener('keydown', function firstk() { audio.init(); document.removeEventListener('keydown', firstk, true); }, true);
 
-  /* ---------- game ---------- */
-  var DAILY_N = 5, CLASSIC_N = 10, EPOCH = Date.UTC(2026, 10, 13);
-  var OUT = { thrive: 'YOU THRIVED', barely: 'BARELY SURVIVED', doomed: "DIDN'T MAKE IT" };
-  var OUT_SHORT = { thrive: 'THRIVED', barely: 'BARELY', doomed: 'LOST' };
-  var ASK = [['Choose a Planet', 'You must survive 1 year here'], ['Pick a World', 'You must survive 1 year here'], ['Select a Planet', 'Survive one whole year'], ['Choose a World', 'You must live here for a year']];
-  var G = null, selIdx = -1, revealTimers = [], revealDone = false;
-
-  function todayKey() { var d = new Date(); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); }
-  function dailyNum() { var d = new Date(); return Math.floor((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - EPOCH) / 864e5) + 1; }
-
-  function buildRounds(n, rnd, preferUnseen) {
-    var seen = preferUnseen ? store.get('seen', {}) : {};
-    function ordered(list) {
-      var a = shuffle(list.slice(), rnd);
-      if (preferUnseen) a.sort(function (x, y) { return (seen[x.slug] ? 1 : 0) - (seen[y.slug] ? 1 : 0); });
-      return a;
-    }
-    var safe = ordered(WORLDS.filter(function (w) { return w.outcome === 'thrive'; }));
-    var doom = ordered(WORLDS.filter(function (w) { return w.outcome === 'doomed'; }));
-    var bar = ordered(WORLDS.filter(function (w) { return w.outcome === 'barely'; }));
-    var rounds = [];
-    for (var i = 0; i < n; i++) {
-      var set = [safe.shift(), doom.shift()];
-      for (var k = 0; k < 2; k++) {
-        var useBar = bar.length && (rnd() < 0.62 || !doom.length);
-        set.push(useBar ? bar.shift() : doom.shift());
-      }
-      rounds.push(shuffle(set.filter(Boolean), rnd));
-    }
-    return rounds;
+  /* ---------- "% of players picked this" ---------- */
+  var VOTES = {}, voteWaiters = [];
+  function votes(w, day) { var v = VOTES[w + ':' + day]; return v && typeof v === 'object' ? v : null; }
+  function fetchVotes(w, day) {
+    var key = w + ':' + day;
+    if (VOTES[key]) return;
+    if (!window.fetch || !/^https?:$/.test(location.protocol)) { VOTES[key] = 'fail'; return; }
+    VOTES[key] = 'loading';
+    var url = VOTES_API + '?w=' + encodeURIComponent(w) + '&day=' + day + (stats.test ? '&beta=1' : '');
+    var done = function (v) { VOTES[key] = v; var ws = voteWaiters; voteWaiters = []; ws.forEach(function (f) { try { f(); } catch (e) {} }); };
+    try {
+      fetch(url, { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { done(j && j.ok ? j : 'fail'); }, function () { done('fail'); });
+    } catch (e) { done('fail'); }
   }
+  function whenVotes(fn) { voteWaiters.push(fn); }
+  function vote(name, data) { if (R && R.off) stats.track(name, data); }
 
+  /* ---------- screens + navigation ---------- */
+  var SCREENS = ['start', 'drop', 'year', 'end', 'past', 'shelf'], current = 'start', histPushed = false, ignorePop = false;
   function show(id) {
-    ['menu', 'round', 'reveal', 'end'].forEach(function (s) { $(s).hidden = s !== id; });
-    document.body.classList.toggle('ingame', id === 'round' || id === 'reveal');
+    SCREENS.forEach(function (s) { $(s).hidden = s !== id; });
+    current = id;
+    document.body.classList.toggle('ingame', id !== 'start');
+    if (id !== 'start' && !histPushed) { try { history.pushState({ qw: 1 }, ''); histPushed = true; } catch (e) {} }
     window.scrollTo(0, 0);
   }
-  function setProg() {
-    if (!G) { $('prog').textContent = ''; return; }
-    var idx = Math.min(G.i + 1, G.rounds.length);
-    $('prog').innerHTML = (G.mode === 'daily' ? 'Daily ' : 'World ') + '<b>' + idx + '/' + G.rounds.length + '</b> &middot; Streak <b>' + G.streak + '</b>';
+  function setProg(html) { $('prog').innerHTML = html || ''; }
+  function goStart() {
+    clearTimers(); closeSheets(); moodT = 0; R = null; D = null;
+    if (histPushed) { histPushed = false; ignorePop = true; try { history.back(); } catch (e) { ignorePop = false; } }
+    setProg(''); refreshStart(); show('start');
+  }
+  window.addEventListener('popstate', function () {
+    if (ignorePop) { ignorePop = false; return; }
+    histPushed = false;
+    if (openSheet()) { closeSheets(); if (current !== 'start') { try { history.pushState({ qw: 1 }, ''); histPushed = true; } catch (e) {} } return; }
+    if (current !== 'start') goStart();
+  });
+
+  /* ---------- start ---------- */
+  function refreshStart() {
+    var t = today(), done = S.days[t], line = $('stLine'), btn = $('bToday');
+    if (S.run) {
+      var w = BY[S.run.w], st = STORY[S.run.w], b = S.run.b;
+      line.textContent = 'Your year on ' + w.name + ' is waiting. Day ' + (b < 0 ? 1 : st.beats[b].day) + ' of 365.';
+      btn.textContent = 'Continue your year';
+    } else if (done) {
+      line.innerHTML = '';
+      line.appendChild(document.createTextNode('You ' + END_WORD[done.e] + ' ' + BY[done.w].name + ' today. Next four planets in '));
+      var b2 = document.createElement('b'); b2.className = 'cdv'; b2.textContent = hms(msToNext()); line.appendChild(b2);
+      line.appendChild(document.createTextNode('.'));
+      btn.textContent = "Explore today's planets";
+    } else {
+      line.textContent = 'Four new planets every day. Only one is safe. Survive a year.';
+      btn.textContent = "See today's planets";
+    }
+    renderedDay = t;
   }
 
-  function start(mode) {
-    var rnd = mode === 'daily' ? mulberry(hashStr('qw-daily-' + todayKey())) : mulberry((Math.random() * 4294967296) >>> 0);
-    var n = mode === 'daily' ? DAILY_N : CLASSIC_N;
-    G = { mode: mode, rounds: buildRounds(n, rnd, mode !== 'daily'), i: 0, res: [], streak: 0, bestStreak: 0, day: todayKey() };
-    G.rounds.forEach(function (r, k) { if (k < 2) r.forEach(preload); });
-    showRound();
+  /* ---------- drop: four planets ---------- */
+  var D = null, R = null;
+  function openToday() {
+    if (S.run) { R = S.run; R.k = R.set.indexOf(R.w); fetchVotes(R.w, R.day); showYear(); return; }
+    openDrop(today(), 'drop');
   }
-
-  function showRound() {
-    var set = G.rounds[G.i], grid = $('grid'), ask = ASK[G.i % ASK.length];
-    selIdx = -1; grid.innerHTML = ''; grid.classList.remove('picked');
-    $('askL1').textContent = ask[0]; $('askL2').textContent = ask[1];
+  function openDrop(day, m) {
+    var set = m === 'free' ? freeSet() : dropSet(day);
+    D = { m: m, day: day, set: set, sel: -1 };
+    set.forEach(preload);
+    var mine = m !== 'free' && S.days[day] ? S.days[day] : null;
+    var l1 = $('dropL1'), l2 = $('dropL2'), sub = $('dropSub'), note = $('dropNote');
+    sub.innerHTML = ''; note.hidden = true;
+    if (m === 'free') {
+      l1.textContent = 'Free play'; l2.textContent = 'One of these is safe. Survive a year.';
+      sub.textContent = 'Practice. Years survived in a row: ' + S.free.streak + ' (best ' + S.free.best + ')';
+      setProg('Free play');
+    } else if (m === 'drop') {
+      l1.textContent = "Today's four planets"; l2.textContent = 'Exactly one is safe. Survive a year.';
+      sub.appendChild(document.createTextNode('Day #' + day + ' · next four planets in '));
+      var b = document.createElement('b'); b.className = 'cdv'; b.textContent = hms(msToNext()); sub.appendChild(b);
+      setProg('Day <b>#' + day + '</b>');
+    } else {
+      l1.textContent = 'Day #' + day + ' · ' + dateLabel(day); l2.textContent = 'Exactly one is safe. Survive a year.';
+      sub.textContent = 'Practice: keepsakes only drop on the day itself.';
+      setProg('Past · Day <b>#' + day + '</b>');
+    }
+    if (mine) {
+      note.textContent = 'You ' + END_WORD[mine.e] + ' ' + BY[mine.w].name + (m === 'drop' ? ' today' : ' that day') + '. Other years here are practice.';
+      note.hidden = false;
+    }
+    var grid = $('grid'); grid.innerHTML = ''; grid.classList.remove('picked');
     set.forEach(function (w, k) {
-      var b = document.createElement('button'); b.className = 'card'; b.type = 'button';
-      b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', 'false');
-      b.setAttribute('aria-label', 'Planet ' + (k + 1) + ': ' + w.name + '. ' + w.promise);
+      var b2 = document.createElement('button'); b2.className = 'card'; b2.type = 'button';
+      b2.setAttribute('role', 'radio'); b2.setAttribute('aria-checked', 'false');
+      b2.setAttribute('aria-label', 'Planet ' + (k + 1) + ': ' + w.name + '. ' + w.promise);
       var pic = document.createElement('div'); pic.className = 'pic'; pic.appendChild(artEl(w, 'a', ''));
       var num = document.createElement('span'); num.className = 'num'; num.textContent = '0' + (k + 1); pic.appendChild(num);
+      if (mine && mine.w === w.slug) { var mn = document.createElement('span'); mn.className = 'mine'; mn.textContent = 'YOUR PICK'; pic.appendChild(mn); }
       var tx = document.createElement('div'); tx.className = 'txt';
       var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = w.name;
       var pr = document.createElement('div'); pr.className = 'pr'; pr.textContent = w.promise;
-      tx.appendChild(nm); tx.appendChild(pr); b.appendChild(pic); b.appendChild(tx);
-      b.addEventListener('click', function () { select(k); });
-      grid.appendChild(b);
+      tx.appendChild(nm); tx.appendChild(pr); b2.appendChild(pic); b2.appendChild(tx);
+      b2.addEventListener('click', function () { selectPlanet(k); });
+      grid.appendChild(b2);
     });
     $('bChoose').disabled = true; $('bChoose').textContent = 'Pick a planet';
-    $('hint').textContent = G.i === 0 ? 'Tap a planet to read it, then confirm.' : 'One of these four is safe.';
-    if (G.rounds[G.i + 1]) G.rounds[G.i + 1].forEach(preload);
-    setProg(); show('round');
+    show('drop');
   }
-  function select(k) {
-    selIdx = k; var cards = $('grid').children;
+  function selectPlanet(k) {
+    if (!D) return;
+    D.sel = k; var cards = $('grid').children;
     for (var i = 0; i < cards.length; i++) { cards[i].classList.toggle('sel', i === k); cards[i].setAttribute('aria-checked', String(i === k)); }
     $('grid').classList.add('picked');
-    var w = G.rounds[G.i][k]; $('bChoose').disabled = false; $('bChoose').textContent = 'Live on ' + w.name + ' for a year';
+    $('bChoose').disabled = false; $('bChoose').textContent = 'Live on ' + D.set[k].name + ' for a year';
     audio.select(k);
   }
-
-  function clearReveal() { revealTimers.forEach(clearTimeout); revealTimers = []; }
-  function at(ms, fn) { revealTimers.push(setTimeout(fn, reduceMotion ? Math.min(ms, 120) : ms)); }
-
-  function choose() {
-    if (selIdx < 0 || !G) return;
-    var set = G.rounds[G.i], w = set[selIdx], res = { w: w, k: selIdx, set: set };
-    G.res.push(res);
-    if (w.outcome === 'doomed') G.streak = 0; else { G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak); }
-    if (G.mode !== 'daily') { var seen = store.get('seen', {}); set.forEach(function (x) { seen[x.slug] = 1; }); store.set('seen', seen); }
-    audio.confirm(); reveal(res);
+  function confirmPlanet() {
+    if (!D || D.sel < 0) return;
+    var w = D.set[D.sel], t = today();
+    var off = D.m === 'drop' && D.day === t && !S.days[t] && !S.run;
+    R = { m: D.m, off: off, day: D.day, set: D.set.map(function (x) { return x.slug; }), w: w.slug, k: D.sel, b: -1, c: [] };
+    if (off) { S.run = R; persist(); }
+    stats.track('play', {});
+    stats.track('level', { m: D.m === 'drop' ? 'daily' : 'classic', n: D.day });
+    vote('qw_pick', { w: w.slug, day: R.day });
+    fetchVotes(w.slug, R.m === 'free' ? t : R.day);
+    audio.confirm();
+    showYear();
   }
 
-  function reveal(res) {
-    var w = res.w; clearReveal(); revealDone = false;
+  /* ---------- the year ---------- */
+  function runLabel() { return R.m === 'free' ? 'Free play' : R.off ? 'Day #' + R.day : R.m === 'drop' ? 'Practice' : 'Past #' + R.day; }
+  function showYear() {
+    var w = BY[R.w], st = STORY[R.w];
+    var pic = $('yPic'); Array.prototype.slice.call(pic.querySelectorAll('img,canvas')).forEach(function (n) { n.remove(); });
+    pic.insertBefore(artEl(w, 'a', w.name), pic.firstChild);
+    $('yName').textContent = w.name;
+    var tr = $('yTrack'); Array.prototype.slice.call(tr.querySelectorAll('.mk')).forEach(function (n) { n.remove(); });
+    st.beats.forEach(function (b) { var mk = document.createElement('i'); mk.className = 'mk'; mk.style.left = (b.day / YEAR * 100) + '%'; tr.appendChild(mk); });
+    setProg(runLabel() + ' · <b>' + escapeHtml(w.name) + '</b>');
+    show('year');
+    renderBeat();
+  }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function renderBeat() {
+    var w = BY[R.w], st = STORY[R.w], b = R.b, opts = $('yOpts');
+    opts.innerHTML = ''; opts.className = 'opts'; $('yRes').textContent = ''; $('yCrowd').textContent = '';
+    var day = b < 0 ? 1 : st.beats[b].day;
+    $('yDay').textContent = 'DAY ' + day;
+    $('yFill').style.width = (day / YEAR * 100) + '%';
+    Array.prototype.forEach.call($('yTrack').querySelectorAll('.mk'), function (mk, i) { mk.classList.toggle('done', i < b || (i === b && R.c[b] != null)); });
+    var img = $('yPic').querySelector('img,canvas');
+    if (img) img.style.filter = b < 1 ? '' : b === 1 ? 'saturate(.9) brightness(.92)' : 'saturate(.78) brightness(.84) hue-rotate(-8deg)';
+    if (b < 0) {
+      $('yText').textContent = st.arrive;
+      $('yNext').textContent = 'Begin the year';
+      $('yNextWrap').hidden = false;
+      if (R.m !== 'free') { showPickShare(); whenVotes(function () { if (R && R.b < 0 && current === 'year') showPickShare(); }); }
+      return;
+    }
+    var beat = st.beats[b];
+    $('yText').textContent = beat.text;
+    optOrder(R.w, b, beat.options.length).forEach(function (oi, pos) {
+      var o = beat.options[oi], btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'opt'; btn.dataset.o = oi;
+      btn.innerHTML = '<span class="bar"></span><span class="lab"></span><span class="pct"></span>';
+      btn.querySelector('.lab').textContent = o.t;
+      btn.setAttribute('aria-keyshortcuts', String(pos + 1));
+      btn.addEventListener('click', function () { chooseOption(oi); });
+      opts.appendChild(btn);
+    });
+    if (R.c[b] != null) { markChosen(); } else { $('yNextWrap').hidden = true; }
+  }
+  function showPickShare() {
+    var v = votes(R.w, R.day), el = $('yCrowd'), w = BY[R.w];
+    if (!v) { el.textContent = ''; return; }
+    var p = v.pick && v.pick.pct ? v.pick.pct[R.w] : null;
+    el.textContent = v.pick && v.pick.pct ? (p || 0) + '% of players picked ' + w.name + (R.day === today() ? ' today.' : ' on day #' + R.day + '.') : '';
+  }
+  function chooseOption(oi) {
+    var b = R.b; if (b < 0 || R.c[b] != null) return;
+    R.c[b] = oi;
+    if (R.off) { S.run = R; persist(); }
+    vote('qw_choice', { w: R.w, b: b + 1, o: oi });
+    var o = STORY[R.w].beats[b].options[oi];
+    audio.choice(!o.ok);
+    markChosen();
+    setTimeout(function () {
+      try { var r = $('yNextWrap').getBoundingClientRect(); if (r.bottom > window.innerHeight) $('yNextWrap').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'end' }); } catch (e) {}
+    }, 120);
+  }
+  function markChosen() {
+    var b = R.b, oi = R.c[b], beat = STORY[R.w].beats[b], opts = $('yOpts');
+    opts.classList.add('done');
+    Array.prototype.forEach.call(opts.children, function (btn) {
+      btn.disabled = true;
+      if (+btn.dataset.o === oi) { btn.classList.add('chosen'); btn.setAttribute('aria-pressed', 'true'); }
+    });
+    $('yRes').textContent = beat.options[oi].r;
+    $('yNext').textContent = b < 2 ? 'Continue' : 'See day 365';
+    $('yNextWrap').hidden = false;
+    Array.prototype.forEach.call($('yTrack').querySelectorAll('.mk'), function (mk, i) { mk.classList.toggle('done', i <= b); });
+    showBeatShares();
+    whenVotes(function () { if (R && R.b === b && current === 'year') showBeatShares(); });
+  }
+  function showBeatShares() {
+    var b = R.b, oi = R.c[b], v = votes(R.w, R.m === 'free' ? today() : R.day), opts = $('yOpts'), el = $('yCrowd');
+    var raw = VOTES[R.w + ':' + (R.m === 'free' ? today() : R.day)];
+    if (raw === 'loading') { el.textContent = ''; return; }
+    var pct = v && v.beats && v.beats[b] ? v.beats[b].pct : null;
+    if (!pct) { el.textContent = 'Too few players have been here yet. You are one of the first.'; return; }
+    opts.classList.add('shown');
+    Array.prototype.forEach.call(opts.children, function (btn) {
+      var p = pct[+btn.dataset.o] || 0;
+      btn.querySelector('.pct').textContent = p + '%';
+      btn.querySelector('.bar').style.width = p + '%';
+      btn.setAttribute('aria-label', btn.querySelector('.lab').textContent + ', ' + p + '% of players');
+    });
+    el.textContent = (pct[oi] || 0) + '% of players chose the same.';
+  }
+  function nextBeat() {
+    if (!R) return;
+    if (R.b >= 0 && R.c[R.b] == null) return;
+    if (R.b < 2) { R.b++; if (R.off) { S.run = R; persist(); } renderBeat(); window.scrollTo(0, 0); return; }
+    finishYear();
+  }
+
+  /* ---------- day 365 ---------- */
+  var timers = [], endDone = false;
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+  function at(ms, fn) { timers.push(setTimeout(fn, reduceMotion ? Math.min(ms, 80) : ms)); }
+  function finishYear() {
+    var w = BY[R.w], e = ending(w, R.c);
+    R.e = e; R.ks = '';
+    if (R.off) {
+      S.days[R.day] = { w: R.w, e: e, c: R.c.slice() }; S.run = null;
+      if (e === bestEnding(w)) {
+        if (S.ks[R.w]) R.ks = 'have';
+        else { S.ks[R.w] = { r: rollRarity(w), d: R.day, t: Date.now() }; R.ks = 'new'; }
+      } else R.ks = 'missed';
+      vote('qw_end', { w: R.w, r: e, day: R.day });
+    } else R.ks = R.m === 'free' ? 'free' : 'practice';
+    if (R.m === 'free') { if (e < 2) { S.free.streak++; S.free.best = Math.max(S.free.best, S.free.streak); } else S.free.streak = 0; }
+    S.years++;
+    persist();
+    stats.track('result', { m: R.m === 'drop' && R.off ? 'daily' : 'classic', n: R.day, won: e === bestEnding(w) ? 1 : 0, sc: e });
+    showEnd();
+  }
+  function showEnd() {
+    var w = BY[R.w], e = R.e; clearTimers(); endDone = false;
     var pic = $('rvPic'); pic.classList.remove('secret');
     Array.prototype.slice.call(pic.querySelectorAll('img,canvas')).forEach(function (n) { n.remove(); });
     var a = artEl(w, 'a', w.name), b = artEl(w, 'b', 'The secret of ' + w.name); a.classList.add('a'); b.classList.add('b');
     pic.insertBefore(b, pic.firstChild); pic.insertBefore(a, pic.firstChild);
-    $('rvTag').textContent = '0' + (res.k + 1);
-    $('rvName').textContent = w.name; $('rvPromise').textContent = w.promise;
-    var sec = $('rvSecret'); sec.innerHTML = '';
-    var parts = w.secret.match(/[^.!?]+[.!?]+["']?\s*|[^.!?]+$/g) || [w.secret];
-    parts.forEach(function (p) { var s = document.createElement('span'); s.textContent = p.trim() + ' '; sec.appendChild(s); });
-    $('rvRule').textContent = w.rule;
+    $('rvStamp').className = 'stamp e' + e; $('rvSt').textContent = END_STAMP[e]; $('rvVerdict').textContent = endText(w, e);
+    $('rvName').textContent = w.name; $('rvSecret').textContent = w.secret; $('rvRule').textContent = 'The rule: ' + w.rule;
     var blocks = $('rvMeter').querySelectorAll('i'); for (var i = 0; i < 5; i++) blocks[i].className = '';
-    var st = $('rvStamp'); st.className = 'stamp ' + w.outcome; $('rvSt').textContent = OUT[w.outcome]; $('rvVerdict').textContent = w.verdict;
+    renderEndCrowd(); whenVotes(function () { if (current === 'end' && R) renderEndCrowd(); });
+    renderEndKs();
     var ol = $('rvOtherList'); ol.innerHTML = '';
-    res.set.forEach(function (x, k) {
-      if (k === res.k) return;
-      var li = document.createElement('li'), bb = document.createElement('b'), o = document.createElement('span');
-      bb.textContent = x.name; o.className = 'o ' + x.outcome; o.textContent = OUT_SHORT[x.outcome] === 'LOST' ? 'DOOMED' : x.outcome === 'thrive' ? 'THE SAFE ONE' : 'SURVIVABLE';
+    R.set.forEach(function (s) {
+      if (s === R.w) return;
+      var x = BY[s], li = document.createElement('li'), bb = document.createElement('b'), o = document.createElement('span');
+      bb.textContent = x.name; o.className = 'o ' + x.outcome; o.textContent = x.outcome === 'thrive' ? 'THE SAFE ONE' : x.outcome === 'barely' ? 'RISKY' : 'DOOMED';
       li.appendChild(bb); li.appendChild(document.createTextNode(x.secret + ' ')); li.appendChild(o); ol.appendChild(li);
     });
     $('rvOthers').open = false;
-    ['rvBut', 'rvRule', 'rvMeter', 'rvStamp', 'rvOthers', 'rvNext'].forEach(function (id) { $(id).classList.remove('on1'); });
-    $('bNext').textContent = G.i + 1 >= G.rounds.length ? 'See my year' : 'Next round';
+    $('rvTip').hidden = !(R.off && !S.tip && !isStandalone());
+    setEndButtons();
+    ['rvSecretWrap', 'rvRest'].forEach(function (id) { $(id).classList.remove('on'); });
     $('bSkip').hidden = false;
-    setProg(); show('reveal');
-    at(1300, function () { $('rvBut').classList.add('on1'); audio.but(); moodT = 1; });
-    at(2300, function () { pic.classList.add('secret'); });
-    var t = 2700, spans = sec.children;
-    for (var j = 0; j < spans.length; j++) (function (sp) { at(t, function () { sp.classList.add('on'); }); t += 1500; })(spans[j]);
-    at(t, function () { $('rvRule').classList.add('on1'); }); t += 900;
-    at(t, function () { $('rvMeter').classList.add('on1'); });
-    for (var m = 0; m < w.danger; m++) (function (m) { at(t + 200 + m * 220, function () { blocks[m].className = 'f' + w.danger; audio.tick(m); }); })(m);
-    t += 300 + w.danger * 220 + 400;
-    at(t, finishReveal);
+    setProg(runLabel() + ' · <b>' + escapeHtml(w.name) + '</b>');
+    show('end');
+    audio.outcome(e);
+    at(900, function () { pic.classList.add('secret'); moodT = e === 2 ? 1 : 0; });
+    at(1500, function () { $('rvSecretWrap').classList.add('on'); });
+    for (var m = 0; m < w.danger; m++) (function (m) { at(1900 + m * 200, function () { blocks[m].className = 'f' + w.danger; audio.tick(m); }); })(m);
+    at(2100 + w.danger * 200, finishEnd);
   }
-  function finishReveal() {
-    if (revealDone) return; revealDone = true; clearReveal();
-    var w = G.res[G.res.length - 1].w, blocks = $('rvMeter').querySelectorAll('i');
+  function finishEnd() {
+    if (endDone) return; endDone = true; clearTimers();
+    var w = BY[R.w], blocks = $('rvMeter').querySelectorAll('i');
     $('rvPic').classList.add('secret');
-    Array.prototype.forEach.call($('rvSecret').children, function (s) { s.classList.add('on'); });
     for (var m = 0; m < 5; m++) blocks[m].className = m < w.danger ? 'f' + w.danger : '';
-    ['rvBut', 'rvRule', 'rvMeter', 'rvStamp', 'rvOthers', 'rvNext'].forEach(function (id) { $(id).classList.add('on1'); });
+    $('rvSecretWrap').classList.add('on'); $('rvRest').classList.add('on');
     $('bSkip').hidden = true; moodT = 0;
-    audio.outcome(w.outcome); setProg();
-    setTimeout(function () {
-      try { $('bNext').focus({ preventScroll: true }); } catch (e) {}
-      var r = $('rvStamp').getBoundingClientRect();
-      if (r.bottom > window.innerHeight) try { $('rvStamp').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' }); } catch (e) {}
-    }, 400);
+    if (R.ks === 'new') { $('rvKs').classList.add('new'); audio.found(); }
+    tick();
   }
-  function next() {
-    if (!revealDone) { finishReveal(); return; }
-    G.i++;
-    if (G.i >= G.rounds.length) endGame(); else showRound();
+  function renderEndCrowd() {
+    var el = $('rvCrowd'), v = votes(R.w, R.m === 'free' ? today() : R.day), raw = VOTES[R.w + ':' + (R.m === 'free' ? today() : R.day)];
+    el.innerHTML = '<h3>How other players\' years ended here</h3>';
+    var pct = v && v.end ? v.end.pct : null;
+    if (!pct) {
+      var p = document.createElement('p'); p.className = 'few';
+      p.textContent = raw === 'loading' ? 'Checking...' : 'Not enough players have finished a year here yet. You are one of the first.';
+      el.appendChild(p); return;
+    }
+    ['thrived', 'survived', 'lost'].forEach(function (k, i) {
+      var row = document.createElement('div'); row.className = 'cbar e' + i + (i === R.e ? ' me' : '');
+      var lab = document.createElement('span'); lab.textContent = END_SHORT[i] + (i === R.e ? ' (you)' : '');
+      var num = document.createElement('b'); num.textContent = (pct[k] || 0) + '%';
+      var t = document.createElement('span'); t.className = 't'; var fill = document.createElement('i'); t.appendChild(fill);
+      row.appendChild(lab); row.appendChild(num); row.appendChild(t); el.appendChild(row);
+      requestAnimationFrame(function () { fill.style.width = (pct[k] || 0) + '%'; });
+    });
+  }
+  function renderEndKs() {
+    var box = $('rvKs'), w = BY[R.w], k = S.ks[R.w], found = R.ks === 'new' || R.ks === 'have';
+    box.className = 'ks' + (found ? ' found rar' + k.r : ' lost');
+    box.innerHTML = '<div class="spr"></div><div class="kt"><h3></h3><div class="kn"></div><p class="kd"></p></div>';
+    box.querySelector('.spr').appendChild(sprite(R.w));
+    var h = box.querySelector('h3'), kn = box.querySelector('.kn'), kd = box.querySelector('.kd');
+    if (R.ks === 'new') { h.textContent = 'Keepsake found · ' + RAR[k.r]; kn.textContent = ksName(R.w); kd.textContent = ksNote(R.w); }
+    else if (R.ks === 'have') { h.textContent = 'Already on your shelf · ' + RAR[k.r]; kn.textContent = ksName(R.w); kd.textContent = 'Rarity is rolled once, so yours stays ' + RAR[k.r].toLowerCase() + '.'; }
+    else {
+      h.textContent = 'A keepsake was hidden here';
+      kn.textContent = k ? ksName(R.w) : '???';
+      kd.textContent = R.ks === 'missed' ? 'Reach ' + w.name + "'s best ending on a day it drops to find it." :
+        R.ks === 'free' ? 'Free play is practice. Keepsakes only drop on daily planets.' :
+        'This was practice. Keepsakes only drop on your first planet of the day.';
+      if (k) { box.className = 'ks found rar' + k.r; kd.textContent = 'You found this one before (' + RAR[k.r].toLowerCase() + ').'; h.textContent = 'On your shelf'; }
+    }
+  }
+  function setEndButtons() {
+    var main = $('bEndMain'), a = $('bEndA'), b = $('bEndB'), cd = $('rvCd');
+    cd.innerHTML = '';
+    if (R.m === 'free') {
+      main.textContent = 'Next planet'; main.onclick = function () { openDrop(today(), 'free'); };
+      a.textContent = 'Share'; a.onclick = share;
+      cd.textContent = 'Years survived in a row: ' + S.free.streak + ' (best ' + S.free.best + ')';
+    } else {
+      main.textContent = 'Share my year'; main.onclick = share;
+      if (R.m === 'past') { a.textContent = 'Past planets'; a.onclick = function () { openPast(); }; }
+      else { a.textContent = 'Other planets'; a.onclick = function () { openDrop(today(), 'drop'); }; }
+      cd.appendChild(document.createTextNode('Next four planets in '));
+      var bb = document.createElement('b'); bb.className = 'cdv'; bb.textContent = hms(msToNext()); cd.appendChild(bb);
+    }
+    b.textContent = 'Home'; b.onclick = goStart;
   }
 
-  var RANKS = [
-    [1, 'Keeper of Quiet Worlds', 'Every planet tried to keep you. None of them managed it.'],
-    [0.8, 'Seasoned Traveller', 'You read between the lines. The planets noticed.'],
-    [0.6, 'Careful Wanderer', 'Mostly sensible choices, and only a few doors you should not have opened.'],
-    [0.4, 'Lucky Tourist', 'Some years went well. Some years went somewhere else entirely.'],
-    [0.2, 'Lantern in the Dark', 'Brave, warm, and far too trusting of cosy cottages.'],
-    [0, 'Gone but Remembered', 'Every planet you picked is still talking about you. Fondly.']
-  ];
-  function summary() {
-    var n = G.res.length, surv = 0, thr = 0;
-    G.res.forEach(function (r) { if (r.w.outcome !== 'doomed') surv++; if (r.w.outcome === 'thrive') thr++; });
-    var f = n ? surv / n : 0, rank = RANKS[RANKS.length - 1];
-    for (var i = 0; i < RANKS.length; i++) if (f >= RANKS[i][0] - 1e-9) { rank = RANKS[i]; break; }
-    return { n: n, surv: surv, thr: thr, rank: rank };
-  }
-  function endGame() {
-    var s = summary(); audio.end();
-    $('prog').textContent = '';
-    $('endKick').textContent = G.mode === 'daily' ? 'DAILY CHALLENGE #' + dailyNum() : 'ONE YEAR LATER';
-    $('endBig').textContent = 'Survived ' + s.surv + ' of ' + s.n;
-    $('endRank').textContent = s.rank[1];
-    $('endDesc').textContent = s.rank[2] + ' Thrived on ' + s.thr + ', best streak ' + G.bestStreak + '.';
-    var tr = $('endTrail'); tr.innerHTML = ''; tr.style.gridTemplateColumns = 'repeat(5, 1fr)';
-    G.res.forEach(function (r) {
-      var d = document.createElement('div'); d.className = r.w.outcome; d.title = r.w.name + ': ' + OUT[r.w.outcome];
-      d.appendChild(artEl(r.w, 'b', r.w.name + ', ' + OUT[r.w.outcome]));
-      var i = document.createElement('i'); i.textContent = OUT_SHORT[r.w.outcome]; d.appendChild(i); tr.appendChild(d);
-    });
-    if (G.mode === 'daily') {
-      var key = 'daily-' + G.day; if (!store.get(key, null)) store.set(key, { s: s.surv, n: s.n, o: G.res.map(function (r) { return r.w.outcome[0]; }).join('') });
-    } else {
-      var best = store.get('best', 0); if (s.surv > best) store.set('best', s.surv);
-      store.set('games', store.get('games', 0) + 1);
+  /* ---------- past planets ---------- */
+  var pastShown = 30;
+  function openPast() { pastShown = 30; renderPast(); setProg(''); show('past'); }
+  function renderPast() {
+    var list = $('pastList'), t = today(); list.innerHTML = '';
+    if (t <= 1) {
+      var em = document.createElement('p'); em.className = 'empty';
+      em.textContent = 'No past planets yet. Day #1 is today, ' + dateLabel(1) + '. Tomorrow, today\'s four will wait here.';
+      list.appendChild(em); $('bPastMore').hidden = true; return;
     }
-    store.set('bestStreak', Math.max(store.get('bestStreak', 0), G.bestStreak));
-    $('bEndDaily').textContent = G.mode === 'daily' ? 'Play 10 worlds' : 'Daily challenge';
-    show('end'); refreshMenu();
+    var last = Math.max(1, t - pastShown);
+    for (var d = t - 1; d >= last; d--) (function (d) {
+      var set = dropSet(d), mine = S.days[d], btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'day';
+      var th = document.createElement('span'); th.className = 'th';
+      set.forEach(function (w) {
+        var el;
+        if (w.img) { el = document.createElement('img'); el.loading = 'lazy'; el.decoding = 'async'; el.alt = ''; el.src = artSrc(w, 'a'); }
+        else el = artEl(w, 'a', '', 40);
+        th.appendChild(el);
+      });
+      var dt = document.createElement('span'); dt.className = 'dt';
+      var bb = document.createElement('b'); bb.textContent = 'Day #' + d + ' · ' + dateLabel(d);
+      var sm = document.createElement('small');
+      if (mine) { sm.className = 'e' + mine.e; sm.textContent = 'You ' + END_WORD[mine.e] + ' ' + BY[mine.w].name; }
+      else sm.textContent = 'Not played · ' + set.map(function (w) { return w.name; }).join(', ');
+      dt.appendChild(bb); dt.appendChild(sm);
+      btn.appendChild(th); btn.appendChild(dt);
+      btn.setAttribute('aria-label', 'Day ' + d + ', ' + dateLabel(d) + '. ' + sm.textContent);
+      btn.addEventListener('click', function () { openDrop(d, 'past'); });
+      list.appendChild(btn);
+    })(d);
+    $('bPastMore').hidden = last <= 1;
+  }
+
+  /* ---------- keepsake shelf ---------- */
+  var shelfFilter = 'all';
+  function openShelf() { renderShelf(); setProg('<b>' + ksCount() + '</b>/' + WORLDS.length); show('shelf'); }
+  function renderShelf() {
+    var n = ksCount(), counts = [0, 0, 0, 0];
+    Object.keys(S.ks).forEach(function (s) { counts[S.ks[s].r]++; });
+    $('shelfLead').textContent = n ? n + ' of ' + WORLDS.length + ' keepsakes found.' : 'Your shelf is empty. Reach a planet\'s best ending on the day it drops to find its keepsake.';
+    $('shelfWarn').hidden = storageOk;
+    var chips = $('chips'); chips.innerHTML = '';
+    [['all', 'All', n]].concat(RAR.map(function (r, i) { return [String(i), r, counts[i]]; })).forEach(function (c) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (c[0] === 'all' ? '' : ' rar' + c[0]);
+      b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(shelfFilter === c[0]));
+      b.innerHTML = (c[0] === 'all' ? '' : '<i></i>') + '<span></span>';
+      b.querySelector('span').textContent = c[1] + ' ' + c[2];
+      b.addEventListener('click', function () { shelfFilter = c[0]; renderShelf(); });
+      chips.appendChild(b);
+    });
+    var grid = $('shelfGrid'), empty = $('shelfEmpty'); grid.innerHTML = '';
+    var list = WORLDS.filter(function (w) { return shelfFilter === 'all' || (S.ks[w.slug] && String(S.ks[w.slug].r) === shelfFilter); });
+    list.forEach(function (w) {
+      var k = S.ks[w.slug], b = document.createElement('button'); b.type = 'button';
+      b.className = 'slot' + (k ? ' found rar' + k.r : '');
+      b.appendChild(sprite(w.slug));
+      if (k) { var dot = document.createElement('span'); dot.className = 'rd'; b.appendChild(dot); }
+      b.setAttribute('aria-label', k ? ksName(w.slug) + ', ' + RAR[k.r] + ', from ' + w.name : 'Not found yet: hidden on ' + w.name);
+      b.addEventListener('click', function () { openKs(w.slug); });
+      grid.appendChild(b);
+    });
+    empty.hidden = list.length > 0;
+    if (!list.length) empty.textContent = 'No ' + RAR[+shelfFilter].toLowerCase() + ' keepsakes yet.';
+  }
+  function openKs(slug) {
+    var w = BY[slug], k = S.ks[slug], box = $('ksBig'); box.innerHTML = '';
+    box.className = 'kbig' + (k ? ' rar' + k.r : '');
+    var rk = document.createElement('div'); rk.className = 'rk'; rk.textContent = k ? RAR[k.r].toUpperCase() : 'NOT FOUND YET';
+    var cv = sprite(slug); if (!k) cv.style.filter = 'brightness(0) opacity(.45)';
+    var kn = document.createElement('h2'); kn.id = 'ksH'; kn.className = 'kn'; kn.textContent = k ? ksName(slug) : 'Hidden on ' + w.name;
+    var p = document.createElement('p');
+    p.textContent = k ? ksNote(slug) + ' Found on ' + w.name + ', day #' + k.d + ' (' + dateLabel(k.d) + ').' : 'Reach ' + w.name + "'s best ending on a day it drops, and this keepsake is yours.";
+    box.appendChild(cv); box.appendChild(rk); box.appendChild(kn); box.appendChild(p);
+    openSheetEl('ksSheet');
+  }
+
+  /* ---------- sheets ---------- */
+  var SHEETS = ['menuSheet', 'saveSheet', 'a2hsSheet', 'ksSheet'], lastFocus = null;
+  function openSheet() { for (var i = 0; i < SHEETS.length; i++) if (!$(SHEETS[i]).hidden) return SHEETS[i]; return !$('modal').hidden ? 'modal' : null; }
+  function openSheetEl(id) {
+    closeSheets(true); lastFocus = document.activeElement;
+    $(id).hidden = false;
+    var f = $(id).querySelector('.in > .row button, .in > button.mi, .in > button') || $(id).querySelector('button'); try { if (f) f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function closeSheets(keepFocus) {
+    SHEETS.forEach(function (id) { $(id).hidden = true; }); $('modal').hidden = true;
+    if (!keepFocus && lastFocus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} lastFocus = null; }
+  }
+  SHEETS.forEach(function (id) {
+    var el = $(id);
+    el.addEventListener('click', function (e) { if (e.target === el || (e.target.closest && e.target.closest('[data-close]'))) closeSheets(); });
+  });
+  function openMenu() {
+    var t = today();
+    $('miPast').textContent = t > 1 ? (t - 1) + (t - 1 === 1 ? ' day' : ' days') : 'From tomorrow';
+    $('miShelf').textContent = ksCount() + '/' + WORLDS.length;
+    $('miFree').textContent = S.free.best ? 'Best streak ' + S.free.best : 'Practice';
+    $('miA2hs').hidden = isStandalone();
+    openSheetEl('menuSheet');
+  }
+  $('menuSheet').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-go]'); if (!b) return;
+    var go = b.getAttribute('data-go'); closeSheets(true);
+    if (go === 'past') openPast();
+    else if (go === 'shelf') openShelf();
+    else if (go === 'free') openDrop(today(), 'free');
+    else if (go === 'save') openSave();
+    else if (go === 'a2hs') openA2hs();
+    else if (go === 'how') { try { $('how-it-works').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); } catch (err) {} }
+  });
+
+  /* ---------- save code (copy on one phone, load on another) ---------- */
+  function b64e(s) { return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function b64d(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return decodeURIComponent(escape(atob(s))); }
+  function exportCode() {
+    var json = JSON.stringify({ v: 1, d: S.days, k: S.ks, f: S.free });
+    return 'QW1-' + hashStr(json).toString(36) + '-' + b64e(json);
+  }
+  function importCode(str) {
+    var m = /^QW1-([0-9a-z]+)-([A-Za-z0-9_-]+)$/.exec(String(str || '').replace(/\s+/g, ''));
+    if (!m) return 'That does not look like a Quiet Worlds save code.';
+    var json, p;
+    try { json = b64d(m[2]); p = JSON.parse(json); } catch (e) { return 'That code is damaged. Copy it again, all of it.'; }
+    if (hashStr(json).toString(36) !== m[1] || !p || p.v !== 1) return 'That code is damaged. Copy it again, all of it.';
+    var days = cleanDays(p.d), ks = cleanKs(p.k), addedD = 0, addedK = 0;
+    Object.keys(days).forEach(function (d) { if (!S.days[d]) { S.days[d] = days[d]; addedD++; } });
+    Object.keys(ks).forEach(function (s) { if (!S.ks[s]) { S.ks[s] = ks[s]; addedK++; } });
+    if (p.f && isInt(p.f.best, 0, 1e6)) S.free.best = Math.max(S.free.best, p.f.best);
+    persist();
+    return 'Loaded: ' + addedK + ' new keepsake' + (addedK === 1 ? '' : 's') + ' and ' + addedD + ' day' + (addedD === 1 ? '' : 's') + '. Keepsakes you already had kept their rarity.' + (storageOk ? '' : ' (This browser is not saving, so it lasts until you close the page.)');
+  }
+  function openSave() { $('saveOut').value = exportCode(); $('saveIn').value = ''; $('saveMsg').textContent = ''; openSheetEl('saveSheet'); }
+  $('bSaveCopy').addEventListener('click', function () { copy($('saveOut').value, 'Save code copied.'); });
+  $('saveOut').addEventListener('focus', function () { try { this.select(); } catch (e) {} });
+  $('bSaveLoad').addEventListener('click', function () {
+    var v = $('saveIn').value.trim();
+    if (!v) { $('saveMsg').textContent = 'Paste a code first.'; return; }
+    $('saveMsg').textContent = importCode(v);
+    $('saveOut').value = exportCode(); refreshStart();
+  });
+
+  /* ---------- add to home screen (no notifications, ever) ---------- */
+  var installEvt = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; });
+  window.addEventListener('appinstalled', function () { installEvt = null; S.tip = 1; persist(); $('rvTip').hidden = true; });
+  function isStandalone() { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { return false; } }
+  function openA2hs() {
+    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var inApp = /FBAN|FBAV|FB_IAB|Instagram|Line\/|Snapchat|TikTok|musical_ly|YouTube|GSA\//i.test(ua);
+    var steps = inApp ? ['Open this page in ' + (ios ? 'Safari' : 'Chrome') + ' first: tap the menu (three dots) and choose Open in browser.', ios ? 'In Safari, tap the Share button, then Add to Home Screen.' : 'In Chrome, open the menu and tap Add to Home screen.'] :
+      ios ? ['Tap the Share button (the square with an arrow) in Safari\'s toolbar.', 'Scroll down and tap Add to Home Screen.', 'Tap Add. Quiet Worlds now opens from your home screen.'] :
+      /Android/i.test(ua) ? ['Tap the menu (three dots) in your browser.', 'Tap Add to Home screen or Install app.', 'Tap Add.'] :
+      ['In Chrome or Edge, click the install icon at the right of the address bar.', 'Or open the browser menu and choose Install Quiet Worlds.'];
+    var ol = $('a2hsSteps'); ol.innerHTML = '';
+    steps.forEach(function (s) { var li = document.createElement('li'); li.textContent = s; ol.appendChild(li); });
+    ol.hidden = !!installEvt; $('a2hsInstallRow').hidden = !installEvt;
+    openSheetEl('a2hsSheet');
+  }
+  $('bInstall').addEventListener('click', function () {
+    if (!installEvt) return;
+    try { installEvt.prompt(); installEvt.userChoice.then(function () { installEvt = null; closeSheets(); }, function () {}); } catch (e) {}
+  });
+  $('bTipHow').addEventListener('click', openA2hs);
+  $('bTipX').addEventListener('click', function () { S.tip = 1; persist(); $('rvTip').hidden = true; });
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', function () { try { navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () {}); } catch (e) {} });
   }
 
   /* ---------- share card ---------- */
@@ -438,57 +856,60 @@
     var s = Math.max(w / iw, h / ih), sw = w / s, sh = h / s;
     g.drawImage(el, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h);
   }
+  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  var SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', ECOL = ['#8fe39a', '#ffb35c', '#ff6b6b'], RCOL = ['#b9b4cc', '#6fb4ff', '#c58cff', '#ffcf5c'];
   function makeCard() {
-    var s = summary(), W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var w = BY[R.w], e = R.e, W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     var g = cv.getContext('2d');
     var bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0a0b1c'); bg.addColorStop(1, '#1b1840'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    var rnd = mulberry(11); for (var i = 0; i < 260; i++) { g.globalAlpha = 0.25 + rnd() * 0.7; g.fillStyle = '#fff'; var r = rnd() < 0.1 ? 3 : 1.6; g.fillRect(rnd() * W, rnd() * H, r, r); }
-    g.globalAlpha = 1;
-    var ng = g.createRadialGradient(W * 0.8, H * 0.15, 0, W * 0.8, H * 0.15, 600); ng.addColorStop(0, 'rgba(244,200,110,0.18)'); ng.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = ng; g.fillRect(0, 0, W, H);
-    g.textAlign = 'center'; g.fillStyle = '#f4c86e'; g.font = '52px VT, monospace';
-    g.fillText(G.mode === 'daily' ? 'QUIET WORLDS  DAILY #' + dailyNum() : 'QUIET WORLDS', W / 2, 110);
-    g.fillStyle = '#f5efe3'; g.font = '120px VT, monospace'; g.fillText('I survived ' + s.surv + ' of ' + s.n, W / 2, 230);
-    g.font = '54px VT, monospace'; g.fillStyle = '#7fd6c6'; g.fillText(s.rank[1], W / 2, 300);
-    g.font = '600 32px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'; g.fillStyle = '#c9c3d8';
-    g.fillText('Thrived on ' + s.thr + '  |  Best streak ' + G.bestStreak, W / 2, 352);
-    var cols = 5, gap = 22, pad = 70, tw = (W - pad * 2 - gap * (cols - 1)) / cols, th = tw * 1.25, rows = Math.ceil(G.res.length / cols);
-    var top = 400 + (rows === 1 ? 110 : 0), colr = { thrive: '#8fe39a', barely: '#ffb35c', doomed: '#ff6b6b' };
-    G.res.forEach(function (r, k) {
-      var x = pad + (k % cols) * (tw + gap), y = top + Math.floor(k / cols) * (th + 96);
-      g.save(); roundRect(g, x, y, tw, th, 18); g.clip(); g.fillStyle = '#15162c'; g.fillRect(x, y, tw, th);
-      var el = r.w.img ? imgCache[artSrc(r.w, 'b')] : artEl(r.w, 'b');
-      try { if (el && (el.complete === undefined || el.complete)) { if (!r.w.img) g.imageSmoothingEnabled = false; drawCover(g, el, x, y, tw, th); g.imageSmoothingEnabled = true; } } catch (e) {}
-      g.restore();
-      g.lineWidth = 6; g.strokeStyle = colr[r.w.outcome]; roundRect(g, x, y, tw, th, 18); g.stroke();
-      g.fillStyle = 'rgba(8,9,20,0.9)'; g.fillRect(x + 3, y + th - 44, tw - 6, 41);
-      g.fillStyle = colr[r.w.outcome]; g.font = '600 22px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'; g.fillText(OUT_SHORT[r.w.outcome], x + tw / 2, y + th - 15);
-      g.fillStyle = '#f5efe3'; g.font = '36px VT, monospace';
-      var nm = r.w.name; while (g.measureText(nm).width > tw + 14 && nm.length > 4) nm = nm.slice(0, -2) + '.';
-      g.fillText(nm, x + tw / 2, y + th + 40);
-    });
-    g.fillStyle = 'rgba(14,15,32,0.92)'; roundRect(g, 120, H - 190, W - 240, 120, 24); g.fill();
-    g.fillStyle = '#f5efe3'; g.font = '46px VT, monospace'; g.fillText('Can you survive more?', W / 2, H - 132);
-    g.fillStyle = '#f4c86e'; g.font = '44px VT, monospace'; g.fillText('saagarverma.com/quiet-worlds', W / 2, H - 88);
+    var rnd = mulberry(11); for (var i = 0; i < 240; i++) { g.globalAlpha = 0.25 + rnd() * 0.7; g.fillStyle = '#fff'; var r = rnd() < 0.1 ? 3 : 1.6; g.fillRect(rnd() * W, rnd() * H, r, r); }
+    g.globalAlpha = 1; g.textAlign = 'center';
+    g.fillStyle = '#f4c86e'; g.font = '52px VT, monospace';
+    g.fillText(R.m === 'free' ? 'QUIET WORLDS  ·  FREE PLAY' : 'QUIET WORLDS  ·  DAY #' + R.day, W / 2, 96);
+    var ix = 110, iy = 130, iw = W - 220, ih = 520;
+    g.save(); roundRect(g, ix, iy, iw, ih, 26); g.clip(); g.fillStyle = '#15162c'; g.fillRect(ix, iy, iw, ih);
+    var el = w.img ? imgCache[artSrc(w, 'b')] : artEl(w, 'b');
+    try { if (el && (el.complete === undefined || el.complete)) { g.imageSmoothingEnabled = !!w.img; drawCover(g, el, ix, iy, iw, ih); g.imageSmoothingEnabled = true; } } catch (err) {}
+    g.restore();
+    g.lineWidth = 6; g.strokeStyle = ECOL[e]; roundRect(g, ix, iy, iw, ih, 26); g.stroke();
+    g.fillStyle = 'rgba(8,9,20,0.88)'; roundRect(g, ix + 24, iy + ih - 92, 330, 68, 14); g.fill();
+    g.fillStyle = '#f5efe3'; g.font = '50px VT, monospace'; g.textAlign = 'left'; g.fillText('DAY 365', ix + 48, iy + ih - 42); g.textAlign = 'center';
+    g.fillStyle = '#f4c86e'; g.font = '92px VT, monospace'; g.fillText(w.name, W / 2, 750);
+    g.fillStyle = ECOL[e]; g.font = '64px VT, monospace'; g.fillText(END_STAMP[e], W / 2, 822);
+    g.fillStyle = '#c9c3d8'; g.font = '500 32px ' + SANS;
+    wrapLines(g, endText(w, e), W - 260).slice(0, 3).forEach(function (ln, k) { g.fillText(ln, W / 2, 880 + k * 44); });
+    var k2 = S.ks[R.w], hasK = R.ks === 'new' || R.ks === 'have';
+    var by = 1025, bw = W - 240;
+    g.fillStyle = 'rgba(27,28,54,0.95)'; roundRect(g, 120, by, bw, 150, 22); g.fill();
+    if (hasK) {
+      g.strokeStyle = RCOL[k2.r]; g.lineWidth = 3; roundRect(g, 120, by, bw, 150, 22); g.stroke();
+      g.imageSmoothingEnabled = false; g.drawImage(sprite(R.w), 150, by + 15, 120, 120); g.imageSmoothingEnabled = true;
+      g.textAlign = 'left'; g.fillStyle = RCOL[k2.r]; g.font = '700 26px ' + SANS; g.fillText((R.ks === 'new' ? 'KEEPSAKE FOUND  ·  ' : 'KEEPSAKE  ·  ') + RAR[k2.r].toUpperCase(), 300, by + 62);
+      g.fillStyle = '#f5efe3'; g.font = '56px VT, monospace'; g.fillText(ksName(R.w), 300, by + 116); g.textAlign = 'center';
+    } else {
+      g.fillStyle = '#c9c3d8'; g.font = '46px VT, monospace'; g.fillText(e === bestEnding(w) ? 'A year well lived.' : 'The keepsake stayed hidden.', W / 2, by + 90);
+    }
+    g.fillStyle = '#f5efe3'; g.font = '46px VT, monospace'; g.fillText('Which planet would you pick?', W / 2, H - 100);
+    g.fillStyle = '#f4c86e'; g.font = '44px VT, monospace'; g.fillText(PUBLIC_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), W / 2, H - 50);
     return cv;
   }
-  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function shareText() {
-    var s = summary();
-    return (G.mode === 'daily' ? 'Quiet Worlds Daily #' + dailyNum() + ': ' : 'Quiet Worlds: ') + 'I survived ' + s.surv + ' of ' + s.n + ' worlds (' + s.rank[1] + '). Can you beat me? https://saagarverma.com/quiet-worlds/';
+    var w = BY[R.w], k = S.ks[R.w], hasK = R.ks === 'new' || R.ks === 'have';
+    return (R.m === 'free' ? 'Quiet Worlds: ' : 'Quiet Worlds Day #' + R.day + ': ') + 'I picked ' + w.name + ' and ' + ['thrived', 'survived the year', "didn't make it"][R.e] + '.' +
+      (hasK ? ' Keepsake: ' + ksName(R.w) + ' (' + RAR[k.r] + ').' : '') + ' Which planet would you pick? ' + PUBLIC_URL;
   }
   var cardBlob = null;
   function share() {
+    if (!R || R.e == null) return;
     var go = function () {
       var cv = makeCard(), url = cv.toDataURL('image/png');
-      $('cardImg').src = url; $('mSave').href = url;
-      cardBlob = null;
+      $('cardImg').src = url; $('mSave').href = url; cardBlob = null;
       try { cv.toBlob(function (b) { cardBlob = b; }, 'image/png'); } catch (e) {}
-      $('modal').hidden = false;
+      lastFocus = document.activeElement; $('modal').hidden = false;
+      try { $('mShare').focus({ preventScroll: true }); } catch (e) {}
     };
-    var waits = G.res.filter(function (r) { return r.w.img; }).map(function (r) {
-      var im = loadImg(artSrc(r.w, 'b')); if (im.complete) return Promise.resolve();
-      return new Promise(function (res) { im.addEventListener('load', res, { once: true }); im.addEventListener('error', res, { once: true }); setTimeout(res, 2500); });
-    });
+    var w = BY[R.w], waits = [];
+    if (w.img) { var im = loadImg(artSrc(w, 'b')); if (!im.complete) waits.push(new Promise(function (res) { im.addEventListener('load', res, { once: true }); im.addEventListener('error', res, { once: true }); setTimeout(res, 2500); })); }
     var fontP = document.fonts && document.fonts.load ? document.fonts.load('40px VT') : Promise.resolve();
     Promise.all(waits.concat([fontP.catch(function () {})])).then(go, go);
   }
@@ -496,65 +917,64 @@
     var text = shareText();
     try {
       if (cardBlob && navigator.canShare) {
-        var f = new File([cardBlob], 'quiet-worlds-result.png', { type: 'image/png' });
+        var f = new File([cardBlob], 'quiet-worlds-year.png', { type: 'image/png' });
         if (navigator.canShare({ files: [f] })) { navigator.share({ files: [f], text: text }).catch(function () {}); return; }
       }
-      if (navigator.share) { navigator.share({ text: text, url: 'https://saagarverma.com/quiet-worlds/' }).catch(function () {}); return; }
+      if (navigator.share) { navigator.share({ text: text }).catch(function () {}); return; }
     } catch (e) {}
     copy(text);
   }
-  function copy(text) {
-    var ok = function () { toast('Copied. Paste it anywhere.'); };
-    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text); }); return; } } catch (e) {}
-    fallbackCopy(text);
+  function copy(text, msg) {
+    var ok = function () { toast(msg || 'Copied. Paste it anywhere.'); };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text, msg); }); return; } } catch (e) {}
+    fallbackCopy(text, msg);
   }
-  function fallbackCopy(text) {
-    var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); toast('Copied. Paste it anywhere.'); } catch (e) { toast('Could not copy'); }
+  function fallbackCopy(text, msg) {
+    var ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast(msg || 'Copied. Paste it anywhere.'); } catch (e) { toast('Could not copy. Select the text and copy it.'); }
     ta.remove();
   }
   var toastT = null;
-  function toast(t) { var el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('show'); }, 2200); }
+  function toast(t) { var el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('show'); }, 2400); }
 
-  /* ---------- menu ---------- */
-  function refreshMenu() {
-    var d = store.get('daily-' + todayKey(), null);
-    $('dailyLab').textContent = d ? '#' + dailyNum() + ' done: ' + d.s + '/' + d.n : '#' + dailyNum() + ', 5 worlds';
-    var best = store.get('best', 0), bs = store.get('bestStreak', 0);
-    $('best').textContent = best || bs ? 'Your best: survived ' + best + ' of 10, longest streak ' + bs : WORLDS.length + ' worlds to discover';
+  /* ---------- countdown ---------- */
+  var renderedDay = 0;
+  function tick() {
+    var left = hms(msToNext());
+    Array.prototype.forEach.call(document.querySelectorAll('.cdv'), function (el) { el.textContent = left; });
+    if (today() !== renderedDay && current === 'start') refreshStart();
   }
-  function goMenu() { clearReveal(); moodT = 0; G = null; setProg(); refreshMenu(); show('menu'); drawMenu.done = false; }
+  setInterval(function () { if (!document.hidden) tick(); }, 1000);
 
   /* ---------- wire up ---------- */
-  $('bPlay').addEventListener('click', function () { start('classic'); });
-  $('bDaily').addEventListener('click', function () { start('daily'); });
-  $('bChoose').addEventListener('click', choose);
-  $('bNext').addEventListener('click', next);
-  $('bSkip').addEventListener('click', finishReveal);
-  $('bHome').addEventListener('click', goMenu);
-  // "< Games" is a plain link on the menu and the end screen; during a round it becomes "back to the menu"
-  $('bBack').addEventListener('click', function (e) {
-    if (!document.body.classList.contains('ingame')) return;
-    e.preventDefault(); goMenu();
-  });
-  $('bAgain').addEventListener('click', function () { start(G && G.mode === 'daily' ? 'daily' : 'classic'); });
-  $('bEndDaily').addEventListener('click', function () { start(G && G.mode === 'daily' ? 'classic' : 'daily'); });
-  $('bShare').addEventListener('click', share);
-  $('mShare').addEventListener('click', nativeShare);
-  $('mCopy').addEventListener('click', function () { copy(shareText()); });
-  $('mClose').addEventListener('click', function () { $('modal').hidden = true; });
+  $('bToday').addEventListener('click', openToday);
+  $('bMore').addEventListener('click', openMenu);
+  $('bChoose').addEventListener('click', confirmPlanet);
+  $('yNext').addEventListener('click', function () { if (R && R.b < 0) { R.b = 0; if (R.off) { S.run = R; persist(); } renderBeat(); window.scrollTo(0, 0); } else nextBeat(); });
+  $('bSkip').addEventListener('click', finishEnd);
+  $('bHome').addEventListener('click', goStart);
+  $('bPastMore').addEventListener('click', function () { pastShown += 60; renderPast(); });
+  $('bBack').addEventListener('click', function (e) { if (current === 'start') return; e.preventDefault(); goStart(); });
+  $('mShare').addEventListener('click', function () { stats.track('share', { w: 'share' }); nativeShare(); });
+  $('mCopy').addEventListener('click', function () { stats.track('share', { w: 'copy' }); copy(shareText()); });
+  $('mSave').addEventListener('click', function () { stats.track('share', { w: 'save' }); });
+  $('mClose').addEventListener('click', function () { closeSheets(); });
   document.addEventListener('keydown', function (e) {
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
-    if (!$('modal').hidden) { if (e.key === 'Escape') $('modal').hidden = true; return; }
-    if (!$('round').hidden) {
-      if (e.key >= '1' && e.key <= '4') { select(+e.key - 1); e.preventDefault(); }
-      else if (e.key === 'Enter' && selIdx >= 0 && document.activeElement && !document.activeElement.classList.contains('card')) { choose(); e.preventDefault(); }
-    } else if (!$('reveal').hidden && (e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { next(); e.preventDefault(); }
+    if (openSheet()) { if (e.key === 'Escape') closeSheets(); return; }
+    if (current === 'drop') {
+      if (e.key >= '1' && e.key <= '4') { selectPlanet(+e.key - 1); e.preventDefault(); }
+      else if (e.key === 'Enter' && D && D.sel >= 0 && !(document.activeElement && document.activeElement.classList.contains('card'))) { confirmPlanet(); e.preventDefault(); }
+    } else if (current === 'year' && R) {
+      var opts = $('yOpts').children;
+      if (e.key >= '1' && e.key <= String(opts.length) && R.b >= 0 && R.c[R.b] == null) { opts[+e.key - 1].click(); e.preventDefault(); }
+      else if (e.key === 'Enter' && !$('yNextWrap').hidden && document.activeElement === document.body) { $('yNext').click(); e.preventDefault(); }
+    } else if (current === 'end' && !endDone && (e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { finishEnd(); e.preventDefault(); }
   });
   window.addEventListener('resize', skyResize);
 
-  skyResize(); setupMenuGlobes(); syncMuteIcon(); refreshMenu();
-  if (reduceMotion) drawSky(0);
+  skyResize(); syncMuteIcon(); refreshStart(); show('start');
   requestAnimationFrame(loop);
-  window.__qw = { start: start, state: function () { return G; }, worlds: WORLDS.length };
+  /* test hooks for the headless checks (read-only helpers) */
+  window.__qw = { dropSet: function (d) { return dropSet(d).map(function (w) { return w.slug; }); }, today: today, ending: function (s, c) { return ending(BY[s], c); }, save: function () { return JSON.parse(JSON.stringify(S)); }, storageOk: function () { return storageOk; }, exportCode: exportCode };
 })();
