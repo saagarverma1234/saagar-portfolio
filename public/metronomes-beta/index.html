@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metronome Sync Game: Chaos to Order (preview)</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Play with 100 metronomes on a rolling board and watch them fall into sync. Nudge the board, shake it at 229 bpm, flip a few, break a perfect 3-way tie. Real physics from the Chaos to Order videos.">
+<link rel="canonical" href="https://saagarverma.com/metronomes/">
+<meta name="theme-color" content="#0f1015">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Chaos to Order">
+<meta property="og:title" content="Metronome Sync Game: Chaos to Order">
+<meta property="og:description" content="100 metronomes, one rolling board. Can you make them sync? Real physics from the viral Chaos to Order videos.">
+<meta property="og:url" content="https://saagarverma.com/metronomes/">
+<meta property="og:image" content="https://saagarverma.com/metronomes/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Metronome Sync Game: Chaos to Order">
+<meta name="twitter:description" content="100 metronomes, one rolling board. Can you make them sync?">
+<meta name="twitter:image" content="https://saagarverma.com/metronomes/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+/* Inter 700 (SIL Open Font License 1.1, The Inter Project Authors), self-hosted */
+@font-face { font-family: InterB; src: url('inter-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+:root {
+  --bg: #0f1015; --bg2: #16171f; --panel: #171821; --panel2: #1f2029; --line: #2a2c38; --text: #f4f4f7; --muted: #b8bac7; --dim: #8a8d9c;
+  --pink: #ff5494; --cyan: #33d9ff; --lime: #9ef040; --violet: #9e73ff; --orange: #ff8c2e; --red: #ff5252; --gold: #ffcc66;
+  --radius: 14px; --topH: 52px; --safeT: env(safe-area-inset-top, 0px); --safeB: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font-family: InterB, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 700; min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
+       padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+
+/* ---- top bar: same pattern on every game page (back to games, title, actions) ---- */
+header.top { display: flex; align-items: center; gap: 8px; height: calc(var(--topH) + var(--safeT)); padding: var(--safeT) 10px 0; }
+header.top h1 { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 15px; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header.top h1 span { color: var(--gold); }
+.tb-side { flex: 0 0 auto; display: flex; gap: 6px; width: 96px; }
+.tb-side.r { justify-content: flex-end; }
+.icon-btn { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; height: 44px; min-width: 44px; padding: 0 12px; color: var(--text); text-decoration: none;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-size: 14px; flex: 0 0 auto; }
+.icon-btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.icon-btn.back { padding: 0 14px 0 8px; gap: 2px; }
+.icon-btn.back svg { width: 20px; height: 20px; }
+.icon-btn .wide { display: none; }
+.icon-btn:active { transform: scale(.96); }
+
+/* ---- phone: the game is one full screen (stage + control dock), everything else scrolls below ---- */
+.screen { display: flex; flex-direction: column; min-height: 470px;
+          height: calc(100vh - var(--topH) - var(--safeT)); height: calc(100dvh - var(--topH) - var(--safeT)); }
+html.vh .screen { height: calc(var(--vh) - var(--topH) - var(--safeT)); }
+.stage { position: relative; flex: 1 1 auto; min-height: 250px; width: 100%; overflow: hidden; background: #101116;
+         touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+
+.below { display: grid; gap: 12px; padding: 14px 12px 0; }
+
+.hud { position: absolute; left: 0; right: 0; top: 0; padding: 12px 16px 0; text-align: center; pointer-events: none; }
+.hud .lab { font-size: 12px; letter-spacing: 5px; color: var(--muted); margin-left: 5px; }
+.hud .num { font-size: clamp(42px, 12vw, 72px); line-height: 1; margin-top: 2px; font-variant-numeric: tabular-nums; transition: color .3s; text-shadow: 0 2px 16px rgba(0,0,0,.5); }
+.hud .bar { width: min(260px, 60%); height: 6px; margin: 8px auto 0; border-radius: 3px; background: rgba(255,255,255,.14); overflow: hidden; }
+.hud .bar i { display: block; height: 100%; width: 0; background: var(--text); border-radius: 3px; }
+.hud .timer { margin-top: 7px; font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hud.gold .num, .hud.gold .lab, .hud.gold .timer { color: var(--gold); }
+.hud.gold .bar i { background: var(--gold); }
+.goal { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; pointer-events: none; }
+.goal .tag { flex: 0 1 auto; min-width: 0; font-size: 11px; line-height: 1.35; letter-spacing: 1.2px; color: var(--muted); background: rgba(10,10,14,.72); padding: 6px 9px; border-radius: 8px; }
+.goal .hint { flex: 0 0 auto; white-space: nowrap; font-size: 12px; color: var(--muted); background: rgba(10,10,14,.72); padding: 6px 9px; border-radius: 8px; line-height: 1.3; }
+.goal .tag:empty { display: none; }
+.banner { position: absolute; left: 50%; bottom: 46px; transform: translate(-50%, 0) scale(.9); opacity: 0; pointer-events: none;
+          background: rgba(16,14,8,.9); border: 1px solid rgba(255,204,102,.55); border-radius: 18px; padding: 16px 18px 14px; text-align: center;
+          box-shadow: 0 0 60px rgba(255,190,80,.25); transition: opacity .25s, transform .25s; width: min(330px, calc(100% - 24px)); z-index: 2; }
+.banner.show { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+.banner .big { font-size: 26px; color: var(--gold); }
+.banner .sub { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 700; line-height: 1.35; }
+.banner .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.btn { border: 1px solid var(--line); background: #22242f; border-radius: 12px; min-height: 48px; padding: 0 14px; cursor: pointer;
+       font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: transform .08s, background .15s; }
+.btn:active { transform: scale(.97); }
+.btn.gold { background: var(--gold); color: #1a1406; border-color: var(--gold); }
+.btn.on { background: rgba(255,204,102,.16); border-color: var(--gold); color: var(--gold); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn small { font-size: 11px; color: var(--dim); }
+.btn.on small { color: var(--gold); }
+
+/* start screen */
+.start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px;
+         background: radial-gradient(ellipse at 50% 55%, rgba(10,10,14,.5), rgba(10,10,14,.9)); text-align: center; z-index: 3; }
+.start.hide { display: none; }
+.stage:has(.start:not(.hide)) .hud, .stage:has(.start:not(.hide)) .goal { visibility: hidden; }
+.start .kick { font-size: 12px; letter-spacing: 4px; color: var(--muted); margin-left: 4px; }
+.start h2 { margin: 0; font-size: clamp(30px, 8.5vw, 46px); line-height: 1.05; letter-spacing: -.5px; text-shadow: 0 2px 20px rgba(0,0,0,.6); }
+.start h2 span { color: var(--gold); }
+.start p { margin: 0; color: var(--muted); font-size: 15px; max-width: 340px; line-height: 1.45; }
+.play { background: var(--gold); color: #1a1406; border: 0; border-radius: 999px; font-size: 24px; padding: 0 48px; height: 66px; cursor: pointer; margin-top: 4px;
+        box-shadow: 0 0 0 6px rgba(255,204,102,.15), 0 0 50px rgba(255,190,80,.35); display: inline-flex; align-items: center; gap: 10px; }
+.play svg { width: 22px; height: 22px; }
+.play:active { transform: scale(.97); }
+.start .alt { background: none; border: 0; color: var(--text); font-size: 15px; min-height: 44px; padding: 0 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(255,255,255,.35); }
+
+/* ---- controls ---- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px; }
+.panel h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: 3px; color: var(--dim); }
+.panel.dock { flex: 0 0 auto; background: #0c0d12; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 10px 10px calc(10px + var(--safeB)); }
+.dock h3 { display: none; }
+.acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.acts .btn { flex-direction: column; gap: 3px; min-height: 54px; padding: 6px 4px; font-size: 14px; line-height: 1.1; text-align: center; }
+.flipn { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 13px; }
+.flipn .btn { min-height: 44px; min-width: 44px; width: 44px; padding: 0; font-size: 20px; line-height: 1; }
+.flipn output { min-width: 26px; text-align: center; color: var(--text); font-size: 17px; font-variant-numeric: tabular-nums; }
+.flipn .used { margin-left: auto; color: var(--dim); white-space: nowrap; }
+.flipn .used span { color: var(--text); }
+.field { margin-bottom: 12px; }
+.field label { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+.field label output { color: var(--text); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; height: 44px; background: transparent; -webkit-appearance: none; appearance: none; margin: 0; touch-action: pan-y; }
+input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: #2c2e3a; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: var(--gold); margin-top: -11px; border: 3px solid #1a1406; }
+input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: #2c2e3a; }
+input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--gold); border: 3px solid #1a1406; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.seg .btn { min-height: 46px; font-size: 14px; padding: 0 6px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; min-height: 44px; padding: 0 15px; font-size: 14px; cursor: pointer; }
+.chip.on { border-color: var(--gold); color: var(--gold); background: rgba(255,204,102,.1); }
+.chip .best { color: var(--dim); font-size: 12px; margin-left: 5px; }
+.goaltext { color: var(--muted); font-size: 14px; margin: 12px 2px 0; line-height: 1.45; }
+#pCh { scroll-margin-top: 12px; transition: border-color .3s, box-shadow .3s; }
+#pCh.flash { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255,204,102,.18); }
+
+/* ---- sections below the game ---- */
+.sec { max-width: 760px; margin: 14px auto 0; padding: 0 12px; }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 10px 2px 10px; }
+.sec-h h2 { margin: 0; font-size: 18px; }
+.sec-h a { color: var(--gold); font-size: 14px; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+.mg-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 640px) { .mg-list { grid-template-columns: 1fr 1fr; } }
+.mg { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; min-height: 76px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+      text-decoration: none; color: var(--text); transition: border-color .15s; }
+@media (hover: hover) { .mg:hover { border-color: var(--accent, var(--gold)); } }
+.mg:active { transform: scale(.99); }
+.mg img, .mg .ph { width: 108px; height: 61px; border-radius: 9px; object-fit: cover; flex: 0 0 auto; background: #0b0c10; }
+.mg .ph { display: flex; align-items: center; justify-content: center; font-size: 26px; color: #1a1406; background: linear-gradient(135deg, var(--accent, var(--gold)), #3a2c10); }
+.mg span:not(.ph) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mg b { font-size: 16px; line-height: 1.2; }
+.mg small { font-size: 12px; color: var(--dim); letter-spacing: .5px; }
+.mg > svg { width: 20px; height: 20px; color: var(--dim); flex: 0 0 auto; }
+
+/* collapsible boxes: suggestions + how it works */
+.fold { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 64px; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary .ic { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,204,102,.12); color: var(--gold); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.fold > summary .ic svg { width: 20px; height: 20px; }
+.fold > summary .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fold > summary .tx b { font-size: 16px; }
+.fold > summary .tx small { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; font-size: 13px; color: var(--muted); line-height: 1.35; }
+.fold > summary .chev { width: 20px; height: 20px; color: var(--dim); flex: 0 0 auto; transition: transform .2s; }
+.fold[open] > summary .chev { transform: rotate(180deg); }
+.fold[open] > summary { border-bottom: 1px solid var(--line); }
+.suggest { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+.suggest form { padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.suggest label { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.suggest label span { color: var(--dim); }
+.suggest textarea, .suggest input { width: 100%; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #0b0c10; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+.suggest input { min-height: 46px; }
+.suggest textarea { resize: vertical; min-height: 104px; }
+.suggest textarea:focus, .suggest input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.suggest .sg-count { align-self: flex-end; font-size: 12px; color: var(--dim); margin-top: -2px; }
+.suggest .sg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.suggest .sg-send { align-self: stretch; margin-top: 10px; background: var(--gold); color: #1a1406; border: 0; border-radius: 12px; min-height: 50px; padding: 0 26px; font: 700 16px InterB, system-ui, sans-serif; cursor: pointer; }
+.suggest .sg-send:disabled { opacity: .5; cursor: default; }
+.suggest .sg-status { margin: 4px 0 0; font-size: 14px; color: var(--text); min-height: 1px; }
+.suggest .sg-status:empty { display: none; }
+.suggest .sg-note { margin: 4px 0 0; font-size: 12px; color: var(--dim); line-height: 1.45; }
+.suggest .sg-note a { color: var(--muted); }
+.suggest .sg-thanks { margin: 4px 0 6px; color: var(--gold); font-size: 15px; }
+.guide-body { padding: 16px 16px 6px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400;
+              font-size: 16px; line-height: 1.65; color: var(--muted); overflow-wrap: break-word; }
+.guide-body h2 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 20px; line-height: 1.25; margin: 0 0 12px; }
+.guide-body h3 { font-family: InterB, system-ui, sans-serif; font-weight: 700; color: var(--text); font-size: 17px; margin: 22px 0 6px; }
+.guide-body p, .guide-body ul { margin: 0 0 12px; }
+.guide-body ul { padding-left: 20px; }
+.guide-body li { margin-bottom: 6px; }
+.guide-body strong { color: var(--text); font-weight: 600; }
+.guide-body a { color: var(--gold); }
+
+/* ad slot: its own block below the game, never over the controls */
+.ad-wrap { max-width: 760px; margin: 14px auto 0; padding: 0 12px; }
+.ad-slot { min-height: 0; }
+footer { max-width: 760px; margin: 0 auto; color: var(--dim); font-size: 13px; text-align: center; padding: 26px 16px calc(24px + var(--safeB)); line-height: 1.6; }
+footer a { color: var(--text); }
+footer .yt { display: inline-flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; border: 1px solid var(--line);
+             border-radius: 999px; min-height: 46px; padding: 0 18px; background: var(--panel); font-size: 14px; }
+footer .yt svg { width: 20px; height: 20px; }
+footer p { margin: 14px auto 0; max-width: 620px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+footer p.stats-note { font-size: 12px; margin-top: 8px; }
+footer nav.site { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 4px; margin-top: 14px; font-size: 14px; }
+footer nav.site a { color: var(--muted); min-height: 44px; display: inline-flex; align-items: center; padding: 0 8px; text-decoration: none; }
+footer nav.site a:hover { color: var(--text); text-decoration: underline; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + var(--safeB)); transform: translateX(-50%) translateY(20px); opacity: 0; background: #2a2c38; color: var(--text);
+         padding: 10px 16px; border-radius: 10px; font-size: 14px; transition: .25s; pointer-events: none; z-index: 9; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---- small phones ---- */
+@media (max-width: 370px) {
+  .acts .btn { font-size: 13px; }
+  .btn small { font-size: 10px; }
+  .tb-side { width: 92px; }
+  header.top { padding-left: 8px; padding-right: 8px; gap: 6px; }
+}
+/* short screens (in-app browsers with toolbars): tighter dock */
+@media (max-width: 899px) and (max-height: 700px) {
+  .acts .btn { min-height: 50px; }
+  .panel.dock { padding-top: 8px; padding-bottom: calc(8px + var(--safeB)); }
+  .flipn { margin-top: 6px; }
+  .hud { padding-top: 8px; }
+  .hud .num { font-size: clamp(38px, 11vw, 60px); }
+  .start { gap: 10px; }
+  .start p { font-size: 14px; }
+  .play { height: 60px; }
+}
+
+/* ---- wide: stage left, controls right (desktop, tablets in landscape, phones in landscape) ---- */
+@media (min-width: 900px), (orientation: landscape) and (min-width: 600px) and (max-height: 600px) {
+  .wrap { padding: 0 20px; }
+  header.top { padding: var(--safeT) 0 0; height: calc(64px + var(--safeT)); }
+  header.top h1 { font-size: 18px; }
+  .tb-side { width: 200px; }
+  .icon-btn .wide { display: inline; }
+  .icon-btn:not(.back) { padding: 0 14px; }
+  .game { display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: auto auto auto 1fr; gap: 12px; align-items: start; }
+  .screen, .below { display: contents; }
+  .stage { grid-column: 1; grid-row: 1 / 5; align-self: start; height: max(460px, min(calc(100vh - 88px), 860px)); border: 1px solid var(--line); border-radius: var(--radius); }
+  .panel.dock { grid-column: 2; grid-row: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px; }
+  .dock h3 { display: block; }
+  #pCh { grid-column: 2; grid-row: 2; }
+  #pSet { grid-column: 2; grid-row: 3; }
+  .sec, .ad-wrap { padding: 0; }
+  .sec { margin-top: 20px; }
+  .sec.more { margin-top: 28px; }
+}
+@media (orientation: landscape) and (min-width: 600px) and (max-height: 600px) {
+  header.top { height: calc(var(--topH) + var(--safeT)); }
+  .tb-side { width: 150px; }
+  .game { grid-template-columns: minmax(0, 1fr) min(360px, 44%); gap: 10px; }
+  .stage { align-self: start; height: calc(100dvh - var(--topH) - var(--safeT) - 12px); min-height: 260px; }
+  .wrap { padding: 0 12px; }
+}
+
+
+/* ===== preview build additions: start menu, modes, builder, share card, UX pass ===== */
+.stage-menu { position: absolute; left: 10px; top: 10px; z-index: 2; width: 44px; height: 44px; border-radius: 12px; background: rgba(16,17,24,.74);
+              border: 1px solid var(--line); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+              -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.stage-menu svg { width: 20px; height: 20px; }
+.stage-menu:active { transform: scale(.94); }
+.stage:has(.start:not(.hide)) .stage-menu { visibility: hidden; }
+.start { justify-content: flex-start; overflow-y: auto; gap: 12px; }
+.start > .kick { margin-top: auto; }
+.start > .alt { margin-bottom: auto; }
+.start-x { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: rgba(23,24,33,.9); color: var(--text);
+           display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.start-x svg { width: 20px; height: 20px; }
+.start-x[hidden] { display: none; }
+.s-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(380px, 100%); }
+.s-row[hidden], .s-meta[hidden] { display: none; }
+.s-btn { display: flex; align-items: center; gap: 9px; text-align: left; min-height: 58px; padding: 8px 10px 8px 12px; border-radius: 14px; background: rgba(23,24,33,.9);
+         border: 1px solid var(--line); color: var(--text); cursor: pointer; transition: border-color .15s, transform .08s; }
+.s-btn:active { transform: scale(.97); }
+@media (hover: hover) { .s-btn:hover { border-color: var(--gold); } }
+.s-btn svg { width: 24px; height: 24px; flex: 0 0 auto; color: var(--gold); }
+.s-btn span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.s-btn b { font-size: 15px; line-height: 1.15; }
+.s-btn small { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+.s-btn.daily { border-color: rgba(255,204,102,.6); background: rgba(42,33,14,.92); }
+.s-btn.daily.done svg { color: var(--lime); }
+.s-meta { font-size: 13px; color: var(--gold); max-width: 380px; line-height: 1.4; background: rgba(255,204,102,.08); border: 1px solid rgba(255,204,102,.3); padding: 8px 12px; border-radius: 10px; }
+.start h2 { overflow-wrap: anywhere; max-width: 100%; }
+.start.intro h2 { font-size: clamp(26px, 7.5vw, 40px); }
+
+/* control buttons: label + sub + desktop key, feedback when pressed, locked tools */
+.acts .btn { position: relative; }
+.acts .btn .t { display: block; }
+.keys { display: none; margin: 10px 2px 0; font-size: 12px; color: var(--dim); line-height: 1.6; }
+.keys kbd { font: 700 11px/1 InterB, system-ui, sans-serif; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 5px; margin-right: 3px; }
+@media (hover: hover) and (pointer: fine) { .keys { display: block; } }
+@media (max-width: 430px) { .goal .tag { letter-spacing: .6px; } }
+.btn.locked { opacity: .45; }
+.btn.locked small { color: var(--dim); }
+.btn.hit { animation: hit .35s ease-out; }
+.btn.nope { animation: nope .3s; }
+@keyframes hit { 0% { background: rgba(255,204,102,.3); box-shadow: 0 0 0 0 rgba(255,204,102,.55); } 100% { box-shadow: 0 0 0 12px rgba(255,204,102,0); } }
+@keyframes nope { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* first-time tip (bottom right of the board), dismissible */
+.goal .hint { pointer-events: auto; display: flex; align-items: center; gap: 0; padding: 0 0 0 10px; min-height: 44px; }
+.goal .hint[hidden] { display: none; }
+.goal .hint button { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; margin-left: -4px; }
+.goal .hint button svg { width: 16px; height: 16px; }
+
+/* result banner */
+.banner { padding-top: 14px; }
+.banner .x { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border: 0; background: none; color: var(--dim); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.banner .x svg { width: 18px; height: 18px; }
+.banner .big { padding: 0 28px; }
+.banner .note { font-size: 12px; color: var(--dim); margin-top: 6px; line-height: 1.35; }
+.banner .note[hidden] { display: none; }
+.banner .row .btn { flex-direction: column; gap: 1px; line-height: 1.1; }
+.banner .row .btn small { font-size: 11px; color: rgba(26,20,6,.7); }
+
+/* challenge panel: daily + create chips, mode details */
+.chip.daily { border-color: rgba(255,204,102,.6); color: var(--gold); }
+.chip.make { border-style: dashed; }
+.goaltext .gt-title { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
+.goaltext .gt-line { display: block; }
+.goaltext .gt-exit { margin-top: 10px; min-height: 44px; font-size: 14px; }
+
+/* modals: bottom sheet on phones, centred card on bigger screens */
+html.modal-open, html.modal-open body { overflow: hidden; }
+.modal { position: fixed; inset: 0; z-index: 20; background: rgba(5,5,8,.74); display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity .2s;
+         padding: var(--safeT) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
+.modal[hidden] { display: none; }
+.modal.in { opacity: 1; }
+.sheet { width: 100%; max-width: 560px; max-height: calc(100% - 16px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-bottom: 0;
+         border-radius: 20px 20px 0 0; transform: translateY(28px); transition: transform .25s ease-out; }
+.modal.in .sheet { transform: none; }
+@media (min-width: 640px) and (min-height: 620px) {
+  .modal { align-items: center; padding: 24px; }
+  .sheet { border-radius: 20px; border-bottom: 1px solid var(--line); max-height: 100%; }
+}
+.sheet-h { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 18px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+.sheet-h h2 { flex: 1; margin: 0; font-size: 18px; }
+.sheet-b { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 14px 16px 8px; flex: 1 1 auto; min-height: 0; }
+.sheet-f { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 16px calc(12px + var(--safeB)); border-top: 1px solid var(--line); flex: 0 0 auto; }
+.sheet-f.three { grid-template-columns: 1.25fr 1fr 1fr; }
+.sheet-f .btn { padding: 0 8px; font-size: 14px; }
+.stage:has(.banner.show) .goal .hint { visibility: hidden; }
+.sheet-f .btn small { display: none; }
+.lbl { font-size: 14px; color: var(--muted); margin: 4px 0 8px; }
+.sheet .field { margin-bottom: 10px; }
+.sheet .field.off { opacity: .4; }
+.sheet .seg { margin-bottom: 12px; }
+.sheet .chips { margin-bottom: 12px; }
+.sheet .chip[aria-pressed="false"] { color: var(--muted); }
+#bdTitle { width: 100%; min-height: 48px; font: 700 16px/1.3 InterB, system-ui, sans-serif; background: #0b0c10; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text); }
+#bdTitle:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.bd-flips { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; color: var(--muted); font-size: 14px; }
+.bd-flips.off { opacity: .4; }
+.bd-flips .btn { min-height: 44px; min-width: 44px; width: 44px; padding: 0; font-size: 20px; }
+.bd-flips output { min-width: 40px; text-align: center; color: var(--text); font-size: 16px; }
+.bd-tip { font: 400 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--dim); margin: 0 0 10px; }
+.linkbox { display: flex; gap: 8px; margin-bottom: 6px; }
+.linkbox input { flex: 1; min-width: 0; min-height: 46px; font: 400 13px system-ui, sans-serif; background: #0b0c10; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; }
+.linkbox .btn { flex: 0 0 auto; min-height: 46px; }
+.card-img img { display: block; margin: 0 auto; max-width: 100%; width: auto; height: auto; max-height: min(56vh, 560px); max-height: min(56dvh, 560px); border-radius: 12px; background: #101116; }
+.cd-hint { font-size: 13px; color: var(--muted); text-align: center; margin: 10px 0 0; }
+.cd-hint[hidden] { display: none; }
+.icon-btn.x { min-width: 44px; padding: 0; }
+
+/* tablets in portrait: bigger dock */
+@media (min-width: 600px) and (max-width: 899px) and (orientation: portrait) {
+  .panel.dock { padding: 14px 18px calc(14px + var(--safeB)); }
+  .acts { gap: 10px; }
+  .acts .btn { min-height: 66px; font-size: 17px; }
+  .acts .btn small { font-size: 12.5px; }
+  .flipn { font-size: 15px; margin-top: 10px; }
+  .hud .num { font-size: 76px; }
+  .goal .tag, .goal .hint { font-size: 13px; }
+}
+/* very short stages (phones in landscape, in-app browsers): compact start screen */
+@media (max-height: 520px) {
+  .start { gap: 8px; padding: 10px 60px; }
+  .start h2, .start.intro h2 { font-size: 24px; }
+  .start .kick { font-size: 11px; }
+  .start:not(.intro) p { display: none; }
+  .start.intro p { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .s-meta { font-size: 12px; padding: 6px 10px; }
+  .play { height: 50px; font-size: 20px; padding: 0 34px; }
+  .s-btn { min-height: 48px; padding: 4px 10px; }
+  .s-btn small { display: none; }
+  .hud .num { font-size: 40px; }
+}
+@media (max-width: 899px) and (max-height: 700px) and (min-height: 521px) {
+  .start:not(.intro) p { font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn.hit, .btn.nope { animation: none; }
+  .banner, .toast, .modal, .sheet { transition: none; }
+}
+
+/* screenshot mode for the share image */
+body.og { overflow: hidden; }
+body.og .wrap { max-width: none; padding: 0; }
+body.og .stage-menu, body.og header.top, body.og .dock, body.og .below, body.og .ad-wrap, body.og footer, body.og .goal, body.og .start, body.og .sec { display: none; }
+body.og .screen { height: 100vh; }
+body.og .stage { height: 100vh; border-radius: 0; border: 0; }
+body.og .ogtitle { display: block; }
+body.og .game { display: block; }
+body.og .timer { display: none; }
+.ogtitle { display: none; position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; font-size: 54px; letter-spacing: -.5px; text-shadow: 0 2px 20px rgba(0,0,0,.7); pointer-events: none; }
+.ogtitle span { color: var(--gold); }
+.ogtitle small { display: block; font-size: 20px; letter-spacing: 6px; color: var(--muted); margin-top: 8px; }
+</style>
+<script>
+/* Fit the game screen to the visible viewport (in-app browser toolbars included). Only re-measured near the top of the page or on a width change, so scrolling never makes the layout jump. */
+(function () {
+  var d = document.documentElement, lastW = 0;
+  function set(force) {
+    var a = document.activeElement;
+    if (!force && a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type !== 'range'))) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    if (!force && w === lastW && window.scrollY > 40) return;
+    lastW = w; d.style.setProperty('--vh', h + 'px'); d.classList.add('vh');
+  }
+  set(true);
+  window.addEventListener('resize', function () { set(false); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { set(true); }, 300); });
+  window.addEventListener('pageshow', function () { set(true); });
+})();
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3532470064725978" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="tb-side">
+      <a class="icon-btn back" href="/games" aria-label="Back to all games">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Games
+      </a>
+    </div>
+    <h1>Metronome <span>Sync</span><span class="sr"> Game</span></h1>
+    <div class="tb-side r">
+      <button class="icon-btn" id="share" aria-label="Share this game">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span class="wide">Share</span>
+      </button>
+      <button class="icon-btn" id="mute" aria-label="Sound on or off" aria-pressed="false">
+        <svg id="snd-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14"/></svg>
+        <svg id="snd-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="game">
+    <div class="screen">
+      <section class="stage" id="stage" aria-label="Metronomes on a rolling board. Tap a metronome to flip it.">
+        <canvas id="cv"></canvas>
+        <button class="stage-menu" id="menu" type="button" aria-label="Menu: daily, create a level, challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <div class="hud" id="hud">
+          <div class="lab">IN STEP</div>
+          <div class="num"><span id="pct">0</span>%</div>
+          <div class="bar"><i id="bar"></i></div>
+          <div class="timer" id="timer">0.0 s</div>
+        </div>
+        <div class="goal"><div class="tag" id="tag"></div><div class="hint" id="hint" hidden><span id="hintT">Tap one to flip it</span><button id="hintX" type="button" aria-label="Got it, hide this tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+        <div class="banner" id="banner" role="status" aria-live="polite">
+          <button class="x" id="bClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <div class="big" id="bannerBig">Synced in 0.0 s!</div>
+          <div class="sub" id="bannerSub"></div>
+          <div class="note" id="bannerNote" hidden></div>
+          <div class="row"><button class="btn gold" id="bShare">Share<small id="bShareSub">image + link</small></button><button class="btn" id="bAgain">Again</button></div>
+        </div>
+        <div class="start" id="start">
+          <button class="start-x" id="startX" type="button" aria-label="Back to the board" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <div class="kick" id="sKick">CHAOS TO ORDER</div>
+          <h2 id="sTitle">Can 100 metronomes<br><span>sync up?</span></h2>
+          <p id="sText">They share one board on rollers. That's their only link. Nudge it, shake it, flip a few, and watch chaos turn into order.</p>
+          <div class="s-meta" id="sMeta" hidden></div>
+          <button class="play" id="play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg><span>Play</span></button>
+          <div class="s-row" id="sRow">
+            <button class="s-btn daily" id="bDaily" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4"/></svg><span><b id="dailyName">Daily</b><small id="dailySub">New puzzle every day</small></span></button>
+            <button class="s-btn" id="bCreate" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span><b>Create level</b><small>share it as a link</small></span></button>
+          </div>
+          <button class="alt" id="toChallenges" type="button">or pick a challenge</button>
+        </div>
+        <div class="ogtitle">Can 100 metronomes <span>sync?</span><small>CHAOS TO ORDER · PLAY IT</small></div>
+      </section>
+
+      <div class="panel dock" id="dock">
+        <h3>DO SOMETHING</h3>
+        <div class="acts">
+          <button class="btn" id="aNudge" aria-keyshortcuts="N"><span class="t">Nudge</span><small>push board once</small></button>
+          <button class="btn" id="aShake" aria-keyshortcuts="S"><span class="t">Shake</span><small>motor 229</small></button>
+          <button class="btn" id="aFlip" aria-keyshortcuts="F"><span class="t">Flip 4</span><small>reverse swings</small></button>
+          <button class="btn" id="aBig" aria-keyshortcuts="B"><span class="t">Add big one</span><small>18x heavier</small></button>
+          <button class="btn" id="aWeights" aria-keyshortcuts="W"><span class="t">Add weights</span><small>48 kg</small></button>
+          <button class="btn" id="aLift" aria-keyshortcuts="L"><span class="t">Lift 20 off</span><small>off the board</small></button>
+        </div>
+        <div class="flipn"><span>Flip how many?</span>
+          <button class="btn" id="fMinus" aria-label="Flip fewer">&minus;</button><output id="flipN">4</output><button class="btn" id="fPlus" aria-label="Flip more">+</button>
+          <span class="used">Flips: <span id="flipsUsed">0</span></span>
+        </div>
+        <p class="keys">Keys: <kbd>N</kbd>nudge <kbd>S</kbd>shake <kbd>F</kbd>flip <kbd>B</kbd>big one <kbd>W</kbd>weights <kbd>L</kbd>lift <kbd>R</kbd>restart <kbd>M</kbd>sound</p>
+      </div>
+    </div>
+
+    <div class="below">
+      <div class="panel" id="pCh">
+        <h3 id="challenges">CHALLENGES</h3>
+        <div class="chips" id="chips"></div>
+        <div class="goaltext" id="goaltext"></div>
+      </div>
+
+      <div class="panel" id="pSet">
+        <h3>SET UP</h3>
+        <div class="field"><label for="sN">Metronomes <output id="oN">100</output></label><input type="range" id="sN" min="1" max="100" value="100"></div>
+        <div class="field"><label for="sB">Speed (ticks a minute) <output id="oB">208</output></label><input type="range" id="sB" min="120" max="240" step="4" value="208"></div>
+        <div class="seg" role="group" aria-label="Teams">
+          <button class="btn on" data-start="random">Random</button>
+          <button class="btn" data-start="tie2">2 teams</button>
+          <button class="btn" data-start="tie3">3 teams</button>
+        </div>
+        <div class="row2"><button class="btn" id="reset" aria-keyshortcuts="R">Reset</button><button class="btn" id="rand">Randomise</button></div>
+      </div>
+    </div>
+  </main>
+
+  <section class="sec more" id="more-games" aria-labelledby="mgH">
+    <div class="sec-h"><h2 id="mgH">More games</h2><a href="/games">See all</a></div>
+    <div class="mg-list" id="mgList">
+      <a class="mg" href="/bump-theory/" style="--accent:#ffcc33"><img src="/images/games/bump-theory.webp" alt="" width="640" height="360" loading="lazy" decoding="async"><span><b>1 Ball → 10,000</b><small>Bump Theory · Puzzle</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+    </div>
+  </section>
+
+  <!-- AdSense slot -->
+  <div class="ad-wrap"><div class="ad-slot" id="ad-slot" aria-hidden="true"></div></div>
+
+  <div class="sec">
+    <!-- Suggestions box (posts to /game-feedback) -->
+    <details class="fold suggest" id="suggestions">
+      <summary>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1121 12z"/></svg></span>
+        <span class="tx"><b>Suggestions</b><small>Tell us what to add, fix or change</small></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </summary>
+      <form id="sgForm" method="post" action="/game-feedback" novalidate>
+        <label for="sgMsg">What should we add, fix or change?</label>
+        <textarea id="sgMsg" name="message" maxlength="500" rows="4" required placeholder="A new level idea, a bug, a feature..."></textarea>
+        <div class="sg-count"><span id="sgCount">0</span>/500</div>
+        <label for="sgContact">Name or email <span>(optional, only if you want a reply)</span></label>
+        <input id="sgContact" name="contact" maxlength="120" autocomplete="email">
+        <input class="sg-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <input type="hidden" name="game" value="metronomes">
+        <button type="submit" class="sg-send">Send</button>
+        <p class="sg-status" role="status" aria-live="polite"></p>
+        <p class="sg-note">Suggestions are stored privately on this site and read only by us. See the <a href="/privacy">privacy policy</a>.</p>
+      </form>
+    </details>
+  </div>
+
+  <div class="sec">
+    <details class="fold guide" id="how-it-works">
+      <summary>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></span>
+        <span class="tx"><b>How it works</b><small>Why metronomes fall into sync: the real physics</small></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </summary>
+      <div class="guide-body">
+        <h2>How it works: why metronomes fall into sync</h2>
+        <p>Put a group of metronomes on a board that can roll, start them at random, and within a minute or two they all tick together. This game runs the same equations as the Chaos to Order videos: nothing is scripted.</p>
+
+        <h3>Each metronome is a self-driven pendulum</h3>
+        <p>A metronome is a pendulum with an escapement: a small spring mechanism that gives the pendulum a tiny kick on every swing. If the swing gets too small, the kicks add energy; if it gets too big, friction wins. So every metronome settles into its own steady swing. Like real ones, each metronome in the game runs a tiny fraction of a percent faster or slower than its neighbours, so on their own they would drift apart forever.</p>
+
+        <h3>The rolling board connects them</h3>
+        <p>The board sits on rollers, so it can slide left and right. When a pendulum swings to the right, it pushes the board slightly to the left, just as stepping forward in a small boat pushes the boat backward. That is conservation of momentum. The board's motion in turn shakes every metronome on it. This is called <em>coupling</em>, and the board is the only link between them.</p>
+        <p>Here is the key effect. When most metronomes swing together, the board rocks in rhythm with them. A metronome that is slightly ahead of the crowd gets its base moved in a way that slows it a little; one that is behind gets sped up a little. Small nudges, repeated a hundred times a minute, pull everyone toward the common beat.</p>
+
+        <h3>Phase locking and the Kuramoto picture</h3>
+        <p>Physicists describe each metronome by its <em>phase</em>: where it is in its swing, as an angle on a circle (0° at one end, 180° at the other, back to 360°). Yoshiki Kuramoto showed in the 1970s that a crowd of oscillators with slightly different natural speeds will suddenly lock to a shared rhythm once the coupling between them is strong enough compared with how different they are. Fireflies flashing together and audiences clapping in unison follow the same rule. Metronomes on a board are the classic tabletop example, worked out by James Pantaleone in the American Journal of Physics in 2002, the paper this game's engine is based on.</p>
+
+        <h3>What the numbers in the game mean</h3>
+        <ul>
+          <li><strong>IN STEP %</strong> is the Kuramoto order parameter. Picture every metronome as an arrow pointing to its phase on a circle and average all the arrows. If they point every which way, the average is close to zero (0%). If they all point the same way, the average is a full-length arrow (100%). The game shows it averaged over the last half second so it doesn't flicker.</li>
+          <li><strong>Synced in X s</strong> appears when the counter reaches 100% and stays there for half a second. The timer counts from the start of the round or your last action.</li>
+          <li><strong>Speed (ticks a minute)</strong> is the tempo. A tick is half a swing, so 208 ticks a minute is about 1.7 full swings per second.</li>
+          <li><strong>BEAT NOW</strong>, shown while the motor runs, is the tempo the crowd is actually keeping, measured from the average swing.</li>
+        </ul>
+
+        <h3>What each button does to the physics</h3>
+        <ul>
+          <li><strong>Nudge</strong> gives the board one short shove. It disturbs everyone at once, which can break a stuck pattern.</li>
+          <li><strong>Shake</strong> starts a motor that rocks the board at 1.1 times the metronomes' tempo (229 against 208). A strong steady drive can drag oscillators onto its own beat, a process called entrainment. Watch BEAT NOW to see whose beat wins.</li>
+          <li><strong>Flip</strong> reverses a metronome's swing as it passes the centre, jumping it half a cycle. Tap a single metronome to flip just that one.</li>
+          <li><strong>Add big one</strong> sets down a metronome 18 times heavier. It pushes the board 18 times harder than any other, so the crowd tends to fall in behind it.</li>
+          <li><strong>Add weights</strong> puts 48 kg on the board. A heavier board barely moves, so the coupling becomes very weak and the metronomes stay out of step for a long time. Take the weights off and syncing resumes.</li>
+        </ul>
+
+        <h3>Why some ties never break</h3>
+        <p>In the <em>Break the 3-way tie</em> challenge, three equal teams are a third of a swing apart. Their pushes on the board cancel exactly, like three people pulling a ring at 120° to each other, so the board stays still and nothing pulls the teams together. Remove that symmetry by flipping a few metronomes from one team, lifting some off or adding the big one, and the board starts to move and sync takes over. The <em>50 vs 50</em> tie (two teams half a swing apart) also cancels at first, but it is unstable: the tiniest imbalance grows, and left alone it breaks in about 15 seconds.</p>
+
+        <h3>Is it exactly real?</h3>
+        <p>The equations are the published model, solved with the 4th-order Runge-Kutta method in small time steps, using realistic masses and lengths. Only the drawing is exaggerated: the board's sway is shown at twice its real size so you can see it. You can try the same experiment at home with a few metronomes on a light board resting on two drink cans.</p>
+        <p>Read more: <a href="/articles/why-metronomes-sync">Why do metronomes sync on a moving board?</a></p>
+      </div>
+    </details>
+  </div>
+
+  <footer>
+    <a class="yt" href="https://www.youtube.com/@chaostoorderlab" rel="noopener" target="_blank">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#ff3d3d" d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.6 12a31 31 0 00.4 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.4-4.8 31 31 0 00-.4-4.8z"/><path fill="#fff" d="M9.8 15.1L15.6 12 9.8 8.9z"/></svg>
+      Watch on YouTube: Chaos to Order</a>
+    <p>The motion is real physics: each metronome is a pendulum with an escapement, and they all push on the same board on rollers (Pantaleone 2002, American Journal of Physics). The board's sway is drawn twice its real size so you can see it.</p>
+    <p class="stats-note">Play stats are anonymous and use no cookies. Ads are served by Google, which may use cookies: see the <a href="/privacy">privacy policy</a>.</p>
+    <nav class="site" aria-label="Site">
+      <a href="/games">More games</a><a href="/">Home</a><a href="/bump-theory/">Bump Theory game</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a>
+    </nav>
+  </footer>
+</div>
+<div class="modal" id="builder" hidden role="dialog" aria-modal="true" aria-labelledby="bdH">
+  <div class="sheet">
+    <div class="sheet-h"><h2 id="bdH">Create a level</h2><button class="icon-btn x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="sheet-b">
+      <div class="field"><label for="bdTitle">Level name <output id="bdTitleN">0/40</output></label><input id="bdTitle" type="text" maxlength="40" placeholder="e.g. Chaos in 10 seconds" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
+      <div class="field"><label for="bdN">Metronomes <output id="bdNo">100</output></label><input type="range" id="bdN" min="2" max="100" value="100"></div>
+      <div class="field"><label for="bdB">Speed (ticks a minute) <output id="bdBo">208</output></label><input type="range" id="bdB" min="120" max="240" step="4" value="208"></div>
+      <div class="lbl">Start</div>
+      <div class="seg" id="bdStart" role="group" aria-label="Start"><button class="btn on" type="button" data-v="random">Random</button><button class="btn" type="button" data-v="tie2">2 teams</button><button class="btn" type="button" data-v="tie3">3 teams</button></div>
+      <div class="field" id="bdSpreadF"><label for="bdS">Start chaos (random only) <output id="bdSo">100%</output></label><input type="range" id="bdS" min="1" max="10" value="10"></div>
+      <div class="lbl">Tools players can use</div>
+      <div class="chips" id="bdTools">
+        <button class="chip on" type="button" data-t="nudge" aria-pressed="true">Nudge</button><button class="chip on" type="button" data-t="shake" aria-pressed="true">Shake</button><button class="chip on" type="button" data-t="flip" aria-pressed="true">Flip</button><button class="chip on" type="button" data-t="big" aria-pressed="true">Big one</button><button class="chip on" type="button" data-t="weights" aria-pressed="true">Weights</button><button class="chip on" type="button" data-t="lift" aria-pressed="true">Lift 20</button>
+      </div>
+      <div class="chips"><button class="chip" type="button" id="bdW" aria-pressed="false">Start with 48 kg weights on</button></div>
+      <div class="bd-flips" id="bdFlipRow"><span>Max flips</span><button class="btn" type="button" id="bdFm" aria-label="Fewer flips">&minus;</button><output id="bdF">Any</output><button class="btn" type="button" id="bdFp" aria-label="More flips">+</button></div>
+      <div class="field"><label for="bdT">Target time <output id="bdTo">15.0 s</output></label><input type="range" id="bdT" min="1" max="120" step="0.5" value="15"></div>
+      <p class="bd-tip">Tip: tap Play it, sync it yourself, then share. Friends get your level and your time to beat.</p>
+      <div class="linkbox"><input id="bdLink" type="text" readonly aria-label="Level link"><button class="btn" type="button" id="bdCopy">Copy</button></div>
+    </div>
+    <div class="sheet-f"><button class="btn" type="button" id="bdPlay">Play it</button><button class="btn gold" type="button" id="bdShare">Share link</button></div>
+  </div>
+</div>
+<div class="modal" id="cardM" hidden role="dialog" aria-modal="true" aria-labelledby="cdH">
+  <div class="sheet">
+    <div class="sheet-h"><h2 id="cdH">Share your result</h2><button class="icon-btn x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="sheet-b"><div class="card-img"><img id="cdImg" alt="Your result card: the board, your time and the game address" width="1080" height="1350"></div><p class="cd-hint" id="cdHint" hidden></p></div>
+    <div class="sheet-f three"><button class="btn gold" type="button" id="cdShare"><span class="t">Share</span></button><button class="btn" type="button" id="cdSave">Save image</button><button class="btn" type="button" id="cdCopy">Copy text</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="stats.js?v=b1"></script>
+<script src="engine.js?v=b1"></script>
+<script src="levels.js?v=b1"></script>
+<script src="game.js?v=b1"></script>
+<script src="page.js?v=b1" defer></script>
+<script src="/game-feedback.js?v=1" defer></script>
+</body>
+</html>

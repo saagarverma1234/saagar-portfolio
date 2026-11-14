@@ -25,6 +25,7 @@ class MetronomeStats
     public const EVENTS = [
         'pageview', 'play', 'control', 'synced', 'challenge_start', 'challenge_complete', 'share', 'mute', 'heartbeat',
         'level', 'result',
+        'level_created', 'level_played', 'daily_played', 'daily_completed', 'share_card',
     ];
 
     /**
@@ -45,7 +46,17 @@ class MetronomeStats
 
     public const CONTROLS = [
         'nudge', 'shake', 'flip', 'big', 'weights', 'lift', 'teams', 'count', 'speed', 'reset', 'randomise', 'again', 'tap',
+        'menu', 'create',
     ];
+
+    /** Start layouts a player level can use. */
+    public const LEVEL_STARTS = ['random', 'tie2', 'tie3'];
+
+    /** What a player did with the result card. */
+    public const CARD_ACTIONS = ['open', 'share', 'save', 'copy'];
+
+    /** Game modes of the metronome game, sent with share_card. */
+    public const PLAY_MODES = ['free', 'challenge', 'daily', 'level'];
 
     public const CHALLENGES = ['c100', '5050', 'tie3', 'shake', 'weights', 'lift', 'big'];
 
@@ -331,6 +342,34 @@ class MetronomeStats
                         $extra['sc'] = (int) $this->number($data['sc'], 0, 100000000);
                     }
                 }
+                break;
+            case 'level_created':
+                $row['ctrl'] = in_array($data['s'] ?? '', self::LEVEL_STARTS, true) ? $data['s'] : '';
+                $row['num'] = $this->number($data['tg'] ?? null, 0, 600);
+                $extra['n'] = (int) $this->number($data['n'] ?? 0, 0, 100);
+                $extra['b'] = (int) $this->number($data['b'] ?? 0, 0, 300);
+                $extra['tl'] = (int) $this->number($data['tl'] ?? 0, 0, 63);
+                $extra['mf'] = (int) $this->number($data['mf'] ?? 0, 0, 99);
+                $extra['w'] = empty($data['w']) ? 0 : 1;
+                $extra['how'] = in_array($data['how'] ?? '', ['play', 'share', 'copy'], true) ? $data['how'] : '';
+                break;
+            case 'level_played':
+                $row['ctrl'] = ($data['src'] ?? '') === 'builder' ? 'builder' : 'link';
+                $row['num'] = $this->number($data['tg'] ?? null, 0, 600);
+                $extra['n'] = (int) $this->number($data['n'] ?? 0, 0, 100);
+                break;
+            case 'daily_played':
+                $row['num'] = $this->number($data['day'] ?? null, 0, 100000);
+                break;
+            case 'daily_completed':
+                $row['num'] = $this->number($data['t'] ?? null, 0, 36000);
+                $extra['day'] = (int) $this->number($data['day'] ?? 0, 0, 100000);
+                $extra['flips'] = (int) $this->number($data['flips'] ?? 0, 0, 100000);
+                $extra['par'] = empty($data['par']) ? 0 : 1;
+                break;
+            case 'share_card':
+                $row['ctrl'] = in_array($data['w'] ?? '', self::CARD_ACTIONS, true) ? $data['w'] : 'open';
+                $extra['m'] = in_array($data['m'] ?? '', self::PLAY_MODES, true) ? $data['m'] : 'free';
                 break;
             case 'mute':
                 $row['num'] = empty($data['on']) ? 0 : 1;

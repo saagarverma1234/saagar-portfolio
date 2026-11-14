@@ -154,6 +154,30 @@ test('events carry a whitelisted game and default to metronomes', function () {
         ->and(json_decode($rows[3]->data, true))->toBe(['won' => 1, 'st' => 2, 'sc' => 1234]);
 });
 
+test('level, daily and share card events are stored with clamped, whitelisted fields', function () {
+    beacon(['e' => 'level_created', 'test' => 1, 'd' => ['n' => 64, 'b' => 216, 's' => 'tie3', 'tl' => 63, 'tg' => 12.5, 'mf' => 5, 'w' => 1, 'how' => 'share']]);
+    beacon(['e' => 'level_played', 'd' => ['src' => 'link', 'n' => 64, 'tg' => 9999]]);
+    beacon(['e' => 'daily_played', 'd' => ['day' => 3]]);
+    beacon(['e' => 'daily_completed', 'd' => ['day' => 3, 't' => 7.4, 'flips' => 2, 'par' => 1]]);
+    beacon(['e' => 'share_card', 'd' => ['w' => 'save', 'm' => 'daily']]);
+    beacon(['e' => 'share_card', 'd' => ['w' => '<script>', 'm' => 'nope']]);
+
+    $rows = events();
+    expect($rows)->toHaveCount(6)
+        ->and($rows[0]->test)->toBe(1)
+        ->and($rows[0]->ctrl)->toBe('tie3')
+        ->and((float) $rows[0]->num)->toBe(12.5)
+        ->and(json_decode($rows[0]->data, true))->toBe(['n' => 64, 'b' => 216, 'tl' => 63, 'mf' => 5, 'w' => 1, 'how' => 'share'])
+        ->and($rows[1]->ctrl)->toBe('link')
+        ->and((float) $rows[1]->num)->toBe(600.0)
+        ->and((int) $rows[2]->num)->toBe(3)
+        ->and((float) $rows[3]->num)->toBe(7.4)
+        ->and(json_decode($rows[3]->data, true))->toBe(['day' => 3, 'flips' => 2, 'par' => 1])
+        ->and($rows[4]->ctrl)->toBe('save')
+        ->and($rows[5]->ctrl)->toBe('open')
+        ->and(json_decode($rows[5]->data, true))->toBe(['m' => 'free']);
+});
+
 test('the kids game never stores a browser id', function () {
     beacon(['e' => 'pageview', 'g' => 'swipe-theory', 'cid' => 'abcdef0123456789', 'sid' => '0123456789abcdef']);
 

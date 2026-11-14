@@ -1,4 +1,4 @@
 User-agent: *
-Disallow:
+Disallow: /metronomes-beta/
 
 Sitemap: https://saagarverma.com/sitemap.xml
