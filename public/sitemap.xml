@@ -43,18 +43,20 @@
     </url>
     <url>
         <loc>https://saagarverma.com/metronomes/</loc>
-        <changefreq>monthly</changefreq>
+        <lastmod>2026-11-15</lastmod>
+        <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://saagarverma.com/bump-theory/</loc>
-        <changefreq>monthly</changefreq>
+        <lastmod>2026-11-15</lastmod>
+        <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://saagarverma.com/swipe-theory/</loc>
-        <lastmod>2026-11-13</lastmod>
-        <changefreq>monthly</changefreq>
+        <lastmod>2026-11-15</lastmod>
+        <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>

@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Metronome Sync Game: Chaos to Order</title>
-<meta name="description" content="Play with 100 metronomes on a rolling board and watch them fall into sync. Nudge the board, shake it at 229 bpm, flip a few, break a perfect 3-way tie. Real physics from the Chaos to Order videos.">
+<title>Metronome Sync Game: Make 100 Metronomes Sync | Chaos to Order</title>
+<meta name="description" content="Free metronome sync game: 100 metronomes on a rolling board fall into sync, just like the viral video. Real physics, a daily challenge and shareable levels. Nudge, shake and flip them in your browser, from the Chaos to Order videos.">
 <link rel="canonical" href="https://saagarverma.com/metronomes/">
 <meta name="theme-color" content="#0f1015">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Chaos to Order">
-<meta property="og:title" content="Metronome Sync Game: Chaos to Order">
+<meta property="og:title" content="Metronome Sync Game: Can 100 Metronomes Sync?">
 <meta property="og:description" content="100 metronomes, one rolling board. Can you make them sync? Real physics from the viral Chaos to Order videos.">
 <meta property="og:url" content="https://saagarverma.com/metronomes/">
 <meta property="og:image" content="https://saagarverma.com/metronomes/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Metronome Sync Game: Chaos to Order">
+<meta name="twitter:title" content="Metronome Sync Game: Can 100 Metronomes Sync?">
 <meta name="twitter:description" content="100 metronomes, one rolling board. Can you make them sync?">
 <meta name="twitter:image" content="https://saagarverma.com/metronomes/og.png">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -338,6 +338,14 @@ footer nav.site a:hover { color: var(--text); text-decoration: underline; }
 .banner .note[hidden] { display: none; }
 .banner .row .btn { flex-direction: column; gap: 1px; line-height: 1.1; }
 .banner .row .btn small { font-size: 11px; color: rgba(26,20,6,.7); }
+/* 15 Nov: one "Play next" card to the ball multiplier game */
+.banner .nextg { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 6px 10px 6px 6px; min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text); text-decoration: none; text-align: left; }
+.banner .nextg:hover { border-color: rgba(255,204,102,.55); }
+.banner .nextg img { width: 64px; height: 36px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; background: #000; }
+.banner .nextg span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.15; }
+.banner .nextg small { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); }
+.banner .nextg b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.banner .nextg svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--gold); }
 
 /* challenge panel: daily + create chips, mode details */
 .chip.daily { border-color: rgba(255,204,102,.6); color: var(--gold); }
@@ -489,6 +497,7 @@ body.og .timer { display: none; }
           <div class="sub" id="bannerSub"></div>
           <div class="note" id="bannerNote" hidden></div>
           <div class="row"><button class="btn gold" id="bShare">Share<small id="bShareSub">image + link</small></button><button class="btn" id="bAgain">Again</button></div>
+          <a class="nextg" id="bNextGame" href="/bump-theory/?utm_source=metronomes&amp;utm_medium=playnext"><img src="/images/games/bump-theory.webp" alt="" width="64" height="36" loading="lazy" decoding="async"><span><small>Play next</small><b>1 Ball → 10,000</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
         </div>
         <div class="start" id="start">
           <button class="start-x" id="startX" type="button" aria-label="Back to the board" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
