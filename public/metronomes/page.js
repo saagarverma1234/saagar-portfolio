@@ -1,15 +1,8 @@
-/* Page glue for the Metronome Sync Game: "pick a challenge" link, How it works deep links, More games list. Never touches the game itself. */
+/* Page glue for the Metronome Sync game: How it works deep links, More games list. Never touches the game itself. */
 (function () {
   'use strict';
   try {
     var $ = function (id) { return document.getElementById(id); };
-
-    // "or pick a challenge" on the start screen: scroll to the challenge list and highlight it
-    var to = $('toChallenges'), pCh = $('pCh');
-    if (to && pCh) to.addEventListener('click', function () {
-      pCh.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      pCh.classList.add('flash'); setTimeout(function () { pCh.classList.remove('flash'); }, 1600);
-    });
 
     // links to #how-it-works or #suggestions open the folded box
     function openHash() {
@@ -25,7 +18,7 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (games) {
           if (!games || !games.length) return;
-          var here = location.pathname.replace(/\/+$/, '/');
+          var here = '/metronomes/';   // the preview is the metronome game: never list it under More games
           var others = games.filter(function (g) { return g.url !== here; });
           if (!others.length) return;
           var chev = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';

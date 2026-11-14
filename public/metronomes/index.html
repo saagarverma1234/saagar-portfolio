@@ -109,6 +109,23 @@ html.vh .screen { height: calc(var(--vh) - var(--topH) - var(--safeT)); }
 .play:active { transform: scale(.97); }
 .start .alt { background: none; border: 0; color: var(--text); font-size: 15px; min-height: 44px; padding: 0 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(255,255,255,.35); }
 
+/* 15 Nov (Saagar): minimal first screen. Home = title, one line, Play, one quiet row of links. No controls behind it on phones. */
+.start:not(.intro) .kick { display: none; }
+.start:not(.intro) { background: radial-gradient(ellipse at 50% 50%, rgba(10,10,14,.72), rgba(10,10,14,.95)); gap: 18px; }
+.start:not(.intro) p { max-width: 340px; text-wrap: balance; }
+.start:not(.intro) > h2 { margin-top: auto; }
+.start:not(.intro) .s-row { display: flex; justify-content: center; gap: 6px; width: auto; }
+.start:not(.intro) .s-btn { min-height: 44px; padding: 0 12px; background: none; border: 0; border-radius: 10px; gap: 6px; }
+.start:not(.intro) .s-btn.daily { background: none; }
+.start:not(.intro) .s-btn small { display: none; }
+.start:not(.intro) .s-btn svg { width: 18px; height: 18px; }
+.start:not(.intro) .s-btn b { font-size: 15px; font-weight: 600; color: var(--muted); }
+.start:not(.intro) .s-btn.daily b { color: var(--gold); }
+.start:not(.intro) .alt { font-size: 14px; color: var(--muted); text-decoration: none; min-height: 40px; }
+@media (max-width: 899px) and (orientation: portrait) {
+  .screen:has(.start:not(.hide)) .dock, main.game:has(.start:not(.hide)) .below { display: none; }
+}
+
 /* ---- controls ---- */
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px; }
 .panel h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: 3px; color: var(--dim); }
@@ -261,10 +278,151 @@ footer nav.site a:hover { color: var(--text); text-decoration: underline; }
   .wrap { padding: 0 12px; }
 }
 
+
+/* ===== 15 Nov additions: start menu, modes, builder, share card, UX pass ===== */
+.stage-menu { position: absolute; left: 10px; top: 10px; z-index: 2; width: 44px; height: 44px; border-radius: 12px; background: rgba(16,17,24,.74);
+              border: 1px solid var(--line); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+              -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.stage-menu svg { width: 20px; height: 20px; }
+.stage-menu:active { transform: scale(.94); }
+.stage:has(.start:not(.hide)) .stage-menu { visibility: hidden; }
+.start { justify-content: flex-start; overflow-y: auto; gap: 12px; }
+.start > .kick { margin-top: auto; }
+.start > .alt { margin-bottom: auto; }
+.start-x { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: rgba(23,24,33,.9); color: var(--text);
+           display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.start-x svg { width: 20px; height: 20px; }
+.start-x[hidden] { display: none; }
+.s-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(380px, 100%); }
+.s-row[hidden], .s-meta[hidden] { display: none; }
+.s-btn { display: flex; align-items: center; gap: 9px; text-align: left; min-height: 58px; padding: 8px 10px 8px 12px; border-radius: 14px; background: rgba(23,24,33,.9);
+         border: 1px solid var(--line); color: var(--text); cursor: pointer; transition: border-color .15s, transform .08s; }
+.s-btn:active { transform: scale(.97); }
+@media (hover: hover) { .s-btn:hover { border-color: var(--gold); } }
+.s-btn svg { width: 24px; height: 24px; flex: 0 0 auto; color: var(--gold); }
+.s-btn span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.s-btn b { font-size: 15px; line-height: 1.15; }
+.s-btn small { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+.s-btn.daily { border-color: rgba(255,204,102,.6); background: rgba(42,33,14,.92); }
+.s-btn.daily.done svg { color: var(--lime); }
+.s-meta { font-size: 13px; color: var(--gold); max-width: 380px; line-height: 1.4; background: rgba(255,204,102,.08); border: 1px solid rgba(255,204,102,.3); padding: 8px 12px; border-radius: 10px; }
+.start h2 { overflow-wrap: anywhere; max-width: 100%; }
+.start.intro h2 { font-size: clamp(26px, 7.5vw, 40px); }
+
+/* control buttons: label + sub + desktop key, feedback when pressed, locked tools */
+.acts .btn { position: relative; }
+.acts .btn .t { display: block; }
+.keys { display: none; margin: 10px 2px 0; font-size: 12px; color: var(--dim); line-height: 1.6; }
+.keys kbd { font: 700 11px/1 InterB, system-ui, sans-serif; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 5px; margin-right: 3px; }
+@media (hover: hover) and (pointer: fine) { .keys { display: block; } }
+@media (max-width: 430px) { .goal .tag { letter-spacing: .6px; } }
+.btn.locked { opacity: .45; }
+.btn.locked small { color: var(--dim); }
+.btn.hit { animation: hit .35s ease-out; }
+.btn.nope { animation: nope .3s; }
+@keyframes hit { 0% { background: rgba(255,204,102,.3); box-shadow: 0 0 0 0 rgba(255,204,102,.55); } 100% { box-shadow: 0 0 0 12px rgba(255,204,102,0); } }
+@keyframes nope { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* first-time tip (bottom right of the board), dismissible */
+.goal .hint { pointer-events: auto; display: flex; align-items: center; gap: 0; padding: 0 0 0 10px; min-height: 44px; }
+.goal .hint[hidden] { display: none; }
+.goal .hint button { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; margin-left: -4px; }
+.goal .hint button svg { width: 16px; height: 16px; }
+
+/* result banner */
+.banner { padding-top: 14px; }
+.banner .x { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border: 0; background: none; color: var(--dim); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.banner .x svg { width: 18px; height: 18px; }
+.banner .big { padding: 0 28px; }
+.banner .note { font-size: 12px; color: var(--dim); margin-top: 6px; line-height: 1.35; }
+.banner .note[hidden] { display: none; }
+.banner .row .btn { flex-direction: column; gap: 1px; line-height: 1.1; }
+.banner .row .btn small { font-size: 11px; color: rgba(26,20,6,.7); }
+
+/* challenge panel: daily + create chips, mode details */
+.chip.daily { border-color: rgba(255,204,102,.6); color: var(--gold); }
+.chip.make { border-style: dashed; }
+.goaltext .gt-title { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
+.goaltext .gt-line { display: block; }
+.goaltext .gt-exit { margin-top: 10px; min-height: 44px; font-size: 14px; }
+
+/* modals: bottom sheet on phones, centred card on bigger screens */
+html.modal-open, html.modal-open body { overflow: hidden; }
+.modal { position: fixed; inset: 0; z-index: 20; background: rgba(5,5,8,.74); display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity .2s;
+         padding: var(--safeT) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
+.modal[hidden] { display: none; }
+.modal.in { opacity: 1; }
+.sheet { width: 100%; max-width: 560px; max-height: calc(100% - 16px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-bottom: 0;
+         border-radius: 20px 20px 0 0; transform: translateY(28px); transition: transform .25s ease-out; }
+.modal.in .sheet { transform: none; }
+@media (min-width: 640px) and (min-height: 620px) {
+  .modal { align-items: center; padding: 24px; }
+  .sheet { border-radius: 20px; border-bottom: 1px solid var(--line); max-height: 100%; }
+}
+.sheet-h { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 18px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+.sheet-h h2 { flex: 1; margin: 0; font-size: 18px; }
+.sheet-b { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 14px 16px 8px; flex: 1 1 auto; min-height: 0; }
+.sheet-f { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 16px calc(12px + var(--safeB)); border-top: 1px solid var(--line); flex: 0 0 auto; }
+.sheet-f.three { grid-template-columns: 1.25fr 1fr 1fr; }
+.sheet-f .btn { padding: 0 8px; font-size: 14px; }
+.stage:has(.banner.show) .goal .hint { visibility: hidden; }
+.sheet-f .btn small { display: none; }
+.lbl { font-size: 14px; color: var(--muted); margin: 4px 0 8px; }
+.sheet .field { margin-bottom: 10px; }
+.sheet .field.off { opacity: .4; }
+.sheet .seg { margin-bottom: 12px; }
+.sheet .chips { margin-bottom: 12px; }
+.sheet .chip[aria-pressed="false"] { color: var(--muted); }
+#bdTitle { width: 100%; min-height: 48px; font: 700 16px/1.3 InterB, system-ui, sans-serif; background: #0b0c10; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text); }
+#bdTitle:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.bd-flips { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; color: var(--muted); font-size: 14px; }
+.bd-flips.off { opacity: .4; }
+.bd-flips .btn { min-height: 44px; min-width: 44px; width: 44px; padding: 0; font-size: 20px; }
+.bd-flips output { min-width: 40px; text-align: center; color: var(--text); font-size: 16px; }
+.bd-tip { font: 400 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--dim); margin: 0 0 10px; }
+.linkbox { display: flex; gap: 8px; margin-bottom: 6px; }
+.linkbox input { flex: 1; min-width: 0; min-height: 46px; font: 400 13px system-ui, sans-serif; background: #0b0c10; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; }
+.linkbox .btn { flex: 0 0 auto; min-height: 46px; }
+.card-img img { display: block; margin: 0 auto; max-width: 100%; width: auto; height: auto; max-height: min(56vh, 560px); max-height: min(56dvh, 560px); border-radius: 12px; background: #101116; }
+.cd-hint { font-size: 13px; color: var(--muted); text-align: center; margin: 10px 0 0; }
+.cd-hint[hidden] { display: none; }
+.icon-btn.x { min-width: 44px; padding: 0; }
+
+/* tablets in portrait: bigger dock */
+@media (min-width: 600px) and (max-width: 899px) and (orientation: portrait) {
+  .panel.dock { padding: 14px 18px calc(14px + var(--safeB)); }
+  .acts { gap: 10px; }
+  .acts .btn { min-height: 66px; font-size: 17px; }
+  .acts .btn small { font-size: 12.5px; }
+  .flipn { font-size: 15px; margin-top: 10px; }
+  .hud .num { font-size: 76px; }
+  .goal .tag, .goal .hint { font-size: 13px; }
+}
+/* very short stages (phones in landscape, in-app browsers): compact start screen */
+@media (max-height: 520px) {
+  .start { gap: 8px; padding: 10px 60px; }
+  .start h2, .start.intro h2 { font-size: 24px; }
+  .start .kick { font-size: 11px; }
+  .start:not(.intro) p { display: none; }
+  .start.intro p { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .s-meta { font-size: 12px; padding: 6px 10px; }
+  .play { height: 50px; font-size: 20px; padding: 0 34px; }
+  .s-btn { min-height: 48px; padding: 4px 10px; }
+  .s-btn small { display: none; }
+  .hud .num { font-size: 40px; }
+}
+@media (max-width: 899px) and (max-height: 700px) and (min-height: 521px) {
+  .start:not(.intro) p { font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn.hit, .btn.nope { animation: none; }
+  .banner, .toast, .modal, .sheet { transition: none; }
+}
+
 /* screenshot mode for the share image */
 body.og { overflow: hidden; }
 body.og .wrap { max-width: none; padding: 0; }
-body.og header.top, body.og .dock, body.og .below, body.og .ad-wrap, body.og footer, body.og .goal, body.og .start, body.og .sec { display: none; }
+body.og .stage-menu, body.og header.top, body.og .dock, body.og .below, body.og .ad-wrap, body.og footer, body.og .goal, body.og .start, body.og .sec { display: none; }
 body.og .screen { height: 100vh; }
 body.og .stage { height: 100vh; border-radius: 0; border: 0; }
 body.og .ogtitle { display: block; }
@@ -317,24 +475,33 @@ body.og .timer { display: none; }
     <div class="screen">
       <section class="stage" id="stage" aria-label="Metronomes on a rolling board. Tap a metronome to flip it.">
         <canvas id="cv"></canvas>
+        <button class="stage-menu" id="menu" type="button" aria-label="Menu: daily, create a level, challenges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
         <div class="hud" id="hud">
           <div class="lab">IN STEP</div>
           <div class="num"><span id="pct">0</span>%</div>
           <div class="bar"><i id="bar"></i></div>
           <div class="timer" id="timer">0.0 s</div>
         </div>
-        <div class="goal"><div class="tag" id="tag"></div><div class="hint" id="hint">Tap one to flip it</div></div>
+        <div class="goal"><div class="tag" id="tag"></div><div class="hint" id="hint" hidden><span id="hintT">Tap one to flip it</span><button id="hintX" type="button" aria-label="Got it, hide this tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
         <div class="banner" id="banner" role="status" aria-live="polite">
+          <button class="x" id="bClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           <div class="big" id="bannerBig">Synced in 0.0 s!</div>
           <div class="sub" id="bannerSub"></div>
-          <div class="row"><button class="btn gold" id="bShare">Share</button><button class="btn" id="bAgain">Again</button></div>
+          <div class="note" id="bannerNote" hidden></div>
+          <div class="row"><button class="btn gold" id="bShare">Share<small id="bShareSub">image + link</small></button><button class="btn" id="bAgain">Again</button></div>
         </div>
         <div class="start" id="start">
-          <div class="kick">CHAOS TO ORDER</div>
-          <h2>Can 100 metronomes<br><span>sync up?</span></h2>
-          <p>They share one board on rollers. That's their only link. Nudge it, shake it, flip a few, and watch chaos turn into order.</p>
-          <button class="play" id="play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>Play</button>
-          <button class="alt" id="toChallenges" type="button">or pick a challenge</button>
+          <button class="start-x" id="startX" type="button" aria-label="Back to the board" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <div class="kick" id="sKick">CHAOS TO ORDER</div>
+          <h2 id="sTitle">Can 100 metronomes<br><span>sync up?</span></h2>
+          <p id="sText">Tap to flip. Watch chaos turn into order.</p>
+          <div class="s-meta" id="sMeta" hidden></div>
+          <button class="play" id="play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg><span>Play</span></button>
+          <div class="s-row" id="sRow">
+            <button class="s-btn daily" id="bDaily" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4"/></svg><span><b id="dailyName">Daily</b><small id="dailySub">New puzzle every day</small></span></button>
+            <button class="s-btn" id="bCreate" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span><b>Create level</b><small>share it as a link</small></span></button>
+          </div>
+          <button class="alt" id="toChallenges" type="button">Challenges</button>
         </div>
         <div class="ogtitle">Can 100 metronomes <span>sync?</span><small>CHAOS TO ORDER · PLAY IT</small></div>
       </section>
@@ -342,17 +509,18 @@ body.og .timer { display: none; }
       <div class="panel dock" id="dock">
         <h3>DO SOMETHING</h3>
         <div class="acts">
-          <button class="btn" id="aNudge">Nudge<small>push board once</small></button>
-          <button class="btn" id="aShake">Shake<small id="shakeSub">motor 229</small></button>
-          <button class="btn" id="aFlip"><span>Flip <span id="flipLab">4</span></span><small>reverse swings</small></button>
-          <button class="btn" id="aBig">Add big one<small>18x heavier</small></button>
-          <button class="btn" id="aWeights">Add weights<small>48 kg</small></button>
-          <button class="btn" id="aLift">Lift 20 off<small>off the board</small></button>
+          <button class="btn" id="aNudge" aria-keyshortcuts="N"><span class="t">Nudge</span><small>push board once</small></button>
+          <button class="btn" id="aShake" aria-keyshortcuts="S"><span class="t">Shake</span><small>motor 229</small></button>
+          <button class="btn" id="aFlip" aria-keyshortcuts="F"><span class="t">Flip 4</span><small>reverse swings</small></button>
+          <button class="btn" id="aBig" aria-keyshortcuts="B"><span class="t">Add big one</span><small>18x heavier</small></button>
+          <button class="btn" id="aWeights" aria-keyshortcuts="W"><span class="t">Add weights</span><small>48 kg</small></button>
+          <button class="btn" id="aLift" aria-keyshortcuts="L"><span class="t">Lift 20 off</span><small>off the board</small></button>
         </div>
         <div class="flipn"><span>Flip how many?</span>
           <button class="btn" id="fMinus" aria-label="Flip fewer">&minus;</button><output id="flipN">4</output><button class="btn" id="fPlus" aria-label="Flip more">+</button>
           <span class="used">Flips: <span id="flipsUsed">0</span></span>
         </div>
+        <p class="keys">Keys: <kbd>N</kbd>nudge <kbd>S</kbd>shake <kbd>F</kbd>flip <kbd>B</kbd>big one <kbd>W</kbd>weights <kbd>L</kbd>lift <kbd>R</kbd>restart <kbd>M</kbd>sound</p>
       </div>
     </div>
 
@@ -372,7 +540,7 @@ body.og .timer { display: none; }
           <button class="btn" data-start="tie2">2 teams</button>
           <button class="btn" data-start="tie3">3 teams</button>
         </div>
-        <div class="row2"><button class="btn" id="reset">Reset</button><button class="btn" id="rand">Randomise</button></div>
+        <div class="row2"><button class="btn" id="reset" aria-keyshortcuts="R">Reset</button><button class="btn" id="rand">Randomise</button></div>
       </div>
     </div>
   </main>
@@ -469,11 +637,42 @@ body.og .timer { display: none; }
     </nav>
   </footer>
 </div>
-<div class="toast" id="toast"></div>
-<script src="stats.js?v=1"></script>
-<script src="engine.js?v=1"></script>
-<script src="game.js?v=3"></script>
-<script src="page.js?v=1" defer></script>
+<div class="modal" id="builder" hidden role="dialog" aria-modal="true" aria-labelledby="bdH">
+  <div class="sheet">
+    <div class="sheet-h"><h2 id="bdH">Create a level</h2><button class="icon-btn x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="sheet-b">
+      <div class="field"><label for="bdTitle">Level name <output id="bdTitleN">0/40</output></label><input id="bdTitle" type="text" maxlength="40" placeholder="e.g. Chaos in 10 seconds" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
+      <div class="field"><label for="bdN">Metronomes <output id="bdNo">100</output></label><input type="range" id="bdN" min="2" max="100" value="100"></div>
+      <div class="field"><label for="bdB">Speed (ticks a minute) <output id="bdBo">208</output></label><input type="range" id="bdB" min="120" max="240" step="4" value="208"></div>
+      <div class="lbl">Start</div>
+      <div class="seg" id="bdStart" role="group" aria-label="Start"><button class="btn on" type="button" data-v="random">Random</button><button class="btn" type="button" data-v="tie2">2 teams</button><button class="btn" type="button" data-v="tie3">3 teams</button></div>
+      <div class="field" id="bdSpreadF"><label for="bdS">Start chaos (random only) <output id="bdSo">100%</output></label><input type="range" id="bdS" min="1" max="10" value="10"></div>
+      <div class="lbl">Tools players can use</div>
+      <div class="chips" id="bdTools">
+        <button class="chip on" type="button" data-t="nudge" aria-pressed="true">Nudge</button><button class="chip on" type="button" data-t="shake" aria-pressed="true">Shake</button><button class="chip on" type="button" data-t="flip" aria-pressed="true">Flip</button><button class="chip on" type="button" data-t="big" aria-pressed="true">Big one</button><button class="chip on" type="button" data-t="weights" aria-pressed="true">Weights</button><button class="chip on" type="button" data-t="lift" aria-pressed="true">Lift 20</button>
+      </div>
+      <div class="chips"><button class="chip" type="button" id="bdW" aria-pressed="false">Start with 48 kg weights on</button></div>
+      <div class="bd-flips" id="bdFlipRow"><span>Max flips</span><button class="btn" type="button" id="bdFm" aria-label="Fewer flips">&minus;</button><output id="bdF">Any</output><button class="btn" type="button" id="bdFp" aria-label="More flips">+</button></div>
+      <div class="field"><label for="bdT">Target time <output id="bdTo">15.0 s</output></label><input type="range" id="bdT" min="1" max="120" step="0.5" value="15"></div>
+      <p class="bd-tip">Tip: tap Play it, sync it yourself, then share. Friends get your level and your time to beat.</p>
+      <div class="linkbox"><input id="bdLink" type="text" readonly aria-label="Level link"><button class="btn" type="button" id="bdCopy">Copy</button></div>
+    </div>
+    <div class="sheet-f"><button class="btn" type="button" id="bdPlay">Play it</button><button class="btn gold" type="button" id="bdShare">Share link</button></div>
+  </div>
+</div>
+<div class="modal" id="cardM" hidden role="dialog" aria-modal="true" aria-labelledby="cdH">
+  <div class="sheet">
+    <div class="sheet-h"><h2 id="cdH">Share your result</h2><button class="icon-btn x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="sheet-b"><div class="card-img"><img id="cdImg" alt="Your result card: the board, your time and the game address" width="1080" height="1350"></div><p class="cd-hint" id="cdHint" hidden></p></div>
+    <div class="sheet-f three"><button class="btn gold" type="button" id="cdShare"><span class="t">Share</span></button><button class="btn" type="button" id="cdSave">Save image</button><button class="btn" type="button" id="cdCopy">Copy text</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="stats.js?v=2"></script>
+<script src="engine.js?v=2"></script>
+<script src="levels.js?v=1"></script>
+<script src="game.js?v=4"></script>
+<script src="page.js?v=2" defer></script>
 <script src="/game-feedback.js?v=1" defer></script>
 </body>
 </html>

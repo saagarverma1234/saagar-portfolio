@@ -78,13 +78,14 @@
     this.v = -s / this.M;
   };
 
-  // start: 'random' | 'tie2' | 'tie3'; teams are by position (left/right or left/middle/right), xs = lattice x in [0,1]
+  // start: 'random' | 'tie2' | 'tie3'; spread (random only, 0.05..1) narrows the starting phases; teams are by position (left/right or left/middle/right), xs = lattice x in [0,1]
   Sim.prototype.reset = function (opt) {
     opt = opt || {};
     this.N = Math.max(1, Math.min(100, opt.N || 100));
     this.start = opt.start || 'random';
     this.seed = opt.seed != null ? opt.seed : (Math.random() * 1e9) | 0;
     this.weights = !!opt.weights;
+    var spread = opt.spread != null ? Math.max(0.05, Math.min(1, +opt.spread || 1)) : 1;   // random start: share of the full circle the phases cover
     this.setBpm(opt.bpm || 208);
     var rnd = mulberry(this.seed), N = this.N, i;
     var xs = opt.xs || null;
@@ -110,7 +111,7 @@
       for (k = 0; k < N; k++) this.team[order[k]] = k < a3 ? 0 : k < a3 + b3 ? 1 : 2;
     }
     for (i = 0; i < N; i++) {
-      var phi = nt === 1 ? rnd() * TAU : this.team[i] * TAU / nt + gauss(rnd) * 0.12;
+      var phi = nt === 1 ? (spread >= 1 ? rnd() * TAU : (rnd() - 0.5) * TAU * spread) : this.team[i] * TAU / nt + gauss(rnd) * 0.12;
       this.th[i] = A0 * Math.cos(phi); this.om[i] = -A0 * this.w0 * Math.sin(phi);
     }
     this.M = this.mass();
