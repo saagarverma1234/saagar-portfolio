@@ -11,17 +11,20 @@ use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 /**
- * Private stats page for the Metronome Sync Game.
+ * Private stats page for all web games, at /admin.
  *
- * Auth is a single password (bcrypt hash in config/metronomes.php) and a signed,
- * HttpOnly cookie, so it works without sessions, cache or database tables.
- * POSTs must come from this site (Origin check) on top of SameSite=Lax.
+ * Auth is one email + password (only hashes in config/metronomes.php: SHA-256 of
+ * the email, bcrypt of the password) and a signed, HttpOnly cookie, so it works
+ * without sessions, cache or database tables. POSTs must come from this site
+ * (Origin check) on top of SameSite=Lax.
  */
 class AdminController extends Controller
 {
     private const COOKIE = 'metronome_admin';
 
     private const COOKIE_DAYS = 30;
+
+    private const PATH = '/admin';
 
     private const PRESETS = ['today' => 'Today', 'yesterday' => 'Yesterday', '7d' => '7 days', '30d' => '30 days', 'all' => 'All time'];
 
@@ -31,11 +34,13 @@ class AdminController extends Controller
     {
         if (! $this->isAuthenticated($request)) {
             return $this->private(response()->view('metronomes.admin-login', [
-                'error' => $request->query('e') === 'bad' ? 'Wrong password.' : ($request->query('e') === 'wait' ? 'Too many tries. Wait 15 minutes.' : ($request->query('e') === 'origin' ? 'Please log in from this page.' : null)),
+                'error' => $request->query('e') === 'bad' ? 'Wrong email or password.' : ($request->query('e') === 'wait' ? 'Too many tries. Wait 15 minutes.' : ($request->query('e') === 'origin' ? 'Please log in from this page.' : null)),
             ]));
         }
 
         $includeTest = $request->boolean('test');
+        $game = (string) $request->query('game', '');
+        $this->stats->forGame(isset(MetronomeStats::GAMES[$game]) ? $game : null);
         if (! $this->stats->sqliteAvailable()) {
             return $this->private(response()->view('metronomes.admin', ['unavailable' => true, 'fallback' => $this->stats->fallbackPath()]));
         }
@@ -52,29 +57,33 @@ class AdminController extends Controller
     public function login(Request $request): Response
     {
         if (! $this->sameOrigin($request)) {
-            return $this->go('/metronomes-admin?e=origin');
+            return $this->go(self::PATH.'?e=origin');
         }
         $who = substr(hash('sha256', (string) ($request->header('CF-Connecting-IP') ?: $request->ip())), 0, 16);
         if ($this->stats->loginBlocked($who)) {
-            return $this->go('/metronomes-admin?e=wait');
+            return $this->go(self::PATH.'?e=wait');
         }
 
+        $email = strtolower(trim((string) $request->input('email', '')));
         $password = (string) $request->input('password', '');
-        if ($password === '' || strlen($password) > 200 || ! password_verify($password, $this->hash())) {
+        // Always run bcrypt, so a wrong email takes as long as a wrong password.
+        $passwordOk = $password !== '' && strlen($password) <= 200 && password_verify($password, $this->hash());
+        $emailOk = $email !== '' && strlen($email) <= 200 && $this->emailHash() !== '' && hash_equals($this->emailHash(), hash('sha256', $email));
+        if (! ($passwordOk && $emailOk)) {
             $this->stats->recordLoginFailure($who);
 
-            return $this->go('/metronomes-admin?e=bad');
+            return $this->go(self::PATH.'?e=bad');
         }
 
         $this->stats->clearLoginFailures($who);
         $expires = time() + self::COOKIE_DAYS * 86400;
 
-        return $this->go('/metronomes-admin', $this->cookie($request, $expires.'.'.$this->signature($expires), $expires));
+        return $this->go(self::PATH, $this->cookie($request, $expires.'.'.$this->signature($expires), $expires));
     }
 
     public function logout(Request $request): Response
     {
-        return $this->go('/metronomes-admin', $this->cookie($request, '', 1));
+        return $this->go(self::PATH, $this->cookie($request, '', 1));
     }
 
     public function deleteTest(Request $request): Response
@@ -83,7 +92,7 @@ class AdminController extends Controller
             $this->stats->deleteTestEvents();
         }
 
-        return $this->go('/metronomes-admin');
+        return $this->go(self::PATH.'?test=1');
     }
 
     /**
@@ -105,8 +114,14 @@ class AdminController extends Controller
 
         $hourStart = intdiv($now + $offset, 3600) * 3600 - $offset - 47 * 3600;
 
+        $game = $this->stats->game();
+
         return [
             'unavailable' => false,
+            'game' => $game,
+            'games' => MetronomeStats::GAMES,
+            'byGame' => $game === null ? $this->stats->byGame($from, $to, $includeTest) : [],
+            'levels' => $game !== null && $game !== 'metronomes' ? $this->stats->levels($from, $to, $includeTest) : [],
             'includeTest' => $includeTest,
             'testCount' => $this->stats->testEventCount(),
             'presets' => self::PRESETS,
@@ -125,9 +140,9 @@ class AdminController extends Controller
             'systems' => $this->stats->top('os', $from, $to, $includeTest, 6),
             'browsers' => $this->stats->top('browser', $from, $to, $includeTest, 8),
             'campaigns' => array_values(array_filter($this->stats->top('utm', $from, $to, $includeTest, 8), fn (array $row): bool => $row['label'] !== '')),
-            'challenges' => $this->stats->challenges($from, $to, $includeTest),
-            'controls' => $this->stats->controls($from, $to, $includeTest),
-            'medianSync' => $this->stats->median('synced', $from, $to, $includeTest),
+            'challenges' => $game === 'metronomes' ? $this->stats->challenges($from, $to, $includeTest) : [],
+            'controls' => $game === 'metronomes' ? $this->stats->controls($from, $to, $includeTest) : [],
+            'medianSync' => $game === 'metronomes' ? $this->stats->median('synced', $from, $to, $includeTest) : null,
             'recent' => $this->stats->recent($includeTest),
             'suggestions' => $this->stats->suggestions($includeTest),
             'suggestionCount' => $this->stats->suggestionCount($includeTest),
@@ -169,9 +184,14 @@ class AdminController extends Controller
         return (string) config('metronomes.admin_hash');
     }
 
+    private function emailHash(): string
+    {
+        return strtolower((string) config('metronomes.admin_email_hash'));
+    }
+
     private function signature(int $expires): string
     {
-        return hash_hmac('sha256', 'metronome-admin|'.$expires.'|'.substr($this->hash(), -22), (string) config('app.key'));
+        return hash_hmac('sha256', 'metronome-admin|'.$expires.'|'.substr($this->hash(), -22).'|'.$this->emailHash(), (string) config('app.key'));
     }
 
     private function isAuthenticated(Request $request): bool
@@ -200,7 +220,7 @@ class AdminController extends Controller
             || $request->header('X-Forwarded-Proto') === 'https'
             || str_contains((string) $request->header('CF-Visitor'), 'https');
 
-        return Cookie::create(self::COOKIE, $value, $expires, '/metronomes-admin', null, $secure, true, false, Cookie::SAMESITE_LAX);
+        return Cookie::create(self::COOKIE, $value, $expires, self::PATH, null, $secure, true, false, Cookie::SAMESITE_LAX);
     }
 
     private function go(string $path, ?Cookie $cookie = null): Response

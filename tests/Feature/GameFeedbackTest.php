@@ -58,17 +58,17 @@ test('each IP can send 5 suggestions an hour', function () {
 });
 
 test('suggestions show on the admin page and test ones can be deleted', function () {
-    config(['metronomes.admin_hash' => password_hash('correct-horse', PASSWORD_BCRYPT, ['cost' => 4])]);
+    config(['metronomes.admin_hash' => password_hash('correct-horse', PASSWORD_BCRYPT, ['cost' => 4]), 'metronomes.admin_email_hash' => hash('sha256', 'admin@example.com')]);
     suggest(['game' => 'metronomes', 'message' => 'Add a 200 metronome mode']);
     suggest(['game' => 'bump-theory', 'message' => 'test row', 'test' => 1]);
 
-    $login = $this->withHeaders(['Origin' => config('app.url')])->post('/metronomes-admin/login', ['password' => 'correct-horse']);
+    $login = $this->withHeaders(['Origin' => config('app.url')])->post('/admin/login', ['email' => 'Admin@Example.com ', 'password' => 'correct-horse']);
     $cookie = collect($login->headers->getCookies())->first(fn ($c) => $c->getName() === 'metronome_admin');
 
-    $this->withUnencryptedCookie('metronome_admin', $cookie->getValue())->get('/metronomes-admin')
+    $this->withUnencryptedCookie('metronome_admin', $cookie->getValue())->get('/admin')
         ->assertOk()->assertSee('Suggestions from players')->assertSee('Add a 200 metronome mode')->assertDontSee('test row');
 
-    $this->withUnencryptedCookie('metronome_admin', $cookie->getValue())->withHeaders(['Origin' => config('app.url')])->post('/metronomes-admin/delete-test');
+    $this->withUnencryptedCookie('metronome_admin', $cookie->getValue())->withHeaders(['Origin' => config('app.url')])->post('/admin/delete-test');
     expect(suggestionRows()->pluck('message')->all())->toBe(['Add a 200 metronome mode']);
 });
 

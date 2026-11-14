@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="referrer" content="same-origin">
-<title>@yield('title', 'Metronome Stats')</title>
+<title>@yield('title', 'Game Stats')</title>
 <link rel="icon" href="/metronomes/favicon.svg" type="image/svg+xml">
 <style>
 :root {
@@ -36,7 +36,7 @@ a { color: var(--accent); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .muted { color: var(--muted); }
 .dim { color: var(--dim); }
-input[type=password], input[type=date] { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-height: 40px; }
+input[type=email], input[type=password], input[type=date] { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-height: 44px; font-size: 16px; }
 </style>
 @stack('head')
 </head>

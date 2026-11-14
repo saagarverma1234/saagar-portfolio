@@ -345,7 +345,7 @@ footer nav.site a { color: var(--muted); }
     <p><strong>Is the counter real when the screen can't show that many balls?</strong> Yes. Your device draws up to about 20,000 balls (fewer on slower phones). Past that, a ball that splits keeps the extra balls as a hidden weight instead of drawing them, so one drawn ball can stand for many. The counter always equals 1 ball times every split, minus lava losses.</p>
     <p><strong>Why don't the balls bump into each other?</strong> On purpose: skipping ball-to-ball collisions is what lets thousands of balls move smoothly in a phone browser.</p>
     <p><strong>Is every level possible?</strong> Yes. Each of the 24 levels was checked by a solver that found a layout reaching the three-star target, and the Hint button shows one good layout.</p>
-    <p><strong>Where is my progress saved?</strong> In your browser only (local storage). Clearing this site's data resets your stars. Nothing is sent to a server; see the <a href="/privacy">privacy policy</a>.</p>
+    <p><strong>Where is my progress saved?</strong> In your browser only (local storage). Clearing this site's data resets your stars. Your progress is never sent to a server; we only count anonymous plays (no cookies, no names). See the <a href="/privacy">privacy policy</a>.</p>
     <p><strong>Is it free?</strong> Yes, with no download or account. Ads below the game help pay for it.</p>
     <p>Read more: <a href="/articles/maths-of-1-ball-to-10000">The maths of 1 ball becoming 10,000</a> and <a href="/articles/how-bump-theory-simulations-are-made">how Bump Theory simulations are made</a>.</p>
   </article>
@@ -376,5 +376,6 @@ footer nav.site a { color: var(--muted); }
 <script src="game.js?v=2"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
+<script src="/game-stats.v1.js" data-game="bump-theory" defer></script>
 </body>
 </html>

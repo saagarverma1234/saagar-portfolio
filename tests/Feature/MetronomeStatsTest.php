@@ -10,6 +10,7 @@ beforeEach(function () {
     config([
         'metronomes.stats_path' => $this->statsPath,
         'metronomes.admin_hash' => password_hash('correct-horse', PASSWORD_BCRYPT, ['cost' => 4]),
+        'metronomes.admin_email_hash' => hash('sha256', 'admin@example.com'),
     ]);
 });
 
@@ -76,16 +77,16 @@ test('events are rate limited per visitor', function () {
 });
 
 test('the admin page needs a login and a wrong password fails', function () {
-    $this->get('/metronomes-admin')->assertOk()->assertSee('Enter the admin password')
+    $this->get('/admin')->assertOk()->assertSee('admin email and password')
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
 
-    $this->withHeader('Origin', config('app.url'))->post('/metronomes-admin/login', ['password' => 'wrong'])
-        ->assertRedirect('/metronomes-admin?e=bad')
+    $this->withHeader('Origin', config('app.url'))->post('/admin/login', ['email' => 'admin@example.com', 'password' => 'wrong'])
+        ->assertRedirect('/admin?e=bad')
         ->assertCookieMissing('metronome_admin');
 });
 
 test('a login without a same-site origin is refused', function () {
-    $this->post('/metronomes-admin/login', ['password' => 'correct-horse'])->assertRedirect('/metronomes-admin?e=origin');
+    $this->post('/admin/login', ['email' => 'Admin@Example.com ', 'password' => 'correct-horse'])->assertRedirect('/admin?e=origin');
 });
 
 test('logging in shows the dashboard with the stored events', function () {
@@ -94,18 +95,18 @@ test('logging in shows the dashboard with the stored events', function () {
     beacon(['e' => 'synced', 'sid' => '0123456789abcdef', 'd' => ['t' => 12.5, 'n' => 100, 'ch' => 'c100']]);
     beacon(['e' => 'heartbeat', 'sid' => '0123456789abcdef', 'd' => ['s' => 15]]);
 
-    $login = $this->withHeader('Origin', config('app.url'))->post('/metronomes-admin/login', ['password' => 'correct-horse']);
-    $login->assertRedirect('/metronomes-admin')->assertCookie('metronome_admin', null, false);
+    $login = $this->withHeader('Origin', config('app.url'))->post('/admin/login', ['email' => 'Admin@Example.com ', 'password' => 'correct-horse']);
+    $login->assertRedirect('/admin')->assertCookie('metronome_admin', null, false);
     $cookie = collect($login->headers->getCookies())->firstWhere(fn ($c) => $c->getName() === 'metronome_admin');
 
-    $this->withUnencryptedCookie('metronome_admin', $cookie->getValue())->get('/metronomes-admin')
+    $this->withUnencryptedCookie('metronome_admin', $cookie->getValue())->get('/admin')
         ->assertOk()
         ->assertSee('live now')
         ->assertSee('Facebook')
         ->assertSee('12.5 s')
         ->assertHeader('Cache-Control');
 
-    $this->withUnencryptedCookie('metronome_admin', '9999999999.'.str_repeat('a', 64))->get('/metronomes-admin')->assertSee('Enter the admin password');
+    $this->withUnencryptedCookie('metronome_admin', '9999999999.'.str_repeat('a', 64))->get('/admin')->assertSee('admin email and password');
 });
 
 test('referrers and user agents are classified', function () {
@@ -117,4 +118,81 @@ test('referrers and user agents are classified', function () {
         ->and($stats->classifyReferrer(''))->toBe('Direct')
         ->and($stats->parseUserAgent('Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 Chrome/130 Safari/537.36'))->toBe(['tablet', 'Android', 'Chrome'])
         ->and($stats->parseUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130 Safari/537.36 Edg/130'))->toBe(['desktop', 'Windows', 'Edge']);
+});
+
+function adminCookie(): string
+{
+    $login = test()->withHeader('Origin', config('app.url'))->post('/admin/login', ['email' => 'admin@example.com', 'password' => 'correct-horse']);
+
+    return collect($login->headers->getCookies())->firstWhere(fn ($c) => $c->getName() === 'metronome_admin')->getValue();
+}
+
+test('a wrong email with the right password is refused with the same message', function () {
+    $this->withHeader('Origin', config('app.url'))->post('/admin/login', ['email' => 'someone@example.com', 'password' => 'correct-horse'])
+        ->assertRedirect('/admin?e=bad')
+        ->assertCookieMissing('metronome_admin');
+    $this->get('/admin?e=bad')->assertSee('Wrong email or password.');
+});
+
+test('the old admin urls redirect permanently to /admin', function () {
+    $this->get('/metronomes-admin')->assertStatus(301)->assertRedirect('/admin');
+    $this->get('/metronomes/admin')->assertStatus(301)->assertRedirect('/admin');
+});
+
+test('events carry a whitelisted game and default to metronomes', function () {
+    beacon(['e' => 'pageview']);
+    beacon(['e' => 'pageview', 'g' => 'bump-theory', 'cid' => 'abcdef0123456789']);
+    beacon(['e' => 'level', 'g' => 'quiet-worlds', 'd' => ['m' => 'daily', 'n' => 3]]);
+    beacon(['e' => 'result', 'g' => 'bump-theory', 'd' => ['m' => 'level', 'n' => 4, 'won' => 1, 'st' => 2, 'sc' => 1234]]);
+    beacon(['e' => 'pageview', 'g' => 'not-a-game']);
+
+    $rows = events();
+    expect($rows)->toHaveCount(4)
+        ->and($rows->pluck('game')->all())->toBe(['metronomes', 'bump-theory', 'quiet-worlds', 'bump-theory'])
+        ->and($rows[2]->ctrl)->toBe('daily')
+        ->and((int) $rows[2]->num)->toBe(3)
+        ->and(json_decode($rows[3]->data, true))->toBe(['won' => 1, 'st' => 2, 'sc' => 1234]);
+});
+
+test('the kids game never stores a browser id', function () {
+    beacon(['e' => 'pageview', 'g' => 'swipe-theory', 'cid' => 'abcdef0123456789', 'sid' => '0123456789abcdef']);
+
+    expect(events()->sole()->cid)->toBe('')->and(events()->sole()->sid)->toBe('0123456789abcdef');
+});
+
+test('an existing version 2 database gains the game column without losing rows', function () {
+    $pdo = new PDO('sqlite:'.$this->statsPath);
+    $pdo->exec("CREATE TABLE events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, name TEXT NOT NULL, vid TEXT NOT NULL, cid TEXT NOT NULL DEFAULT '', sid TEXT NOT NULL DEFAULT '', country TEXT NOT NULL DEFAULT '', ref TEXT NOT NULL DEFAULT '', utm TEXT NOT NULL DEFAULT '', chal TEXT NOT NULL DEFAULT '', ctrl TEXT NOT NULL DEFAULT '', device TEXT NOT NULL DEFAULT '', os TEXT NOT NULL DEFAULT '', browser TEXT NOT NULL DEFAULT '', ret INTEGER NOT NULL DEFAULT 0, num REAL, data TEXT NOT NULL DEFAULT '', test INTEGER NOT NULL DEFAULT 0)");
+    $pdo->exec('CREATE TABLE login_failures (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, who TEXT NOT NULL)');
+    $pdo->exec("CREATE TABLE suggestions (id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER NOT NULL, game TEXT NOT NULL, message TEXT NOT NULL, contact TEXT NOT NULL DEFAULT '', ip_hash TEXT NOT NULL, test INTEGER NOT NULL DEFAULT 0)");
+    $pdo->exec("INSERT INTO events (ts, name, vid) VALUES (1700000000, 'pageview', 'aaaaaaaaaaaaaaaa'), (1700000001, 'play', 'aaaaaaaaaaaaaaaa')");
+    $pdo->exec('PRAGMA user_version = 2');
+    $pdo = null;
+
+    $db = app(MetronomeStats::class)->db();
+
+    expect($db->selectOne('PRAGMA user_version')->user_version)->toBe(3)
+        ->and($db->table('events')->pluck('game')->all())->toBe(['metronomes', 'metronomes']);
+});
+
+test('the admin shows all games and can switch to one game', function () {
+    beacon(['e' => 'pageview', 'd' => ['ref' => 'facebook.com']]);
+    beacon(['e' => 'pageview', 'g' => 'bump-theory', 'd' => ['ref' => 'm.youtube.com']]);
+    beacon(['e' => 'play', 'g' => 'bump-theory']);
+    beacon(['e' => 'level', 'g' => 'bump-theory', 'sid' => '0123456789abcdef', 'd' => ['m' => 'level', 'n' => 7]]);
+    beacon(['e' => 'pageview', 'g' => 'quiet-worlds', 'test' => 1]);
+    $cookie = adminCookie();
+
+    $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin')
+        ->assertOk()->assertSee('Game stats')->assertSee('All games')->assertSee('By game')
+        ->assertSee('Bump Theory')->assertSee('Swipe Theory')->assertSee('Quiet Worlds')->assertSee('Metronomes');
+
+    $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin?game=bump-theory')
+        ->assertOk()->assertSee('Game stats: Bump Theory')->assertSee('Levels reached')->assertSee('YouTube')->assertDontSee('Facebook');
+
+    $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin?game=metronomes')
+        ->assertOk()->assertSee('Challenges')->assertSee('Facebook')->assertDontSee('YouTube');
+
+    expect(app(MetronomeStats::class)->forGame('quiet-worlds')->summary(0, time() + 1, false)['pageviews'])->toBe(0)
+        ->and(app(MetronomeStats::class)->forGame('quiet-worlds')->summary(0, time() + 1, true)['pageviews'])->toBe(1);
 });

@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
- * Anonymous play stats for the Metronome Sync Game (public/metronomes).
+ * Anonymous play stats for the web games (public/metronomes, bump-theory,
+ * swipe-theory, quiet-worlds). Every event carries a whitelisted `game`.
  *
  * Events live in their own SQLite file under storage/app, created on first use,
  * so the feature needs no migrations and no server config. When pdo_sqlite is
@@ -23,7 +24,24 @@ class MetronomeStats
 
     public const EVENTS = [
         'pageview', 'play', 'control', 'synced', 'challenge_start', 'challenge_complete', 'share', 'mute', 'heartbeat',
+        'level', 'result',
     ];
+
+    /**
+     * Games that may send events, keyed by the value the tracker sends (`g`). Beacons without `g` are metronomes.
+     */
+    public const GAMES = ['metronomes' => 'Metronomes', 'bump-theory' => 'Bump Theory', 'swipe-theory' => 'Swipe Theory', 'quiet-worlds' => 'Quiet Worlds'];
+
+    /**
+     * Games made for a family audience: no persistent browser ID is stored for them, even if one is sent.
+     */
+    public const KIDS_GAMES = ['swipe-theory'];
+
+    /** Game modes for level/result events. */
+    public const MODES = ['level', 'sandbox', 'endless', 'classic', 'daily'];
+
+    /** How a share happened. */
+    public const SHARE_WAYS = ['top', 'banner', 'button', 'share', 'copy', 'save'];
 
     public const CONTROLS = [
         'nudge', 'shake', 'flip', 'big', 'weights', 'lift', 'teams', 'count', 'speed', 'reset', 'randomise', 'again', 'tap',
@@ -34,6 +52,29 @@ class MetronomeStats
     public const MAX_EVENTS_PER_MINUTE = 90;
 
     private ?Connection $connection = null;
+
+    /** Restricts the dashboard queries to one game; null = all games. */
+    private ?string $game = null;
+
+    public function forGame(?string $game): static
+    {
+        $this->game = $game !== null && isset(self::GAMES[$game]) ? $game : null;
+
+        return $this;
+    }
+
+    public function game(): ?string
+    {
+        return $this->game;
+    }
+
+    /**
+     * SQL filter for the dashboard queries. The game value is whitelisted above, so inlining it is safe.
+     */
+    private function scope(bool $includeTest): string
+    {
+        return ($includeTest ? '' : ' AND test = 0').($this->game ? " AND game = '".$this->game."'" : '');
+    }
 
     public function sqliteAvailable(): bool
     {
@@ -83,11 +124,17 @@ class MetronomeStats
     private function migrate(Connection $connection): void
     {
         $version = (int) ($connection->selectOne('PRAGMA user_version')->user_version ?? 0);
-        if ($version >= 2) {
+        if ($version >= 3) {
             return;
         }
-        if ($version >= 1) {
+        if ($version === 2) {
+            $this->migrateGames($connection);
+
+            return;
+        }
+        if ($version === 1) {
             $this->migrateSuggestions($connection);
+            $this->migrateGames($connection);
 
             return;
         }
@@ -119,6 +166,7 @@ class MetronomeStats
         $connection->statement('CREATE INDEX IF NOT EXISTS login_failures_who_ts ON login_failures (who, ts)');
         $connection->statement('PRAGMA user_version = 1');
         $this->migrateSuggestions($connection);
+        $this->migrateGames($connection);
     }
 
     /**
@@ -141,6 +189,27 @@ class MetronomeStats
     }
 
     /**
+     * Version 3: a `game` column on events. Existing rows all came from the metronome game,
+     * so the column default labels them; nothing is rewritten or dropped.
+     */
+    private function migrateGames(Connection $connection): void
+    {
+        $hasColumn = collect($connection->select('PRAGMA table_info(events)'))->contains(fn ($column) => $column->name === 'game');
+        if (! $hasColumn) {
+            try {
+                $connection->statement("ALTER TABLE events ADD COLUMN game TEXT NOT NULL DEFAULT 'metronomes'");
+            } catch (Throwable $e) {
+                // Another request added it at the same moment.
+                if (! str_contains(strtolower($e->getMessage()), 'duplicate column')) {
+                    throw $e;
+                }
+            }
+        }
+        $connection->statement('CREATE INDEX IF NOT EXISTS events_game_name_ts ON events (game, name, ts)');
+        $connection->statement('PRAGMA user_version = 3');
+    }
+
+    /**
      * Validate a raw beacon body and store it. Silently drops anything invalid.
      */
     public function record(Request $request, string $body): void
@@ -152,6 +221,10 @@ class MetronomeStats
         if (! is_array($payload) || ! in_array($payload['e'] ?? null, self::EVENTS, true)) {
             return;
         }
+        $game = $payload['g'] ?? 'metronomes';
+        if (! is_string($game) || ! isset(self::GAMES[$game])) {
+            return;
+        }
 
         $userAgent = substr((string) $request->userAgent(), 0, 400);
         $isTest = ! empty($payload['test']);
@@ -160,6 +233,10 @@ class MetronomeStats
         }
 
         $row = $this->buildRow($request, $payload, $userAgent, $isTest);
+        $row['game'] = $game;
+        if (in_array($game, self::KIDS_GAMES, true)) {
+            $row['cid'] = '';
+        }
 
         if (! $this->sqliteAvailable()) {
             @file_put_contents($this->fallbackPath(), json_encode($row)."\n", FILE_APPEND | LOCK_EX);
@@ -238,8 +315,22 @@ class MetronomeStats
                 $row['ctrl'] = ($data['src'] ?? '') === 'link' ? 'link' : 'chip';
                 break;
             case 'share':
-                $row['ctrl'] = ($data['w'] ?? '') === 'banner' ? 'banner' : 'top';
+                $row['ctrl'] = in_array($data['w'] ?? '', self::SHARE_WAYS, true) ? $data['w'] : 'top';
                 $extra['synced'] = empty($data['synced']) ? 0 : 1;
+                break;
+            case 'level':
+            case 'result':
+                $row['ctrl'] = in_array($data['m'] ?? '', self::MODES, true) ? $data['m'] : '';
+                $row['num'] = $this->number($data['n'] ?? null, 0, 1000);
+                if ($name === 'result') {
+                    $extra['won'] = empty($data['won']) ? 0 : 1;
+                    if (isset($data['st'])) {
+                        $extra['st'] = (int) $this->number($data['st'], 0, 3);
+                    }
+                    if (isset($data['sc'])) {
+                        $extra['sc'] = (int) $this->number($data['sc'], 0, 100000000);
+                    }
+                }
                 break;
             case 'mute':
                 $row['num'] = empty($data['on']) ? 0 : 1;
@@ -371,7 +462,7 @@ class MetronomeStats
             return;
         }
         $handle = fopen($claimed, 'r');
-        $columns = ['ts', 'name', 'vid', 'cid', 'sid', 'country', 'ref', 'utm', 'chal', 'ctrl', 'device', 'os', 'browser', 'ret', 'num', 'data', 'test'];
+        $columns = ['ts', 'name', 'vid', 'cid', 'sid', 'country', 'ref', 'utm', 'chal', 'ctrl', 'device', 'os', 'browser', 'ret', 'num', 'data', 'test', 'game'];
         $this->connection->transaction(function () use ($handle, $columns): void {
             while (($line = fgets($handle)) !== false) {
                 $row = json_decode($line, true);
@@ -473,6 +564,9 @@ class MetronomeStats
         if (! $includeTest) {
             $query->where('test', 0);
         }
+        if ($this->game) {
+            $query->where('game', $this->game);
+        }
 
         return $query->get(['id', 'created_at', 'game', 'message', 'contact', 'test'])->all();
     }
@@ -482,6 +576,9 @@ class MetronomeStats
         $query = $this->db()->table('suggestions');
         if (! $includeTest) {
             $query->where('test', 0);
+        }
+        if ($this->game) {
+            $query->where('game', $this->game);
         }
 
         return $query->count();
@@ -494,7 +591,7 @@ class MetronomeStats
      */
     public function summary(int $from, int $to, bool $includeTest): array
     {
-        $test = $includeTest ? '' : ' AND test = 0';
+        $test = $this->scope($includeTest);
         $row = $this->db()->selectOne("SELECT
                 COUNT(DISTINCT CASE WHEN name = 'pageview' THEN (CASE WHEN cid <> '' THEN cid ELSE 'h' || vid END) END) AS visitors,
                 COUNT(DISTINCT CASE WHEN name = 'pageview' AND ret = 1 THEN (CASE WHEN cid <> '' THEN cid ELSE 'h' || vid END) END) AS returners,
@@ -502,6 +599,7 @@ class MetronomeStats
                 SUM(name = 'play') AS plays,
                 SUM(name = 'synced') AS syncs,
                 SUM(name = 'share') AS shares,
+                SUM(name = 'result') AS results,
                 SUM(CASE WHEN name = 'heartbeat' THEN num ELSE 0 END) AS seconds
             FROM events WHERE ts >= ? AND ts < ?{$test}", [$from, $to]);
 
@@ -515,6 +613,7 @@ class MetronomeStats
             'play_rate' => $pageviews ? round(100 * $row->plays / $pageviews, 1) : null,
             'syncs' => (int) $row->syncs,
             'shares' => (int) $row->shares,
+            'results' => (int) $row->results,
             'avg_time' => $pageviews ? (int) round($row->seconds / $pageviews) : null,
             'returning_rate' => $visitors ? round(100 * $row->returners / $visitors, 1) : null,
         ];
@@ -522,7 +621,7 @@ class MetronomeStats
 
     public function liveNow(bool $includeTest): int
     {
-        $test = $includeTest ? '' : ' AND test = 0';
+        $test = $this->scope($includeTest);
 
         return (int) $this->db()->selectOne("SELECT COUNT(DISTINCT CASE WHEN sid <> '' THEN sid ELSE vid END) AS n FROM events WHERE ts >= ?{$test}", [time() - 120])->n;
     }
@@ -534,7 +633,7 @@ class MetronomeStats
      */
     public function series(int $from, int $to, string $unit, bool $includeTest): array
     {
-        $test = $includeTest ? '' : ' AND test = 0';
+        $test = $this->scope($includeTest);
         $format = $unit === 'hour' ? '%Y-%m-%d %H' : '%Y-%m-%d';
         $rows = $this->db()->select("SELECT strftime('{$format}', ts + ".self::IST_OFFSET.", 'unixepoch') AS bucket,
                 COUNT(DISTINCT CASE WHEN cid <> '' THEN cid ELSE 'h' || vid END) AS visitors, COUNT(*) AS pageviews
@@ -566,7 +665,7 @@ class MetronomeStats
     public function top(string $column, int $from, int $to, bool $includeTest, int $limit = 10): array
     {
         abort_unless(in_array($column, ['country', 'ref', 'device', 'os', 'browser', 'utm', 'chal'], true), 500);
-        $test = $includeTest ? '' : ' AND test = 0';
+        $test = $this->scope($includeTest);
         $rows = $this->db()->select("SELECT {$column} AS label,
                 COUNT(DISTINCT CASE WHEN cid <> '' THEN cid ELSE 'h' || vid END) AS visitors, COUNT(*) AS pageviews
             FROM events WHERE name = 'pageview' AND ts >= ? AND ts < ?{$test}
@@ -580,7 +679,7 @@ class MetronomeStats
      */
     public function controls(int $from, int $to, bool $includeTest): array
     {
-        $test = $includeTest ? '' : ' AND test = 0';
+        $test = $this->scope($includeTest);
         $rows = $this->db()->select("SELECT ctrl, COUNT(*) AS uses, COUNT(DISTINCT CASE WHEN cid <> '' THEN cid ELSE 'h' || vid END) AS visitors
             FROM events WHERE name = 'control' AND ts >= ? AND ts < ?{$test} GROUP BY ctrl ORDER BY uses DESC", [$from, $to]);
 
@@ -594,7 +693,7 @@ class MetronomeStats
      */
     public function challenges(int $from, int $to, bool $includeTest): array
     {
-        $test = $includeTest ? '' : ' AND test = 0';
+        $test = $this->scope($includeTest);
         $rows = $this->db()->select("SELECT chal,
                 SUM(name = 'challenge_start') AS starts,
                 SUM(name = 'challenge_start' AND ctrl = 'link') AS from_links,
@@ -623,6 +722,9 @@ class MetronomeStats
         if ($challenge !== null) {
             $query->where('chal', $challenge);
         }
+        if ($this->game) {
+            $query->where('game', $this->game);
+        }
         $count = (clone $query)->count();
         if ($count === 0) {
             return null;
@@ -641,8 +743,57 @@ class MetronomeStats
         if (! $includeTest) {
             $query->where('test', 0);
         }
+        if ($this->game) {
+            $query->where('game', $this->game);
+        }
 
-        return $query->get(['ts', 'name', 'country', 'ref', 'chal', 'ctrl', 'device', 'os', 'browser', 'num', 'data', 'test'])->all();
+        return $query->get(['ts', 'game', 'name', 'country', 'ref', 'chal', 'ctrl', 'device', 'os', 'browser', 'num', 'data', 'test'])->all();
+    }
+
+    /**
+     * Headline numbers per game for one window (ignores the game filter).
+     *
+     * @return array<string, array<string, float|int|null>>
+     */
+    public function byGame(int $from, int $to, bool $includeTest): array
+    {
+        $saved = $this->game;
+        $out = [];
+        try {
+            foreach (array_keys(self::GAMES) as $game) {
+                $out[$game] = $this->forGame($game)->summary($from, $to, $includeTest);
+            }
+        } finally {
+            $this->game = $saved;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Level/round funnel: per mode and level, the sessions that reached it, finished it and won it.
+     *
+     * @return list<array{mode: string, level: int, reached: int, finished: int, won: int, avg_score: float|null}>
+     */
+    public function levels(int $from, int $to, bool $includeTest): array
+    {
+        $test = $this->scope($includeTest);
+        $rows = $this->db()->select("SELECT ctrl AS mode, CAST(num AS INTEGER) AS level,
+                COUNT(DISTINCT CASE WHEN name = 'level' THEN (CASE WHEN sid <> '' THEN sid ELSE vid END) END) AS reached,
+                SUM(name = 'result') AS finished,
+                SUM(CASE WHEN name = 'result' THEN json_extract(data, '$.won') = 1 ELSE 0 END) AS won,
+                AVG(CASE WHEN name = 'result' THEN json_extract(data, '$.sc') END) AS avg_score
+            FROM events WHERE name IN ('level', 'result') AND num IS NOT NULL AND ts >= ? AND ts < ?{$test}
+            GROUP BY ctrl, CAST(num AS INTEGER) ORDER BY ctrl, level LIMIT 200", [$from, $to]);
+
+        return array_map(fn ($row): array => [
+            'mode' => (string) $row->mode,
+            'level' => (int) $row->level,
+            'reached' => (int) $row->reached,
+            'finished' => (int) $row->finished,
+            'won' => (int) $row->won,
+            'avg_score' => $row->avg_score === null ? null : round((float) $row->avg_score, 1),
+        ], $rows);
     }
 
     public function testEventCount(): int

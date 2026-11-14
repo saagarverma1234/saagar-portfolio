@@ -1,6 +1,6 @@
 @extends('metronomes.layout')
 
-@section('title', 'Metronome Stats')
+@section('title', 'Game Stats')
 
 @php
     $fmtTime = function ($seconds) {
@@ -16,6 +16,13 @@
     $challengeNames = ['c100' => 'Can 100 sync?', '5050' => '50 vs 50', 'tie3' => 'Break the 3-way tie', 'shake' => 'Shake at 229', 'weights' => 'Weights off', 'lift' => 'Lift 20 off', 'big' => 'Add 1 big one'];
     $controlNames = ['nudge' => 'Nudge', 'shake' => 'Shake (motor)', 'flip' => 'Flip button', 'tap' => 'Tap to flip', 'big' => 'Add/remove big one', 'weights' => 'Weights', 'lift' => 'Lift 20 off', 'teams' => 'Teams (random/2/3)', 'count' => 'Metronome count', 'speed' => 'Speed slider', 'reset' => 'Reset', 'randomise' => 'Randomise', 'again' => 'Again (after sync)', 'other' => 'Other'];
     $ist = fn (int $ts) => gmdate('j M, g:i A', $ts + \App\Services\MetronomeStats::IST_OFFSET);
+    $game = $game ?? null;
+    $games = $games ?? \App\Services\MetronomeStats::GAMES;
+    $modeNames = ['level' => 'Levels', 'sandbox' => 'Sandbox', 'endless' => 'Endless', 'classic' => '10 worlds', 'daily' => 'Daily challenge', '' => 'Other'];
+    if (! ($unavailable ?? false)) {
+        $baseQuery = ['game' => $game, 'range' => $preset, 'from' => $preset === 'custom' ? $fromDate : null, 'to' => $preset === 'custom' ? $toDate : null, 'test' => $includeTest ? 1 : null];
+    }
+    $link = fn (array $over = []) => '/admin?'.http_build_query(array_filter(array_merge($baseQuery ?? [], $over), fn ($v) => $v !== null && $v !== ''));
 @endphp
 
 @push('head')
@@ -62,6 +69,11 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
 .recent td { white-space: nowrap; }
 .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); }
 .empty { color: var(--dim); font-size: 13px; padding: 6px 0; }
+.games { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 0 -16px 14px; padding: 2px 16px; }
+.games::-webkit-scrollbar { display: none; }
+.games .btn { flex: 0 0 auto; min-height: 44px; white-space: nowrap; }
+.btn { min-height: 44px; }
+tr.sel td { font-weight: 700; }
 .foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 18px; font-size: 13px; }
 </style>
 @endpush
@@ -69,7 +81,7 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
 @section('body')
 <div class="wrap">
 @if ($unavailable)
-  <header class="top"><h1>Metronome stats</h1></header>
+  <header class="top"><h1>Game stats</h1></header>
   <div class="card">
     <p><b>Stats storage is not available on this server.</b></p>
     @isset($error)<p class="muted">{{ $error }}</p>@endisset
@@ -79,12 +91,19 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
   </div>
 @else
   <header class="top">
-    <h1>Metronome stats</h1>
+    <h1>Game stats{{ $game ? ': '.$games[$game] : '' }}</h1>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span class="live" title="Sessions with any activity in the last 2 minutes"><i></i><b>{{ $live }}</b> live now</span>
       <a class="btn" href="{{ request()->fullUrl() }}">Refresh</a>
     </div>
   </header>
+
+  <nav class="games" aria-label="Choose a game">
+    <a class="btn {{ $game === null ? 'on' : '' }}" href="{{ $link(['game' => null]) }}" @if ($game === null) aria-current="page" @endif>All games</a>
+    @foreach ($games as $key => $title)
+      <a class="btn {{ $game === $key ? 'on' : '' }}" href="{{ $link(['game' => $key]) }}" @if ($game === $key) aria-current="page" @endif>{{ $title }}</a>
+    @endforeach
+  </nav>
 
   <section class="periods" aria-label="Headline numbers">
     @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', 'all' => 'All time'] as $key => $title)
@@ -96,7 +115,11 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
           <span>Pageviews</span><span>{{ $num($c['pageviews']) }}</span>
           <span>Plays</span><span>{{ $num($c['plays']) }}</span>
           <span>Play rate</span><span>{{ $pct($c['play_rate']) }}</span>
-          <span>Syncs</span><span>{{ $num($c['syncs']) }}</span>
+          @if ($game === 'metronomes')
+            <span>Syncs</span><span>{{ $num($c['syncs']) }}</span>
+          @elseif ($game !== null)
+            <span>Finished</span><span>{{ $num($c['results']) }}</span>
+          @endif
           <span>Shares</span><span>{{ $num($c['shares']) }}</span>
           <span>Avg time</span><span>{{ $fmtTime($c['avg_time']) }}</span>
           <span>Returning</span><span>{{ $pct($c['returning_rate']) }}</span>
@@ -162,10 +185,11 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
 
   <div class="rangebar">
     @foreach ($presets as $key => $title)
-      <a class="btn {{ $preset === $key ? 'on' : '' }}" href="?range={{ $key }}{{ $includeTest ? '&test=1' : '' }}">{{ $title }}</a>
+      <a class="btn {{ $preset === $key ? 'on' : '' }}" href="{{ $link(['range' => $key, 'from' => null, 'to' => null]) }}">{{ $title }}</a>
     @endforeach
-    <form method="get" action="/metronomes-admin">
+    <form method="get" action="/admin">
       <input type="hidden" name="range" value="custom">
+      @if ($game)<input type="hidden" name="game" value="{{ $game }}">@endif
       @if ($includeTest)<input type="hidden" name="test" value="1">@endif
       <input type="date" name="from" value="{{ $fromDate }}" aria-label="From date">
       <input type="date" name="to" value="{{ $toDate }}" aria-label="To date">
@@ -177,9 +201,65 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
   <div class="rangesum">
     <div class="card"><b>{{ $num($range['visitors']) }}</b><span>visitors</span></div>
     <div class="card"><b>{{ $pct($range['play_rate']) }}</b><span>play rate ({{ $num($range['plays']) }} plays)</span></div>
-    <div class="card"><b>{{ $num($range['syncs']) }}</b><span>syncs · median {{ $medianSync === null ? '–' : $medianSync.' s' }}</span></div>
+    @if ($game === 'metronomes')
+      <div class="card"><b>{{ $num($range['syncs']) }}</b><span>syncs · median {{ $medianSync === null ? '–' : $medianSync.' s' }}</span></div>
+    @elseif ($game !== null)
+      <div class="card"><b>{{ $num($range['results']) }}</b><span>{{ $game === 'quiet-worlds' ? 'games finished' : 'levels finished' }}</span></div>
+    @else
+      <div class="card"><b>{{ $num($range['pageviews']) }}</b><span>pageviews</span></div>
+    @endif
     <div class="card"><b>{{ $fmtTime($range['avg_time']) }}</b><span>avg time · {{ $num($range['shares']) }} shares</span></div>
   </div>
+
+  @if ($game === null && $byGame)
+    <div class="card" style="margin-bottom:10px">
+      <h2>By game ({{ $rangeLabel }})</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Game</th><th class="n">Visitors</th><th class="n">Pageviews</th><th class="n">Plays</th><th class="n">Play rate</th><th class="n">Avg time</th><th class="n">Returning</th><th class="n">Shares</th></tr></thead>
+        <tbody>
+        @foreach ($byGame as $key => $g)
+          <tr>
+            <td><a href="{{ $link(['game' => $key]) }}">{{ $games[$key] }}</a></td>
+            <td class="n">{{ $num($g['visitors']) }}</td>
+            <td class="n">{{ $num($g['pageviews']) }}</td>
+            <td class="n">{{ $num($g['plays']) }}</td>
+            <td class="n">{{ $pct($g['play_rate']) }}</td>
+            <td class="n">{{ $fmtTime($g['avg_time']) }}</td>
+            <td class="n">{{ $pct($g['returning_rate']) }}</td>
+            <td class="n">{{ $num($g['shares']) }}</td>
+          </tr>
+        @endforeach
+        </tbody>
+      </table></div>
+      <p class="dim" style="font-size:12px;margin:8px 0 0">A visitor who opens two games counts once in each row, so rows can add up to more than the total.</p>
+    </div>
+  @endif
+
+  @if ($game !== null && $game !== 'metronomes')
+    <div class="card" style="margin-bottom:10px">
+      <h2>{{ $game === 'quiet-worlds' ? 'Rounds reached' : 'Levels reached' }}</h2>
+      @if ($levels)
+        <div class="scroll"><table>
+          <thead><tr><th>Mode</th><th class="n">{{ $game === 'quiet-worlds' ? 'Round' : 'Level' }}</th><th class="n">Sessions</th><th class="n">Finished</th><th class="n">{{ $game === 'quiet-worlds' ? 'Perfect' : 'Won' }}</th>@if ($game === 'quiet-worlds')<th class="n">Avg survived</th>@endif</tr></thead>
+          <tbody>
+          @foreach ($levels as $row)
+            <tr>
+              <td>{{ $modeNames[$row['mode']] ?? $row['mode'] }}</td>
+              <td class="n">{{ $row['level'] }}</td>
+              <td class="n">{{ $num($row['reached']) }}</td>
+              <td class="n">{{ $num($row['finished']) }}</td>
+              <td class="n">{{ $row['finished'] ? $num($row['won']) : '–' }}</td>
+              @if ($game === 'quiet-worlds')<td class="n">{{ $row['avg_score'] ?? '–' }}</td>@endif
+            </tr>
+          @endforeach
+          </tbody>
+        </table></div>
+        <p class="dim" style="font-size:12px;margin:8px 0 0">Sessions = page loads that reached this {{ $game === 'quiet-worlds' ? 'round' : 'level' }}. {{ $game === 'quiet-worlds' ? 'Finished = whole games ended at this length.' : 'Finished/Won = level results (a retry counts again).' }}</p>
+      @else
+        <div class="empty">No level data yet.</div>
+      @endif
+    </div>
+  @endif
 
   @php
       $table = function (array $rows, string $head, ?array $names = null) use ($num) {
@@ -215,6 +295,7 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
     <div class="card"><h2>Browsers</h2>{!! $table($browsers, 'Browser') !!}</div>
   </div>
 
+  @if ($game === 'metronomes')
   <div class="grid2">
     <div class="card">
       <h2>Challenges</h2>
@@ -256,6 +337,7 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
       @endif
     </div>
   </div>
+  @endif
 
   <div class="card" id="suggestions">
     <h2>Suggestions from players ({{ $num($suggestionCount) }}{{ $suggestionCount > count($suggestions) ? ', newest '.count($suggestions).' shown' : '' }})</h2>
@@ -282,7 +364,7 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
     <h2>Recent 50 events</h2>
     @if ($recent)
       <div class="scroll"><table class="recent">
-        <thead><tr><th>Time (IST)</th><th>Event</th><th>Detail</th><th>Country</th><th>From</th><th>Device</th></tr></thead>
+        <thead><tr><th>Time (IST)</th>@if ($game === null)<th>Game</th>@endif<th>Event</th><th>Detail</th><th>Country</th><th>From</th><th>Device</th></tr></thead>
         <tbody>
         @foreach ($recent as $event)
           @php
@@ -293,6 +375,8 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
                   'challenge_start' => ($challengeNames[$event->chal] ?? $event->chal).' (via '.$event->ctrl.')',
                   'challenge_complete' => ($challengeNames[$event->chal] ?? $event->chal).($event->num !== null ? ', '.$event->num.' s' : ''),
                   'share' => $event->ctrl.' button'.(! empty($data['synced']) ? ', after sync' : ''),
+                  'level' => ($modeNames[$event->ctrl] ?? $event->ctrl).($event->num !== null ? ' '.(int) $event->num : ''),
+                  'result' => ($modeNames[$event->ctrl] ?? $event->ctrl).($event->num !== null ? ' '.(int) $event->num : '').(! empty($data['won']) ? ', won' : ', lost').(isset($data['st']) ? ', '.$data['st'].' stars' : '').(isset($data['sc']) ? ', score '.$num($data['sc']) : ''),
                   'mute' => $event->num ? 'muted' : 'unmuted',
                   'pageview' => $event->chal ? 'challenge link: '.($challengeNames[$event->chal] ?? $event->chal) : '',
                   'play' => $event->chal ? ($challengeNames[$event->chal] ?? $event->chal) : '',
@@ -301,6 +385,7 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
           @endphp
           <tr>
             <td>{{ $ist($event->ts) }}</td>
+            @if ($game === null)<td>{{ $games[$event->game] ?? $event->game }}</td>@endif
             <td>{{ str_replace('_', ' ', $event->name) }} @if ($event->test)<span class="tag">test</span>@endif</td>
             <td>{{ $detail }}</td>
             <td>{{ $event->country ?: '–' }}</td>
@@ -316,12 +401,12 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-righ
   </div>
 
   <div class="foot">
-    <a class="btn" href="?range={{ $preset }}{{ $preset === 'custom' ? '&from='.$fromDate.'&to='.$toDate : '' }}{{ $includeTest ? '' : '&test=1' }}">{{ $includeTest ? 'Hide test events' : 'Show test events' }}</a>
-    <form method="post" action="/metronomes-admin/delete-test" onsubmit="return confirm('Delete all {{ $testCount }} test events?')">
+    <a class="btn" href="{{ $link(['test' => $includeTest ? null : 1]) }}">{{ $includeTest ? 'Hide test events' : 'Show test events' }}</a>
+    <form method="post" action="/admin/delete-test" onsubmit="return confirm('Delete all {{ $testCount }} test events?')">
       <button class="btn" type="submit" @disabled($testCount === 0)>Delete test events ({{ $num($testCount) }})</button>
     </form>
     <button class="btn" type="button" id="testDevice">This device: counted</button>
-    <form method="post" action="/metronomes-admin/logout"><button class="btn" type="submit">Log out</button></form>
+    <form method="post" action="/admin/logout"><button class="btn" type="submit">Log out</button></form>
     <span class="dim">Updated {{ $generatedAt }} IST. No IPs are stored.</span>
   </div>
 @endif
