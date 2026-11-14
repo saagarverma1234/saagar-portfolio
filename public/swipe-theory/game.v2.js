@@ -1,5 +1,6 @@
 /* Protect Pumpkin! a Swipe Theory game. Drag the shield with your finger (or mouse) and keep Pumpkin safe.
-   8 worlds x 3 levels (each world ends on a twist) + Endless. Progress lives only in this browser (localStorage, try/catch). */
+   12 worlds x 3 levels (each world ends on a twist) + Endless + a Daily challenge (same for everyone, by UTC day).
+   Progress lives only in this browser (localStorage, try/catch). Family audience: no IDs, no names, nothing sent. */
 (function () {
   'use strict';
   var A = window.PPArt, S = window.PPAudio, TAU = Math.PI * 2;
@@ -13,6 +14,11 @@
   function save() { mem = save.data; try { window.localStorage.setItem(KEY, JSON.stringify(save.data)); } catch (e) { /* private mode etc. */ } }
   save.data = load(); if (!save.data.stars) save.data.stars = {};
   var data = save.data;
+  // v1 had 8 worlds; Impossible (levels 22-24) is now world 12 (levels 34-36)
+  if (!data.v) {
+    [21, 22, 23].forEach(function (i) { if (data.stars[i]) { data.stars[i + 12] = data.stars[i]; delete data.stars[i]; } });
+    data.v = 2; save.data = data; save();
+  }
 
   // ------------------------------------------------------------------ worlds + levels
   var WORLDS = [
@@ -21,7 +27,7 @@
       levels: [
         { cap: "IT'S STARTING TO RAIN!", dur: 22, wind: .08, sp: [['rain', 5, 9, { aim: .35 }]] },
         { cap: 'HEAVY RAIN!', dur: 26, wind: .25, treat: .08, sp: [['rain', 9, 15, { aim: .4 }]] },
-        { cap: 'THUNDERSTORM!', dur: 30, wind: .42, treat: .07, thunder: 1, sp: [['rain', 13, 22, { aim: .45, spd: 1.12 }]] }] },
+        { cap: 'THUNDERSTORM!', dur: 28, wind: .36, treat: .08, thunder: 1, sp: [['rain', 11, 18, { aim: .42, spd: 1.06 }]] }] },
     { id: 'hail', name: 'Hailstorm', shield: 'umbrella2', sky: ['#8a86c9', '#d6d0f2'], hill: '#a3d98c', ground: '#86c766', ground2: '#68a94d', storm: '#a49fc8', tempo: 96,
       giant: 'hail', pre: 'A GIANT HAILSTONE!', twist: 'IT WAS ICE CREAM?!', say: 'brain freeze :3', reward: 'icecream',
       levels: [
@@ -58,6 +64,30 @@
         { cap: 'UFO SPOTTED!', dur: 24, ufo: 1, sp: [['bolt', .8, 1.4, { aim: .85 }]] },
         { cap: 'ALIEN GOO!', dur: 28, ufo: 1, treat: .07, sp: [['bolt', 1, 1.7, { aim: .85 }], ['goo', .5, 1, { aim: .5 }]] },
         { cap: 'TWO UFOS!', dur: 32, ufo: 2, treat: .07, sp: [['bolt', 1.4, 2.4, { aim: .9, spd: 1.12 }], ['goo', .7, 1.2, { aim: .5 }]] }] },
+    { id: 'glitch', name: 'Glitch World', shield: 'neon', sky: ['#140a30', '#3b1d6e'], hill: '#2a1858', ground: '#1e1144', ground2: '#ff4fd8', grid: 1, stars: 1, cushion: '#22e3c4', tempo: 112, seed: 11,
+      giant: 'glitchcube', pre: 'A GIANT GLITCH!', twist: 'IT WAS AN 8-BIT HEART!', say: 'level up :3', reward: 'pixelheart',
+      levels: [
+        { cap: 'GLITCH ALERT!', dur: 26, sp: [['pixel', .8, 1.4, { aim: .8 }]] },
+        { cap: 'PIXELS EVERYWHERE!', dur: 30, treat: .07, sp: [['pixel', 1, 1.6, { aim: .8 }], ['zig', .35, .7, { aim: .75 }]] },
+        { cap: 'SYSTEM OVERLOAD!', dur: 32, treat: .08, gfx: 1, sp: [['pixel', 1.2, 2, { aim: .82, spd: 1.06 }], ['zig', .5, .9, { aim: .75 }]] }] },
+    { id: 'lift', name: 'Elevator', shield: 'hardhat', sky: ['#c3c9d6', '#a9b0bf'], hill: '#9aa2b3', ground: '#5d6577', ground2: '#ffcc33', lift: 1, cushion: '#ff5c9a', tempo: 104,
+      giant: 'package', pre: 'A GIANT PACKAGE!', twist: 'DING! IT WAS A NEW CAT BED!', say: 'so comfy :3', reward: 'bed',
+      levels: [
+        { cap: 'GOING UP!', dur: 26, sp: [['nut', 1, 1.7, { aim: .72 }]] },
+        { cap: 'FLICKERING LIGHTS!', dur: 30, flicker: 1, treat: .07, sp: [['nut', 1.1, 1.8, { aim: .72 }], ['bulb', .35, .7, { aim: .8 }]] },
+        { cap: 'BUMPY RIDE!', dur: 32, quake: 1, treat: .08, sp: [['nut', 1.3, 2.1, { aim: .75, spd: 1.06 }], ['panel', .25, .5, { aim: .85 }], ['bulb', .3, .55, { aim: .8 }]] }] },
+    { id: 'tank', name: "TANK's Backyard", shield: 'pillow', sky: ['#8fd3ff', '#e9f8ff'], hill: '#a3dc7a', ground: '#82c95c', ground2: '#69b046', sun: 1, fence: 1, flowers: 1, tempo: 108, seed: 5,
+      giant: 'bigball', pre: "TANK'S GIANT BALL!", twist: 'TANK JUST WANTED A FRIEND!', say: 'best buddies :3', reward: 'goldbone',
+      levels: [
+        { cap: 'TANK WANTS TO PLAY!', dur: 26, tank: 1, sp: [['bone', .7, 1.2, { aim: .8 }]] },
+        { cap: 'BOUNCY BALLS!', dur: 28, tank: 1, treat: .08, sp: [['tball', .55, .95, { aim: .78 }], ['bone', .25, .45, { aim: .8 }]] },
+        { cap: 'TANK IS GRUMPY!', dur: 30, tank: 1, treat: .09, sp: [['tball', .7, 1.2, { aim: .8 }], ['bone', .35, .65, { aim: .8 }]] }] },
+    { id: 'mothership', name: 'Alien Mothership', shield: 'saucer', sky: ['#0b1433', '#34307a'], hill: '#1d3b3a', ground: '#2f5d3c', ground2: '#3f7a4c', stars: 1, moon: 1, barn: 1, cushion: '#9e73ff', tempo: 116, seed: 3,
+      giant: 'pod', pre: 'THEY ARE BEAMING DOWN A POD!', twist: 'THEY JUST WANTED A SELFIE!', say: 'say cheese :3', reward: 'camera',
+      levels: [
+        { cap: 'THE MOTHERSHIP IS HERE!', dur: 26, mship: 1, sp: [['mini', .6, 1.1, { aim: .8 }]] },
+        { cap: 'TRACTOR BEAMS!', dur: 30, mship: 1, treat: .07, sp: [['mini', .7, 1.2, { aim: .8 }], ['ray', .3, .6, { aim: .9 }]] },
+        { cap: 'FULL INVASION!', dur: 32, mship: 1, treat: .08, sp: [['mini', .9, 1.5, { aim: .82, spd: 1.05 }], ['ray', .45, .8, { aim: .9 }]] }] },
     { id: 'dragon', name: 'Impossible', shield: 'gold', sky: ['#3a1a4a', '#c2456a'], hill: '#5a2350', ground: '#6b2d5a', ground2: '#82396b', castle: 1, stars: 1, cushion: '#ffcc33', tempo: 116,
       giant: 'fireball', pre: "THE DRAGON'S BIGGEST FIREBALL!", twist: 'IT WAS LOVE ALL ALONG!', say: 'this is for you :3', reward: 'heart',
       levels: [
@@ -69,7 +99,7 @@
   function lvWorld(i) { return WORLDS[Math.floor(i / 3)]; }
   function lvDef(i) { return lvWorld(i).levels[i % 3]; }
   function lvName(i) { return (Math.floor(i / 3) + 1) + '-' + (i % 3 + 1); }
-  function unlocked(i) { return i === 0 || (data.stars[i - 1] || 0) > 0 || qs.indexOf('unlockall') >= 0; }
+  function unlocked(i) { return i === 0 || (data.stars[i - 1] || 0) > 0 || (data.stars[i] || 0) > 0 || qs.indexOf('unlockall') >= 0; }
   function endlessUnlocked() { return (data.stars[2] || 0) > 0 || qs.indexOf('unlockall') >= 0; }
 
   // ------------------------------------------------------------------ layout
@@ -100,9 +130,10 @@
   var G = {
     mode: 'menu', li: 0, endless: false, world: WORLDS[0], def: null, t: 0, hearts: 5, score: 0, blocked: 0, combo: 0, best: 0,
     objs: [], parts: [], acc: [], wind: 0, finaleOn: false, giantOut: false, twistT: 0, outT: 0, won: false, cap: null, capT: 0,
-    say: null, sayT: 0, sayCd: 0, flash: 0, shake: 0, treatTold: false, ents: { tornado: null, ufos: [], dragon: null }, treatAcc: 0,
-    thunderT: 3, endWorld: 0
+    say: null, sayT: 0, sayCd: 0, flash: 0, shake: 0, treatTold: false, ents: noEnts(), treatAcc: 0,
+    thunderT: 3, endWorld: 0, daily: false, fxT: 4, dim: 0, gfx: 0
   };
+  function noEnts() { return { tornado: null, ufos: [], dragon: null, mship: null, tank: null, lift: null }; }
   var shield = { x: 195, y: 420, tx: 195, ty: 420, vx: 0, vy: 0, tilt: 0, hit: 0, show: false };
   var ptr = { down: false, type: 'mouse', x: 0, y: 0, id: null, inside: false, kb: false };
   var face = { blinkT: 2, blink: 0, scared: 0, hurt: 0, happy: 0, wet: 0, snow: 0, look: [0, 0], bounce: 0 };
@@ -111,6 +142,28 @@
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function pick(a) { return a[(Math.random() * a.length) | 0]; }
+  // spawns use their own random stream: seeded for the Daily (the same threats for everyone that day)
+  var sr = Math.random;
+  function srnd(a, b) { return a + sr() * (b - a); }
+  function spick(a) { return a[(sr() * a.length) | 0]; }
+  function seeded(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) | 0; var t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function isTwist() { return G.daily || (!G.endless && G.li % 3 === 2); }
+
+  // ------------------------------------------------------------------ daily challenge (UTC day, same for everyone)
+  function today() { return Math.floor(Date.now() / 864e5); }
+  function dayLabel(day) { var d = new Date(day * 864e5); return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + d.getUTCDate(); }
+  function dailyPlan(day) {
+    var r = seeded(day * 2654435761), n = WORLDS.length - 1;   // never Impossible
+    var a = Math.floor(r() * n), b = (a + 1 + Math.floor(r() * (n - 1))) % n;
+    var A = WORLDS[a], B = WORLDS[b], base = A.levels[1], extra = B.levels[1].sp[0], def = {};
+    for (var k in base) def[k] = base[k];
+    def.cap = 'DAILY: ' + A.name.toUpperCase() + ' + ' + B.name.toUpperCase() + '!';
+    def.dur = 30; def.treat = .08;
+    def.sp = base.sp.map(function (q) { return [q[0], q[1] * .9, q[2] * .9, q[3]]; }).concat([[extra[0], extra[1] * .4, extra[2] * .45, extra[3]]]);
+    ['tank', 'mship', 'ufo', 'dragon'].forEach(function (f) { if (B.levels[1][f] && !def[f]) def[f] = B.levels[1][f]; });
+    return { day: day, world: A, mix: B, def: def, seed: day * 7919 + 13 };
+  }
+  function dailyInfo() { var d = data.daily || {}; var t = today(); return { streak: d.last >= t - 1 ? d.streak || 0 : 0, doneToday: d.last === t, best: d.best || 0 }; }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
   // ------------------------------------------------------------------ HUD + overlays
@@ -139,21 +192,23 @@
   }
 
   // ------------------------------------------------------------------ level control
-  function startLevel(i, endless) {
-    G.endless = !!endless; G.li = i;
-    G.world = endless ? WORLDS[0] : lvWorld(i);
-    G.def = endless ? { cap: 'ENDLESS! HOW LONG CAN YOU LAST?', dur: 1e9, sp: [], treat: .1 } : lvDef(i);
+  function startLevel(i, endless, daily) {
+    G.endless = !!endless; G.daily = !!daily; G.li = i;
+    var plan = daily ? dailyPlan(today()) : null; G.plan = plan;
+    sr = plan ? seeded(plan.seed) : Math.random;
+    G.world = endless ? WORLDS[0] : daily ? plan.world : lvWorld(i);
+    G.def = endless ? { cap: 'ENDLESS! HOW LONG CAN YOU LAST?', dur: 1e9, sp: [], treat: .1 } : daily ? plan.def : lvDef(i);
     G.t = 0; G.hearts = 5; G.score = 0; G.blocked = 0; G.combo = 0; G.best = 0; G.objs = []; G.parts = []; G.acc = [];
     G.finaleOn = false; G.giantOut = false; G.twistT = 0; G.outT = 0; G.won = false; G.flash = 0; G.treatAcc = 0; G.thunderT = 4; G.endWorld = 0; G.rewardOn = false;
-    G.ents = { tornado: null, ufos: [], dragon: null };
+    G.ents = noEnts(); G.fxT = rnd(3, 5); G.dim = 0; G.gfx = 0; shareMade = null;
     face.hurt = 0; face.scared = 0; face.wet = 0; face.snow = 0; face.happy = 0;
     setupEnts();
     G.mode = 'ready';
     caption(G.def.cap, 2.6, 'y');
     say(G.endless ? "let's go!" : pick(['protect me pls!', 'help me!', 'u got this!', 'keep me safe?']), 2.2);
-    setTitle(G.endless ? 'Endless' : lvName(i) + ' · ' + G.world.name);
+    setTitle(G.endless ? 'Endless' : G.daily ? 'Daily · ' + dayLabel(plan.day) : lvName(i) + ' · ' + G.world.name);
     shield.x = shield.tx = cat.x; shield.y = shield.ty = Math.max(150, headY() - 215); shield.show = true;
-    ['menu', 'levels', 'result', 'hold'].forEach(function (k) { show(k, false); });
+    ['menu', 'levels', 'result', 'hold', 'cardM'].forEach(function (k) { show(k, false); });
     hud.hidden = false; $('bPause').hidden = false; setNav(true);
     drawHud();
   }
@@ -163,6 +218,9 @@
     G.ents.ufos = [];
     for (var k = 0; k < (d.ufo || 0); k++) G.ents.ufos.push({ ph: k * Math.PI, x: W / 2, y: 92 + k * 40 });
     G.ents.dragon = d.dragon ? { x: W / 2, y: 110, ph: 0 } : null;
+    G.ents.mship = d.mship ? { x: W / 2, y: 64, ph: 0, beam: 0 } : null;
+    G.ents.tank = d.tank ? { x: W * .13, dir: 1, sw: 0, throwT: 0, run: 0 } : null;
+    G.ents.lift = w.lift ? { floor: 1, ft: 0 } : null;
   }
   function beginPlay() {
     if (G.mode !== 'ready') return;
@@ -177,9 +235,9 @@
 
   // ------------------------------------------------------------------ spawning
   function target(aim, spread) {
-    if (Math.random() < aim) return [cat.x + rnd(-1, 1) * (spread || 26), headY() + rnd(-20, 50)];
-    var side = Math.random() < .5 ? -1 : 1;
-    return [cat.x + side * rnd(70, W * .5), GY];
+    if (sr() < aim) return [cat.x + srnd(-1, 1) * (spread || 26), headY() + srnd(-20, 50)];
+    var side = sr() < .5 ? -1 : 1;
+    return [cat.x + side * srnd(70, W * .5), GY];
   }
   function ballistic(x0, y0, tx, ty, T, g) { return [(tx - x0) / T, (ty - y0 - .5 * g * T * T) / T]; }
   function mk(kind, x, y, vx, vy, r, dmg, extra) {
@@ -193,68 +251,115 @@
     switch (type) {
       case 'rain': case 'hail': {
         var hail = type === 'hail';
-        vy = (hail ? 300 : 400) * spd * rnd(.9, 1.1);
-        vx = G.wind * vy + (hail ? rnd(-50, 50) : 0);
+        vy = (hail ? 300 : 400) * spd * srnd(.9, 1.1);
+        vx = G.wind * vy + (hail ? srnd(-50, 50) : 0);
         y0 = -20; T = (headY() - y0) / vy;
-        if (Math.random() < aim) x0 = cat.x + rnd(-30, 30) - vx * T;
-        else x0 = rnd(-.15 * W, 1.15 * W) - vx * T;
-        if (hail) { var big = o.big && Math.random() < .3; mk('hail', x0, y0, vx, vy, big ? rnd(10, 12) : rnd(6, 8.5), big ? .75 : .5); }
+        if (sr() < aim) x0 = cat.x + srnd(-30, 30) - vx * T;
+        else x0 = srnd(-.15 * W, 1.15 * W) - vx * T;
+        if (hail) { var big = o.big && sr() < .3; mk('hail', x0, y0, vx, vy, big ? srnd(10, 12) : srnd(6, 8.5), big ? .75 : .5); }
         else mk('drop', x0, y0, vx, vy, 3, .2);
         return;
       }
       case 'snowball': {
-        var sd = Math.random() < .5 ? -1 : 1; x0 = sd < 0 ? -20 : W + 20; y0 = GY - rnd(90, 300);
-        tg = target(aim, 22); T = rnd(1.0, 1.45) / spd;
-        v = ballistic(x0, y0, tg[0], tg[1], T, 420); mk('snow', x0, y0, v[0], v[1], rnd(9, 11), .5, { g: 420 });
+        var sd = sr() < .5 ? -1 : 1; x0 = sd < 0 ? -20 : W + 20; y0 = GY - srnd(90, 300);
+        tg = target(aim, 22); T = srnd(1.0, 1.45) / spd;
+        v = ballistic(x0, y0, tg[0], tg[1], T, 420); mk('snow', x0, y0, v[0], v[1], srnd(9, 11), .5, { g: 420 });
         return;
       }
       case 'bigsnow': {
-        tg = target(aim, 20); x0 = rnd(.1, .9) * W; y0 = -30; T = (tg[1] - y0) / (200 * spd);
+        tg = target(aim, 20); x0 = srnd(.1, .9) * W; y0 = -30; T = (tg[1] - y0) / (200 * spd);
         mk('bigsnow', x0, y0, (tg[0] - x0) / T, 200 * spd, 17, 1); return;
       }
       case 'wind': {
-        var ws = Math.random() < .5 ? -1 : 1; x0 = ws < 0 ? -30 : W + 30;
-        y0 = Math.random() < aim ? rnd(headY() - 25, cat.y - 30) : rnd(H * .15, GY - 170);
-        var kinds = [['leaf', 10, .25], ['sock', 11, .5], ['duck', 11, .5], ['boot', 12, 1], ['pot', 12, 1]], kd = pick(kinds);
-        mk(kd[0], x0, y0, -ws * rnd(150, 220) * spd, 0, kd[1], kd[2], { bob: rnd(20, 50), bobF: rnd(2, 4), y0: y0, age: 0, vr: rnd(-5, 5) });
+        var ws = sr() < .5 ? -1 : 1; x0 = ws < 0 ? -30 : W + 30;
+        y0 = sr() < aim ? srnd(headY() - 25, cat.y - 30) : srnd(H * .15, GY - 170);
+        var kinds = [['leaf', 10, .25], ['sock', 11, .5], ['duck', 11, .5], ['boot', 12, 1], ['pot', 12, 1]], kd = spick(kinds);
+        mk(kd[0], x0, y0, -ws * srnd(150, 220) * spd, 0, kd[1], kd[2], { bob: srnd(20, 50), bobF: srnd(2, 4), y0: y0, age: 0, vr: srnd(-5, 5) });
         return;
       }
       case 'tornado': {
         var tor = G.ents.tornado; if (!tor) return;
-        x0 = tor.x; y0 = GY - rnd(60, 200);
-        tg = target(aim, 22); T = rnd(.9, 1.25) / spd;
-        var k2 = pick([['leaf', 10, .25], ['sock', 11, .5], ['duck', 11, .5], ['boot', 12, 1], ['pot', 12, 1]]);
-        v = ballistic(x0, y0, tg[0], tg[1], T, 300); mk(k2[0], x0, y0, v[0], v[1], k2[1], k2[2], { g: 300, vr: rnd(-8, 8) });
+        x0 = tor.x; y0 = GY - srnd(60, 200);
+        tg = target(aim, 22); T = srnd(.9, 1.25) / spd;
+        var k2 = spick([['leaf', 10, .25], ['sock', 11, .5], ['duck', 11, .5], ['boot', 12, 1], ['pot', 12, 1]]);
+        v = ballistic(x0, y0, tg[0], tg[1], T, 300); mk(k2[0], x0, y0, v[0], v[1], k2[1], k2[2], { g: 300, vr: srnd(-8, 8) });
         return;
       }
       case 'meteor': case 'pebble': case 'fireball': case 'rock': {
-        var r = type === 'meteor' ? rnd(11, 15) : type === 'pebble' ? 5.5 : type === 'rock' ? rnd(9, 12) : 13;
-        var sp = (type === 'pebble' ? 340 : type === 'fireball' ? 320 : type === 'rock' ? 240 : 250) * spd * rnd(.9, 1.1);
+        var r = type === 'meteor' ? srnd(11, 15) : type === 'pebble' ? 5.5 : type === 'rock' ? srnd(9, 12) : 13;
+        var sp = (type === 'pebble' ? 340 : type === 'fireball' ? 320 : type === 'rock' ? 240 : 250) * spd * srnd(.9, 1.1);
         tg = target(aim, 24);
         if (type === 'fireball' && G.ents.dragon) { x0 = G.ents.dragon.x; y0 = G.ents.dragon.y + 10; }
-        else { x0 = rnd(-.3, 1.3) * W; y0 = -30; }
+        else { x0 = srnd(-.3, 1.3) * W; y0 = -30; }
         d = Math.hypot(tg[0] - x0, tg[1] - y0);
         mk(type, x0, y0, (tg[0] - x0) / d * sp, (tg[1] - y0) / d * sp, r, type === 'pebble' ? .34 : 1);
         return;
       }
       case 'lava': {
-        if (G.world.volcano) { x0 = W * .2 + rnd(-12, 12); y0 = GY - 190; }
-        else { x0 = Math.random() < .5 ? -10 : W + 10; y0 = GY - 40; }
-        tg = target(aim, 24); T = rnd(1.35, 1.85) / spd;
-        v = ballistic(x0, y0, tg[0], tg[1], T, 380); mk('lava', x0, y0, v[0], v[1], rnd(9, 12.5), 1, { g: 380 });
+        if (G.world.volcano) { x0 = W * .2 + srnd(-12, 12); y0 = GY - 190; }
+        else { x0 = sr() < .5 ? -10 : W + 10; y0 = GY - 40; }
+        tg = target(aim, 24); T = srnd(1.35, 1.85) / spd;
+        v = ballistic(x0, y0, tg[0], tg[1], T, 380); mk('lava', x0, y0, v[0], v[1], srnd(9, 12.5), 1, { g: 380 });
         return;
       }
       case 'bolt': case 'goo': {
-        var u = G.ents.ufos.length ? pick(G.ents.ufos) : null;
-        x0 = u ? u.x : rnd(.1, .9) * W; y0 = u ? u.y + 16 : -20;
+        var u = G.ents.ufos.length ? spick(G.ents.ufos) : null;
+        x0 = u ? u.x : srnd(.1, .9) * W; y0 = u ? u.y + 16 : -20;
         if (type === 'bolt') { tg = target(aim, 20); d = Math.hypot(tg[0] - x0, tg[1] - y0); sp = 290 * spd; mk('bolt', x0, y0, (tg[0] - x0) / d * sp, (tg[1] - y0) / d * sp, 5.5, .5); }
-        else { mk('goo', x0, y0, rnd(-30, 30), 60, 9, .5, { g: 260 }); }
+        else { mk('goo', x0, y0, srnd(-30, 30), 60, 9, .5, { g: 260 }); }
+        return;
+      }
+      case 'pixel': {   // glitch pixel: blinks sideways once on the way down, then re-aims
+        tg = target(aim, 22); x0 = clamp(tg[0] + srnd(-.35, .35) * W, 10, W - 10); y0 = -20;
+        d = Math.hypot(tg[0] - x0, tg[1] - y0); sp = 200 * spd * srnd(.9, 1.1);
+        mk('pixel', x0, y0, (tg[0] - x0) / d * sp, (tg[1] - y0) / d * sp, 8, .5, { tx: tg[0], ty: tg[1], jt: 0, jumpAt: srnd(.3, .55) * d / sp, jdx: (sr() < .5 ? -1 : 1) * srnd(34, 54) });
+        return;
+      }
+      case 'zig': case 'panel': {   // zig-zag glitch bug / fluttering ceiling panel
+        var pan = type === 'panel';
+        tg = target(aim, 22); x0 = clamp(tg[0] + srnd(-.3, .3) * W, 30, W - 30); y0 = -24; vy = (pan ? 135 : 150) * spd * srnd(.9, 1.1); T = (tg[1] - y0) / vy;
+        var zf = pan ? srnd(2.2, 3) : srnd(5, 7), za = pan ? srnd(26, 36) : srnd(26, 38);
+        mk(type, x0, y0, (tg[0] - x0) / T, vy, pan ? 15 : 9, pan ? .75 : .5, { zig: { amp: za, f: zf, ph: -zf * T }, bx: x0, zt: 0, vr: pan ? srnd(-2, 2) : 0 });
+        return;
+      }
+      case 'mini': {   // little UFO swooping in from the side
+        var ms = sr() < .5 ? -1 : 1; x0 = ms < 0 ? -24 : W + 24; y0 = srnd(H * .12, H * .3);
+        tg = target(aim, 22); T = srnd(1.5, 1.95) / spd;
+        v = ballistic(x0, y0, tg[0], tg[1], T, 140); mk('mini', x0, y0, v[0], v[1], 12, .5, { g: 140, vr: 0 });
+        return;
+      }
+      case 'ray': {   // tractor-beam orb from the mothership
+        var mo = G.ents.mship; x0 = mo ? mo.x : srnd(.2, .8) * W; y0 = mo ? mo.y + 18 : -20;
+        tg = target(aim, 18); d = Math.hypot(tg[0] - x0, tg[1] - y0); sp = 165 * spd;
+        mk('ray', x0, y0, (tg[0] - x0) / d * sp, (tg[1] - y0) / d * sp, 13, .75); if (mo) mo.beam = 1;
+        return;
+      }
+      case 'bone': case 'tball': {   // TANK throws bones in an arc, and tennis balls that bounce once
+        var tk = G.ents.tank, dir = tk ? tk.dir : (sr() < .5 ? 1 : -1);
+        if (tk && Math.abs(tk.x - W / 2) < W * .3) return;   // no throws while TANK trots past Pumpkin
+        x0 = tk ? tk.x + dir * 34 : (dir > 0 ? -20 : W + 20); y0 = GY - 84;
+        tg = target(aim, 22);
+        if (type === 'bone') {
+          T = srnd(1.1, 1.45) / spd; v = ballistic(x0, y0, tg[0], tg[1], T, 420);
+          mk('bone', x0, y0, v[0], v[1], 11, .5, { g: 420, vr: srnd(6, 10) * (sr() < .5 ? -1 : 1) });
+        } else {
+          var bxg = cat.x - dir * srnd(72, 118); T = srnd(.85, 1.1) / spd; v = ballistic(x0, y0, bxg, GY - 9, T, 600);
+          mk('tball', x0, y0, v[0], v[1], 9, .5, { g: 600, bnc: 1, tx: tg[0], ty: tg[1], bt: srnd(.65, .82) / spd, vr: 8 * dir });
+        }
+        if (tk) tk.throwT = .35;
+        return;
+      }
+      case 'nut': case 'bulb': {   // things falling from the lift ceiling
+        var bulb = type === 'bulb';
+        vy = (bulb ? 215 : 300) * spd * srnd(.9, 1.1); vx = srnd(-25, 25); y0 = -20; T = (headY() - y0) / vy;
+        x0 = sr() < aim ? cat.x + srnd(-26, 26) - vx * T : srnd(.05, .95) * W - vx * T;
+        mk(type, x0, y0, vx, vy, bulb ? 9 : 6.5, bulb ? .5 : .34, { vr: srnd(-6, 6) });
         return;
       }
     }
   }
   function spawnTreat() {
-    var x0 = cat.x + rnd(-14, 14);
+    var x0 = cat.x + srnd(-14, 14);
     mk('treat', x0, -24, 0, 130, 12, 0, { treat: true });
     if (!G.treatTold) { G.treatTold = true; caption("A FISH! LET IT THROUGH!", 2.4, 'p'); }
   }
@@ -272,13 +377,16 @@
     rain: [['rain', 12, 0, { aim: .42 }]], hail: [['hail', 2.6, 0, { aim: .65, big: 1 }]], snow: [['snowball', 1.8, 0, { aim: .8 }], ['bigsnow', .3, 0, { aim: 1 }]],
     wind: [['wind', 1.4, 0, { aim: .75 }], ['tornado', 1, 0, { aim: .8 }]], meteor: [['meteor', 1.3, 0, { aim: .8 }], ['pebble', 1, 0, { aim: .6 }]],
     volcano: [['lava', 1.8, 0, { aim: .82 }], ['rock', .5, 0, { aim: .8 }]], aliens: [['bolt', 1.6, 0, { aim: .85 }], ['goo', .8, 0, { aim: .5 }]],
-    dragon: [['fireball', 1.3, 0, { aim: .85 }], ['meteor', .6, 0, { aim: .8 }]]
+    dragon: [['fireball', 1.3, 0, { aim: .85 }], ['meteor', .6, 0, { aim: .8 }]],
+    glitch: [['pixel', 1.5, 0, { aim: .8 }], ['zig', .6, 0, { aim: .75 }]], lift: [['nut', 1.8, 0, { aim: .72 }], ['bulb', .5, 0, { aim: .8 }]],
+    tank: [['tball', 1.2, 0, { aim: .82 }], ['bone', .6, 0, { aim: .8 }]], mothership: [['mini', 1.2, 0, { aim: .82 }], ['ray', .6, 0, { aim: .9 }]]
   };
   function endlessUpdate() {
     var wi = Math.floor(G.t / 25) % WORLDS.length, loop = Math.floor(G.t / (25 * WORLDS.length));
     if (wi !== G.endWorld || G.world !== WORLDS[wi]) {
       G.endWorld = wi; G.world = WORLDS[wi];
       var d = G.def; d.tornado = G.world.id === 'wind'; d.ufo = G.world.id === 'aliens' ? 1 + (loop > 0 ? 1 : 0) : 0; d.dragon = G.world.id === 'dragon';
+      d.mship = G.world.id === 'mothership'; d.tank = G.world.id === 'tank';
       d.thunder = G.world.id === 'rain';
       setupEnts();
       var sp = ENDLESS_SP[G.world.id].slice();
@@ -327,7 +435,7 @@
         if (d.thunder) { G.thunderT -= dt; if (G.thunderT <= 0) { G.thunderT = rnd(5, 9); G.flash = .28; S.thunder(); } }
       } else if (!G.endless) {
         var live = 0; for (i = 0; i < G.objs.length; i++) if (!G.objs[i].blocked && !G.objs[i].treat) live++;
-        if (G.li % 3 === 2) { if (!G.giantOut && live === 0) spawnGiant(); }
+        if (isTwist()) { if (!G.giantOut && live === 0) spawnGiant(); }
         else if (live === 0) endLevel(true);
       }
     }
@@ -336,9 +444,28 @@
     if (tor) { tor.sw += dt; if (Math.floor(tor.sw / 6) % 2) { tor.x += (W * .88 - tor.x) * Math.min(1, dt * 1.5); } else { tor.x += (W * .12 - tor.x) * Math.min(1, dt * 1.5); } }
     G.ents.ufos.forEach(function (u) { u.ph += dt * .8; u.x = W / 2 + Math.sin(u.ph) * W * .36; });
     var dr = G.ents.dragon; if (dr) { dr.ph += dt * .6; dr.x = W / 2 + Math.sin(dr.ph) * W * .34; dr.y = 105 + Math.sin(dr.ph * 2.3) * 14; }
+    var mo = G.ents.mship; if (mo) { mo.ph += dt * .45; mo.x = W / 2 + Math.sin(mo.ph) * W * .27; mo.beam = Math.max(0, mo.beam - dt * 2.2); }
+    var tk = G.ents.tank;
+    if (tk) {   // TANK trots to the other side of the yard every 8 s, always facing Pumpkin
+      if (playing) tk.sw += dt;
+      var ttx = Math.floor(tk.sw / 8) % 2 ? W * .87 : W * .13, ox2 = tk.x;
+      tk.x += (ttx - tk.x) * Math.min(1, dt * 2.2); tk.run = Math.abs(tk.x - ox2) / dt; tk.dir = tk.x > W / 2 ? -1 : 1; tk.throwT = Math.max(0, tk.throwT - dt);
+    }
+    var lf = G.ents.lift; if (lf && playing) { lf.ft += dt; if (lf.ft > 2.4) { lf.ft = 0; lf.floor++; } }
+    if (playing && (d.flicker || d.quake || d.gfx)) {
+      G.fxT -= dt;
+      if (G.fxT <= 0) {
+        G.fxT = rnd(4.5, 7);
+        if (d.flicker) G.dim = .45;
+        if (d.quake) { G.shake = 1; say(pick(['whoa!', 'bumpy!!', 'eek!']), 1.2, true); }
+        if (d.gfx) G.gfx = .45;
+      }
+    }
+    G.dim = Math.max(0, G.dim - dt); G.gfx = Math.max(0, G.gfx - dt);
 
+    if (AUTO.on && (G.mode === 'play' || G.mode === 'twist')) autoStep(dt);
     // shield follows the finger (smoothed, frame-rate independent)
-    if (ptr.kb) {
+    if (ptr.kb && !AUTO.on) {
       var kx = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0), ky = (keys.ArrowDown || keys.s ? 1 : 0) - (keys.ArrowUp || keys.w ? 1 : 0);
       shield.tx = clamp(shield.tx + kx * 380 * dt, 10, W - 10); shield.ty = clamp(shield.ty + ky * 380 * dt, 30, GY - 20);
     }
@@ -353,7 +480,21 @@
     for (i = G.objs.length - 1; i >= 0; i--) {
       o = G.objs[i];
       if (o.bob) { o.age += dt; o.vy = Math.cos(o.age * o.bobF) * o.bob; }
-      o.vy += o.g * dt; o.x += o.vx * dt; o.y += o.vy * dt; o.rot += o.vr * dt;
+      if (o.zig) { o.zt += dt; o.bx += o.vx * dt; o.vy += o.g * dt; o.y += o.vy * dt; o.x = o.bx + Math.sin(o.zt * o.zig.f + o.zig.ph) * o.zig.amp; o.rot += o.vr * dt; }
+      else { o.vy += o.g * dt; o.x += o.vx * dt; o.y += o.vy * dt; o.rot += o.vr * dt; }
+      if (o.ghostT > 0) o.ghostT -= dt;
+      if (o.jumpAt != null && !o.blocked) {
+        o.jt += dt;
+        if (o.jt >= o.jumpAt) {   // glitch! blink sideways, then aim at Pumpkin again
+          o.gx = o.x; o.gy = o.y; o.ghostT = .35; o.x = clamp(o.x + o.jdx, 8, W - 8); o.jumpAt = null;
+          var jsp = Math.hypot(o.vx, o.vy), jd = Math.hypot(o.tx - o.x, o.ty - o.y) || 1; o.vx = (o.tx - o.x) / jd * jsp; o.vy = (o.ty - o.y) / jd * jsp;
+          if (G.mode === 'play') S.block(3, true);
+        }
+      }
+      if (o.bnc && !o.blocked && o.vy > 0 && o.y >= GY - o.r) {   // tennis ball bounces once, towards Pumpkin
+        o.y = GY - o.r; o.bnc = 0; var bv = ballistic(o.x, o.y, o.tx, o.ty, o.bt, o.g); o.vx = bv[0]; o.vy = bv[1];
+        burst(o.x, GY, 5, ['rgba(255,255,255,.85)', '#d7f542'], 90, .3, 300, 2.4);
+      }
       if (o.blocked) {
         o.fade -= dt * 1.6;
         if (o.fade <= 0 || o.y > H + 40) G.objs.splice(i, 1);
@@ -403,6 +544,30 @@
     if (G.mode === 'out') { G.outT -= dt; if (G.outT <= 0) showResult(); }
   }
 
+  // autopilot for the automated difficulty checks only (never runs for players): a limited-speed bot that re-aims every AUTO.react s
+  var AUTO = { on: false, react: .12, v: 650, t: 0, fx: 0, fy: 0, aim: null };
+  function autoStep(dt) {
+    AUTO.t -= dt;
+    if (AUTO.t <= 0) {
+      AUTO.t = AUTO.react; var best = null, bt = 9, hy = headY();
+      for (var i = 0; i < G.objs.length; i++) {
+        var o = G.objs[i]; if (o.blocked || o.treat) continue;
+        var x = o.x, y = o.y, vx = o.vx, vy = o.vy, bn = o.bnc, path = [];
+        for (var t = 0; t < 2.5; t += .02) {
+          vy += o.g * .02; x += vx * .02; y += vy * .02; path.push([x, y]);
+          if (bn && vy > 0 && y >= GY - o.r) { var bv = ballistic(x, GY - o.r, o.tx, o.ty, o.bt, o.g); vx = bv[0]; vy = bv[1]; bn = 0; }
+          if (Math.hypot(x - cat.x, y - hy) < 122 * CAT_S + o.r + 26 || Math.hypot(x - cat.x, y - (cat.y - 130 * CAT_S)) < 104 * CAT_S + o.r + 20) {
+            if (t < bt) { bt = t; best = path[Math.max(0, path.length - 6)]; }
+            break;
+          }
+        }
+      }
+      AUTO.aim = best || [cat.x, hy - 70];
+    }
+    var dx = AUTO.aim[0] - AUTO.fx, dy = AUTO.aim[1] - AUTO.fy, dl = Math.hypot(dx, dy), mv = AUTO.v * dt;
+    if (dl > mv) { dx *= mv / dl; dy *= mv / dl; }
+    AUTO.fx += dx; AUTO.fy += dy; shield.tx = clamp(AUTO.fx, 0, W); shield.ty = clamp(AUTO.fy, 24, GY - 16);
+  }
   function onBlock(o, nx, ny, vn) {
     var w = G.world;
     shield.hit = 1;
@@ -417,14 +582,15 @@
     if (o.kind === 'drop') {
       burst(o.x, o.y, 3, ['#bfe6ff', '#ffffff'], 90, .3, 500, 1.8); S.block(G.combo, true); return;
     }
-    o.blocked = true; o.fade = 1;
+    o.blocked = true; o.fade = 1; o.zig = null; o.jumpAt = null; o.bnc = 0;
     var e = .55;
     var px = nx * (shield.x + nx * 0), vxr = o.vx - (1 + e) * vn * nx + shield.vx * .4, vyr = o.vy - (1 + e) * vn * ny + shield.vy * .3;
     o.vx = vxr; o.vy = Math.min(vyr, -60); o.g = Math.max(o.g, 600); o.vr = rnd(-10, 10); o.bob = 0;
-    var cols = o.kind === 'lava' ? ['#ff6a1a', '#ffd34d'] : o.kind === 'bolt' || o.kind === 'goo' ? ['#7ee04f', '#eaffd0'] : o.kind === 'meteor' || o.kind === 'fireball' || o.kind === 'pebble' ? ['#ffb13d', '#ff6a1a', '#fff3b0'] : ['#ffffff', '#cfe8ff'];
+    var cols = o.kind === 'lava' ? ['#ff6a1a', '#ffd34d'] : o.kind === 'bolt' || o.kind === 'goo' || o.kind === 'ray' || o.kind === 'mini' ? ['#7ee04f', '#eaffd0'] :
+      o.kind === 'pixel' || o.kind === 'zig' ? ['#ff4fd8', '#22e3c4', '#ffffff'] : o.kind === 'tball' ? ['#d7f542', '#ffffff'] : o.kind === 'bulb' ? ['#fff6b0', '#ffffff'] : o.kind === 'meteor' || o.kind === 'fireball' || o.kind === 'pebble' ? ['#ffb13d', '#ff6a1a', '#fff3b0'] : ['#ffffff', '#cfe8ff'];
     burst(o.x, o.y, o.kind === 'meteor' || o.kind === 'fireball' ? 12 : 6, cols, 160, .45, 500, 2.6);
-    if (o.kind === 'hail' || o.kind === 'meteor' || o.kind === 'rock' || o.kind === 'fireball' || o.kind === 'bigsnow') { o.fade = .5; }
-    if (w.shield === 'pan' || o.kind === 'meteor' || o.kind === 'boot' || o.kind === 'pot') {
+    if (o.kind === 'hail' || o.kind === 'meteor' || o.kind === 'rock' || o.kind === 'fireball' || o.kind === 'bigsnow' || o.kind === 'pixel' || o.kind === 'ray' || o.kind === 'bulb') { o.fade = .5; }
+    if (w.shield === 'pan' || w.shield === 'hardhat' || o.kind === 'meteor' || o.kind === 'boot' || o.kind === 'pot' || o.kind === 'bone' || o.kind === 'panel') {
       S.bonk(); if (Math.random() < .35) popText(pick(['BONK!', 'CLANG!', 'BOINK!']), o.x, o.y - 14);
     } else S.block(G.combo);
     if (G.combo === 10) { say('purr~', 1.4, true); S.purr(); face.happy = 1.4; }
@@ -467,8 +633,8 @@
   }
   function endLevel(win) {
     if (G.mode === 'out') return;
-    G.won = win; G.mode = 'out'; G.outT = win ? .9 : 1.6;
-    if (win && G.li % 3 !== 2) { caption('PUMPKIN IS SAFE!', 2, 'y'); say('thank u :3', 1.6, true); face.happy = 2; }
+    G.won = win; G.mode = 'out'; G.outT = win ? .7 : 1.6;
+    if (win && !isTwist()) { caption('PUMPKIN IS SAFE!', 2, 'y'); say('thank u :3', 1.6, true); face.happy = 2; }
     S.stopMusic(); S.jingle(win);
   }
   function lose() {
@@ -478,18 +644,38 @@
   function starsFor(h) { return h >= 3.999 ? 3 : h >= 1.999 ? 2 : 1; }
   function showResult() {
     G.mode = 'result'; shield.show = false; hud.hidden = true; $('bPause').hidden = true;
-    var card = $('rcard'), st = G.won ? starsFor(G.hearts) : 0, i;
+    var card = $('rcard'), st = G.won ? starsFor(G.hearts) : 0, i, main = $('bNext'), shareB = $('bShareWin');
     card.className = 'card' + (G.won ? ' win' : '');
     var rs = $('rstars').children; for (i = 0; i < 3; i++) rs[i].className = '';
     $('rstars').hidden = G.endless;
+    $('bRetry').hidden = false; $('bRetry').textContent = 'Retry';
+    G.last = { won: G.won, stars: st, endless: G.endless, daily: G.daily, li: G.li, world: G.world, blocked: G.blocked, best: G.best, score: G.score, secs: Math.floor(G.t), hearts: G.hearts };
     if (G.endless) {
       var secs = Math.floor(G.t), best = data.endless || 0, nb = G.score > best;
       if (nb) { data.endless = G.score; save(); }
+      G.last.newBest = nb;
       $('rtitle').textContent = nb ? 'New best!' : 'Game over';
       $('rline').textContent = 'You lasted ' + secs + ' s, blocked ' + G.blocked + ' and scored ' + G.score.toLocaleString('en-US') + '.';
       $('rbest').textContent = 'Best: ' + Math.max(best, G.score).toLocaleString('en-US');
       $('rquote').textContent = '"' + pick(['again? :3', 'u did so good!', 'one more round?']) + '" - Pumpkin';
-      $('bNext').hidden = true; $('bRetry').textContent = 'Play again'; $('bRetry').classList.add('hot');
+      main.textContent = 'Play again'; G.nextAct = 'endless'; $('bRetry').hidden = true;
+      shareB.hidden = G.score < 200;
+    } else if (G.daily) {
+      var info = dailyInfo();
+      if (G.won) {
+        var dd = data.daily || {}, t = today();
+        if (dd.last !== t) { dd.streak = dd.last === t - 1 ? (dd.streak || 0) + 1 : 1; dd.last = t; }
+        dd.best = Math.max(dd.best || 0, dd.streak); dd.st = Math.max(dd.day === t ? dd.st || 0 : 0, st); dd.day = t;
+        data.daily = dd; save(); info = dailyInfo();
+      }
+      G.last.streak = info.streak;
+      $('rtitle').textContent = G.won ? 'Daily challenge done!' : 'So close!';
+      $('rline').textContent = G.won ? ('Blocked ' + G.blocked + ' · Best combo ' + G.best + ' · Hearts ' + (Math.round(G.hearts * 2) / 2) + '/5') : ('You blocked ' + G.blocked + '. Try again, it is the same for everyone today.');
+      $('rbest').textContent = G.won ? (info.streak > 1 ? info.streak + '-day streak! Come back tomorrow.' : 'Come back tomorrow for a new one.') : (info.streak ? 'Your streak: ' + info.streak + ' days' : '');
+      $('rquote').textContent = '"' + (G.won ? G.world.say : pick(['ow... try again?', 'u can do it!'])) + '" - Pumpkin';
+      if (G.won) { main.textContent = 'Play levels'; G.nextAct = 'levels'; } else { main.textContent = 'Try again'; G.nextAct = 'retry'; $('bRetry').hidden = true; }
+      shareB.hidden = !G.won;
+      setTimeout(function () { for (var j = 0; j < 3; j++) if (j < st) rs[j].className = 'on'; }, 150);
     } else {
       var prev = data.stars[G.li] || 0;
       if (G.won && st > prev) { data.stars[G.li] = st; save(); }
@@ -498,14 +684,96 @@
       $('rline').textContent = G.won ? ('Blocked ' + G.blocked + ' · Best combo ' + G.best + ' · Hearts ' + (Math.round(G.hearts * 2) / 2) + '/5') : ('You blocked ' + G.blocked + '. Keep the shield between Pumpkin and the danger!');
       $('rbest').textContent = G.won && G.li % 3 === 2 ? (last ? 'Now try Endless mode!' : 'Next world: ' + WORLDS[Math.floor(G.li / 3) + 1].name) : (G.won && st < 3 ? 'Lose at most 1 heart for 3 stars.' : '');
       $('rquote').textContent = G.won ? '"' + (G.li % 3 === 2 ? w.say : pick(['thank u :3', 'my hero!', 'purr~', 'ur the best :3'])) + '" - Pumpkin' : '"' + pick(['ow... try again?', 'u can do it!', 'one more time pls!']) + '" - Pumpkin';
-      $('bNext').hidden = !(G.won && G.li < NLEV - 1);
-      $('bNext').textContent = 'Next';
-      $('bRetry').textContent = G.won ? 'Retry' : 'Try again'; $('bRetry').classList.toggle('hot', !G.won);
-      if (G.won && last) { $('bNext').hidden = false; $('bNext').textContent = 'Endless'; }
+      if (G.won) { main.textContent = last ? 'Endless mode' : 'Next level'; G.nextAct = last ? 'endless' : 'next'; }
+      else { main.textContent = 'Try again'; G.nextAct = 'retry'; $('bRetry').hidden = true; }
+      shareB.hidden = !G.won;
       setTimeout(function () { for (var j = 0; j < 3; j++) if (j < st) rs[j].className = 'on'; }, 150);
     }
     show('result', true);
+    try { main.focus({ preventScroll: true }); } catch (e) {}
   }
+
+  // ------------------------------------------------------------------ share card (1080 x 1350 PNG; nothing leaves the device unless the player shares it)
+  var SITE = 'https://saagarverma.com/swipe-theory/', shareMade = null;
+  function shareLink() { return G.last && G.last.daily ? SITE + '?daily' : SITE; }
+  function shareText() {
+    var L = G.last || {};
+    if (L.endless) return 'I lasted ' + L.secs + ' seconds protecting Pumpkin the cat in Endless mode (' + L.score.toLocaleString('en-US') + ' points)! Can you beat it?';
+    if (L.daily) return 'I beat today\'s Protect Pumpkin daily challenge' + (L.streak > 1 ? ' (' + L.streak + '-day streak)' : '') + '! Can you?';
+    return 'I kept Pumpkin the cat safe on level ' + lvName(L.li) + ' (' + L.world.name + ')' + ' with ' + L.stars + (L.stars === 1 ? ' star' : ' stars') + '! Can you?';
+  }
+  function cardStar(c, x, y, r, on) {
+    c.beginPath(); for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+    c.closePath(); c.fillStyle = on ? '#ffe14d' : 'rgba(255,255,255,.18)'; c.fill(); c.lineWidth = 6; c.strokeStyle = A.INK; c.lineJoin = 'round'; c.stroke();
+  }
+  function fitText(c, text, size, maxW) { c.font = '700 ' + size + 'px ' + A.FONT; while (c.measureText(text).width > maxW && size > 20) { size -= 2; c.font = '700 ' + size + 'px ' + A.FONT; } }
+  function makeShareCard() {
+    var L = G.last, cw = 1080, ch = 1350, k = cw / 390, ww = 390, hh = ch / k, gy = hh * .84;
+    var cvs = document.createElement('canvas'); cvs.width = cw; cvs.height = ch; var c = cvs.getContext('2d');
+    c.setTransform(k, 0, 0, k, 0, 0);
+    A.drawBg(c, ww, hh, gy, L.world, 0);
+    var P = A.catState({ eye: 0, closed: 'happy', mouth: 'smile', blush: 1, ear: .4, tail: .8, sway: .3 });
+    A.drawCat(c, ww / 2, gy - 4, .4, P);
+    A.drawShield(c, L.world.shield, ww / 2, gy - 4 - 292 * .4 - 95, 0, 0);
+    if (L.won && !L.endless && (L.daily || L.li % 3 === 2) && L.world.reward !== 'rainbow') A.drawReward(c, L.world.reward, ww / 2 + 104, gy - 50, 1.1, .5);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    var g = c.createLinearGradient(0, 0, 0, 470); g.addColorStop(0, 'rgba(14,16,34,.92)'); g.addColorStop(.75, 'rgba(14,16,34,.8)'); g.addColorStop(1, 'rgba(14,16,34,0)');
+    c.fillStyle = g; c.fillRect(0, 0, cw, 470);
+    c.fillStyle = '#0e1022'; c.fillRect(0, ch - 190, cw, 190);
+    c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    c.fillStyle = '#c4c8e4'; c.font = '700 32px ' + A.FONT; c.fillText('S W I P E   T H E O R Y', cw / 2, 78);
+    var big = L.endless ? 'I lasted ' + L.secs + ' seconds!' : L.daily ? 'Daily challenge done!' : 'I kept Pumpkin safe!';
+    c.fillStyle = '#fbfbff'; fitText(c, big, 88, 980); c.fillText(big, cw / 2, 186);
+    var sub = L.endless ? L.score.toLocaleString('en-US') + ' points in Endless mode' : L.daily ? dayLabel(today()) + (L.streak > 1 ? ' · ' + L.streak + '-day streak' : '') : 'Level ' + lvName(L.li) + ' · ' + L.world.name;
+    c.fillStyle = '#ffa24c'; fitText(c, sub, 50, 960); c.fillText(sub, cw / 2, 262);
+    if (!L.endless) for (var s2 = 0; s2 < 3; s2++) cardStar(c, cw / 2 + (s2 - 1) * 104, 334, 40, s2 < L.stars);
+    c.fillStyle = '#fbfbff'; c.font = '700 54px ' + A.FONT; c.fillText('Can you protect Pumpkin?', cw / 2, ch - 106);
+    c.fillStyle = '#ffa24c'; c.font = '700 40px ' + A.FONT; c.fillText('saagarverma.com/swipe-theory', cw / 2, ch - 46);
+    return cvs;
+  }
+  function openShareCard() {
+    if (!G.last) return;
+    var go = function () {
+      var cvs = makeShareCard(); shareMade = { blob: null, file: null, url: cvs.toDataURL('image/png'), canFiles: false };
+      $('cardImg').src = shareMade.url;
+      try {
+        cvs.toBlob(function (b) {
+          if (!b || !shareMade) return; shareMade.blob = b;
+          try { shareMade.file = new File([b], 'protect-pumpkin.png', { type: 'image/png' }); } catch (e) { shareMade.file = null; }
+          try { shareMade.canFiles = !!(shareMade.file && navigator.canShare && navigator.canShare({ files: [shareMade.file] })); } catch (e) { shareMade.canFiles = false; }
+          $('cShare').textContent = shareMade.canFiles ? 'Share image' : 'Share';
+        }, 'image/png');
+      } catch (e) {}
+      $('cShare').textContent = 'Share'; $('cShare').hidden = !navigator.share; $('cSave').classList.toggle('hot', !navigator.share);
+      show('cardM', true);
+    };
+    if (document.fonts && document.fonts.load) document.fonts.load('700 64px InterB').then(go, go); else go();
+  }
+  function copyText(t) {
+    function legacy() { try { var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '-1000px'; document.body.appendChild(ta); ta.select(); var ok = document.execCommand('copy'); document.body.removeChild(ta); return ok; } catch (e) { return false; } }
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function () { return true; }, function () { return legacy(); });
+    return Promise.resolve(legacy());
+  }
+  function saveImage() {
+    if (!shareMade) return;
+    var a = document.createElement('a'), u = shareMade.blob && window.URL && URL.createObjectURL ? URL.createObjectURL(shareMade.blob) : shareMade.url;
+    a.href = u; a.download = 'protect-pumpkin.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { try { if (u !== shareMade.url) URL.revokeObjectURL(u); } catch (e) {} }, 4000);
+    toast(finePointer ? 'Image saved' : 'Saving image. If nothing happens, press and hold it.');
+  }
+  $('bShareWin').addEventListener('click', function () { S.click(); openShareCard(); });
+  $('cShare').addEventListener('click', function () {
+    var text = shareText(), link = shareLink();
+    if (shareMade && shareMade.canFiles && navigator.share) {
+      navigator.share({ files: [shareMade.file], title: 'Protect Pumpkin!', text: text + ' ' + link }).catch(function (e) { if (e && e.name !== 'AbortError') copyText(text + ' ' + link).then(function (ok) { toast(ok ? 'Link copied' : link); }); });
+      return;
+    }
+    if (navigator.share) { navigator.share({ title: 'Protect Pumpkin!', text: text, url: link }).catch(function () {}); return; }
+    saveImage(); copyText(text + ' ' + link).then(function (ok) { toast(ok ? 'Image saved and link copied' : link); });
+  });
+  $('cSave').addEventListener('click', saveImage);
+  $('cCopy').addEventListener('click', function () { var t = shareText() + ' ' + shareLink(); copyText(t).then(function (ok) { toast(ok ? 'Link copied' : shareLink()); }); });
+  $('cClose').addEventListener('click', function () { show('cardM', false); });
 
   // ------------------------------------------------------------------ render
   function catPose() {
@@ -528,7 +796,7 @@
     var w = G.world, i;
     if (w.storm || G.def && G.def.thunder) {  // storm clouds along the top
       for (i = 0; i < 6; i++) A.cloud(c, ((i * 92 + now * 8) % (W + 120)) - 60, 18 + (i % 2) * 22, 1.25, w.storm || '#9aa9c4');
-    } else if (!w.stars) {
+    } else if (!w.stars && !w.lift) {
       for (i = 0; i < 3; i++) A.cloud(c, ((i * 170 + now * 6) % (W + 140)) - 70, 70 + i * 34, .8, '#ffffff');
     }
     if (w.volcano) {
@@ -554,6 +822,14 @@
       c.beginPath(); c.arc(0, -10, 5, 0, TAU); c.fillStyle = '#7ee04f'; c.fill();
       c.restore();
     });
+    var mo = G.ents.mship; if (mo) A.drawMothership(c, mo.x, mo.y, now, mo.beam);
+    var tk = G.ents.tank;
+    if (tk) {
+      var hopT = tk.run > 30 ? Math.abs(Math.sin(now * 12)) * 6 : 0;
+      A.drawTank(c, tk.x, GY + 2 - hopT, .72, { dir: tk.dir, happy: G.rewardOn, bob: tk.throwT > 0 ? -.12 * tk.dir : Math.sin(now * 2) * .03, squash: tk.throwT > 0 ? -.05 : 0 });
+    }
+    var lf = G.ents.lift;
+    if (lf) { c.font = '700 18px ' + A.FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#ffcc33'; c.fillText('\u25B2 ' + lf.floor, W / 2, 70); }
     var dr = G.ents.dragon;
     if (dr) {
       c.save(); c.translate(dr.x, dr.y); var fl = Math.sin(now * 9) * .5;
@@ -628,6 +904,12 @@
       var fy = shield.y + 64 + Math.sin(now * 4) * 6, coarse = ptr.type !== 'mouse' || !finePointer;
       if (coarse) A.finger(c, shield.x + 4, fy, .75, .95);
       A.pill(c, coarse ? 'PUT YOUR FINGER ON THE SCREEN!' : 'CLICK TO START, THEN MOVE THE MOUSE', W / 2, Math.max(130, Math.min(GY - 230, H * .32)), 15, '#ffffff', A.INK, W - 24);
+    }
+    if (G.dim > 0) { c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(16,20,40,' + (Math.min(1, G.dim * 3) * .38 * (Math.floor(now * 22) % 3 ? 1 : .5)).toFixed(3) + ')'; c.fillRect(0, 0, cv.width, cv.height); }
+    if (G.gfx > 0) {   // a friendly screen glitch: a few shifted colour bands
+      c.setTransform(1, 0, 0, 1, 0, 0); var bands = 4, bh = cv.height / 14;
+      for (i = 0; i < bands; i++) { var by2 = ((Math.sin(now * 37 + i * 9.1) + 1) / 2) * (cv.height - bh); c.globalAlpha = .22; c.fillStyle = i % 2 ? '#ff4fd8' : '#22e3c4'; c.fillRect(0, by2, cv.width, bh * (.4 + (i % 3) * .3)); }
+      c.globalAlpha = 1;
     }
     if (G.flash > 0) { c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = 'rgba(255,255,255,' + G.flash + ')'; c.fillRect(0, 0, cv.width, cv.height); }
     if (G.mode === 'play' || G.mode === 'hold') drawHud();
@@ -711,20 +993,24 @@
   // ------------------------------------------------------------------ menus
   function goMenu() {
     G.mode = 'menu'; S.stopMusic(); G.objs = []; G.parts = []; G.cap = null; G.say = null;
-    G.world = WORLDS[0]; G.def = WORLDS[0].levels[0]; G.ents = { tornado: null, ufos: [], dragon: null };
+    G.world = WORLDS[0]; G.def = WORLDS[0].levels[0]; G.ents = noEnts(); G.daily = false; G.dim = 0; G.gfx = 0;
     hud.hidden = true; $('bPause').hidden = true; shield.show = false; setNav(false);
     setTitle('Protect Pumpkin!');
     var nextLv = 0; for (var i = 0; i < NLEV; i++) if (unlocked(i)) nextLv = i;
     $('playLab').textContent = Object.keys(data.stars).length ? 'Play ' + lvName(nextLv) : 'Play';
     $('bMenuEndless').classList.toggle('locked', !endlessUnlocked());
-    ['levels', 'result', 'hold'].forEach(function (k) { show(k, false); });
+    var di = dailyInfo(), sk = $('dailySk');
+    sk.textContent = di.streak ? di.streak : ''; sk.hidden = !di.streak;
+    $('bDaily').classList.toggle('done', di.doneToday);
+    $('bDaily').setAttribute('aria-label', 'Daily challenge' + (di.doneToday ? ', done today' : '') + (di.streak ? ', ' + di.streak + '-day streak' : ''));
+    ['levels', 'result', 'hold', 'cardM'].forEach(function (k) { show(k, false); });
     show('menu', true);
   }
   function openLevels() {
     var h = '', total = 0;
     for (var wi = 0; wi < WORLDS.length; wi++) {
       var w = WORLDS[wi];
-      h += '<div class="wrow"><div class="wname"><span class="wdot" style="background:' + w.sky[0] + '"></span>' + (wi + 1) + '. ' + w.name + '</div><div class="wlv">';
+      h += '<div class="wrow"><div class="wname"><span class="wdot" style="background:' + w.sky[0] + '"></span>' + (wi + 1) + '. ' + w.name + (wi >= 7 && wi <= 10 ? ' <em class="new">NEW</em>' : '') + '</div><div class="wlv">';
       for (var j = 0; j < 3; j++) {
         var i = wi * 3 + j, st = data.stars[i] || 0, un = unlocked(i); total += st;
         h += '<button class="tile' + (un ? '' : ' locked') + '" data-lv="' + i + '"' + (un ? '' : ' disabled aria-disabled="true"') + ' aria-label="Level ' + lvName(i) + (un ? ', ' + st + ' stars' : ', locked') + '"><b>' + lvName(i) + '</b><span class="st">' +
@@ -746,8 +1032,7 @@
   });
   $('bPlay').addEventListener('click', function () {
     S.unlock(); S.click();
-    var n = 0; for (var i = 0; i < NLEV; i++) if (unlocked(i) && !(data.stars[i] > 0)) { n = i; break; } else if (unlocked(i)) n = i;
-    startLevel(n, false);
+    startLevel(firstOpen(), false);
   });
   $('bMenuLevels').addEventListener('click', function () { S.unlock(); S.click(); openLevels(); });
   $('bMenuEndless').addEventListener('click', function () {
@@ -764,8 +1049,16 @@
   });
   $('bLevels').addEventListener('click', function () { S.unlock(); if (G.mode === 'play') pause(); openLevels(); });
   $('bLvClose').addEventListener('click', function () { show('levels', false); if (G.mode === 'menu') show('menu', true); });
-  $('bRetry').addEventListener('click', function () { S.click(); startLevel(G.li, G.endless); });
-  $('bNext').addEventListener('click', function () { S.click(); if (G.li >= NLEV - 1) startLevel(0, true); else startLevel(G.li + 1, false); });
+  function firstOpen() { var n = 0; for (var i = 0; i < NLEV; i++) if (unlocked(i) && !(data.stars[i] > 0)) { n = i; break; } else if (unlocked(i)) n = i; return n; }
+  $('bRetry').addEventListener('click', function () { S.click(); startLevel(G.li, G.endless, G.daily); });
+  $('bNext').addEventListener('click', function () {
+    S.click(); var a = G.nextAct;
+    if (a === 'retry') startLevel(G.li, G.endless, G.daily);
+    else if (a === 'endless') startLevel(0, true);
+    else if (a === 'levels') startLevel(firstOpen(), false);
+    else startLevel(Math.min(NLEV - 1, G.li + 1), false);
+  });
+  $('bDaily').addEventListener('click', function () { S.unlock(); S.click(); startLevel(0, false, true); });
   $('bResLevels').addEventListener('click', function () { S.click(); show('result', false); openLevels(); });
   $('bQuit').addEventListener('click', function () { goMenu(); });
   $('bPause').addEventListener('click', function () { S.unlock(); if (G.mode === 'play') pause(); else if (G.mode === 'paused' || G.mode === 'hold') resume(); });
@@ -795,6 +1088,7 @@
   window.addEventListener('resize', function () { resize(); drawMenuArt(); });
   setMute(muted);
   goMenu();
+  if (/[?&]daily\b/.test(qs)) startLevel(0, false, true);
   drawMenuArt();
   if (document.fonts && document.fonts.load) document.fonts.load('700 16px InterB').then(function () { drawMenuArt(); }).catch(function () {});
   requestAnimationFrame(frame);
@@ -803,6 +1097,8 @@
   window.__pp = {
     get mode() { return G.mode; }, get level() { return G.li; }, get t() { return G.t; }, get hearts() { return G.hearts; }, get blocked() { return G.blocked; },
     get fps() { return fpsEma; }, get objs() { return G.objs.length; }, get audio() { return S.state; }, get stars() { return JSON.parse(JSON.stringify(data.stars)); },
-    setTimeScale: function (k) { timeScale = k; }, start: function (i, e) { startLevel(i, e); }
+    setTimeScale: function (k) { timeScale = k; }, start: function (i, e, d) { startLevel(i, e, d); },
+    auto: function (on, opts) { AUTO.on = !!on; if (opts) for (var k in opts) AUTO[k] = opts[k]; AUTO.fx = shield.x; AUTO.fy = shield.y; ptr.kb = !!on; if (on && G.mode === 'ready') beginPlay(); },
+    get won() { return G.won; }, get nlev() { return NLEV; }, daily: function () { return dailyPlan(today()); }, get last() { return G.last; }, share: function () { openShareCard(); }
   };
 })();

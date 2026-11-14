@@ -15,6 +15,8 @@
     var $ = function (id) { return document.getElementById(id); };
     var txt = function (id) { var el = $(id); return el ? (el.textContent || '').trim() : ''; };
     var shown = function (id) { var el = $(id); return !!el && !el.hidden; };
+    // daily challenges are logged as mode "daily", n = UTC day of the year (1-366)
+    var dayOfYear = function () { var d = new Date(); return Math.floor((d.getTime() - Date.UTC(d.getUTCFullYear(), 0, 1)) / 864e5) + 1; };
 
     /* Per-game wiring. Everything here only reads the DOM.
        kids: family audience, so no browser ID is stored or sent (returning = the game's own save exists).
@@ -30,6 +32,7 @@
             var small = document.querySelector('#ttl small'), t = small ? small.textContent : '';
             var m = /LEVEL\s+(\d+)/i.exec(t);
             if (m) return { m: 'level', n: +m[1] };
+            if (/DAILY/i.test(t)) return { m: 'daily', n: dayOfYear() };
             if (/SANDBOX/i.test(t)) return { m: 'sandbox', n: 0 };
             return null;
           }
@@ -40,7 +43,7 @@
             var r = null;
             try { r = window.__bt && window.__bt.G && window.__bt.G.lastResult; } catch (e) {}
             if (r && typeof r.level === 'number') {
-              track('result', { m: 'level', n: r.level + 1, won: r.stars > 0 ? 1 : 0, st: r.stars | 0, sc: r.count | 0 });
+              track('result', { m: r.daily ? 'daily' : 'level', n: r.daily ? dayOfYear() : r.level + 1, won: r.stars > 0 ? 1 : 0, st: r.stars | 0, sc: r.count | 0 });
             } else if (lastLevel) {
               track('result', { m: lastLevel.m, n: lastLevel.n, won: $('rcard') && $('rcard').classList.contains('win') ? 1 : 0, sc: parseInt(txt('rnum').replace(/\D/g, ''), 10) || 0 });
             }
@@ -52,13 +55,13 @@
         saveKey: 'protect-pumpkin-v1',
         // the game writes its save (sound setting) on load, so "returning" = it holds at least one star
         returning: function (raw) { try { var v = JSON.parse(raw); return !!(v && v.stars && Object.keys(v.stars).some(function (k) { return v.stars[k] > 0; })); } catch (e) { return false; } },
-        play: '#bPlay, #bMenuEndless, #grid button[data-lv]:not([disabled]), #bRetry, #bNext',
-        share: {},
+        play: '#bPlay, #bMenuEndless, #bDaily, #grid button[data-lv]:not([disabled]), #bRetry, #bNext',
+        share: { cShare: 'share', cCopy: 'copy', cSave: 'save' },
         setup: function (track) {
           var lastLevel = null;
           function onTitle() {
             var t = txt('ttl'), m = /^(\d+)-(\d+)/.exec(t);
-            var l = m ? { m: 'level', n: (+m[1] - 1) * 3 + +m[2] } : /^Endless/i.test(t) ? { m: 'endless', n: 0 } : null;
+            var l = m ? { m: 'level', n: (+m[1] - 1) * 3 + +m[2] } : /^Endless/i.test(t) ? { m: 'endless', n: 0 } : /^Daily/i.test(t) ? { m: 'daily', n: dayOfYear() } : null;
             if (l) { lastLevel = l; track('level', l); }
           }
           watch('ttl', { childList: true, subtree: true, characterData: true }, onTitle);

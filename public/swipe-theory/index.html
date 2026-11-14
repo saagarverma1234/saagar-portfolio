@@ -3,28 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Protect Pumpkin! The Swipe Theory Cat Game</title>
-<meta name="description" content="Put your finger on the screen and protect Pumpkin the orange cat from rain, hail, snowballs, tornadoes, meteors, lava, aliens and a dragon. 24 levels with a twist at the end of every world, plus Endless mode. Free, kid-friendly browser game from the Swipe Theory channel.">
+<title>Protect Pumpkin! Free Cat Game for Kids (Swipe Theory)</title>
+<meta name="description" content="Protect Pumpkin the cat in this free, kid-friendly browser game: drag the shield to block rain, meteors, glitches, UFOs and TANK the dog's balls. 36 levels, a daily challenge and Endless mode. No download, from the Swipe Theory channel.">
 <link rel="canonical" href="https://saagarverma.com/swipe-theory/">
 <meta name="theme-color" content="#121528">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Swipe Theory">
 <meta property="og:title" content="Protect Pumpkin! The Swipe Theory Cat Game">
-<meta property="og:description" content="Put your finger on the screen and keep Pumpkin safe from rain, meteors, lava... and worse. Can you beat Impossible?">
+<meta property="og:description" content="Keep Pumpkin the cat safe from rain, glitches, UFOs and TANK the dog. 36 levels and a new daily challenge every day. Can you beat Impossible?">
 <meta property="og:url" content="https://saagarverma.com/swipe-theory/">
 <meta property="og:image" content="https://saagarverma.com/swipe-theory/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Protect Pumpkin! The Swipe Theory Cat Game">
-<meta name="twitter:description" content="Put your finger on the screen and keep Pumpkin safe. Can you beat Impossible?">
+<meta name="twitter:description" content="Keep Pumpkin the cat safe. 36 levels and a daily challenge. Can you beat Impossible?">
 <meta name="twitter:image" content="https://saagarverma.com/swipe-theory/og.png">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preload" href="inter-700.woff2" as="font" type="font/woff2" crossorigin>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"VideoGame","name":"Protect Pumpkin! The Swipe Theory Cat Game","url":"https://saagarverma.com/swipe-theory/","description":"A kid-friendly browser game: drag a shield with your finger to protect Pumpkin the orange cat from rain, hail, snowballs, wind, meteors, lava, aliens and a dragon. Based on the Swipe Theory YouTube channel.","genre":["Arcade","Casual"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","isAccessibleForFree":true,"typicalAgeRange":"4-","author":{"@type":"Person","name":"Saagar Verma","url":"https://saagarverma.com/"},"sameAs":"https://www.youtube.com/@swipetheoryhq"}
+{"@context":"https://schema.org","@type":"VideoGame","name":"Protect Pumpkin! The Swipe Theory Cat Game","url":"https://saagarverma.com/swipe-theory/","description":"A kid-friendly browser game: drag a shield with your finger to protect Pumpkin the orange cat from rain, hail, snowballs, wind, meteors, lava, aliens, pixel glitches, an alien mothership, TANK the dog, a bumpy elevator and a dragon. 36 levels, a daily challenge and Endless mode. Based on the Swipe Theory YouTube channel.","genre":["Arcade","Casual"],"gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","isAccessibleForFree":true,"typicalAgeRange":"4-","author":{"@type":"Person","name":"Saagar Verma","url":"https://saagarverma.com/"},"sameAs":"https://www.youtube.com/@swipetheoryhq"}
 </script>
 <style>
 /* Inter 700 (SIL Open Font License 1.1, The Inter Project Authors), self-hosted */
@@ -67,12 +67,35 @@ a.ib { color: var(--text); text-decoration: none; }
 #fps { position: absolute; right: 6px; bottom: 6px; font-size: 11px; color: var(--lime); background: rgba(0,0,0,.6); padding: 3px 6px; border-radius: 6px; z-index: 4; pointer-events: none; font-variant-numeric: tabular-nums; }
 #fps:empty { display: none; }
 
+/* 15 Nov (Saagar): minimal first screen = art, title, one line, one Play button, one quiet row of links */
+.menu .quiet { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 2px; }
+.lnk { background: none; border: 0; color: var(--muted); font-size: 15px; min-height: 44px; padding: 0 12px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; font-weight: 700; }
+.lnk:hover { color: var(--text); }
+.lnk.locked { opacity: .5; }
+.lnk[hidden] { display: none; }
+#bDaily { color: var(--yellow); }
+#bDaily.done { color: var(--muted); }
+#bDaily .sk { font-style: normal; font-size: 12px; background: var(--pumpkin); color: #2a1404; border-radius: 999px; min-width: 20px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; }
+#bDaily .sk[hidden] { display: none; }
+.wname em.new { font-style: normal; font-size: 10px; letter-spacing: 1px; color: #2a1404; background: var(--yellow); border-radius: 6px; padding: 2px 6px; }
+.card .btn.big { width: 100%; min-height: 58px; font-size: 20px; border-radius: 16px; margin-top: 4px; }
+.card .btn.big + .btn.big { margin-top: 10px; }
+.card .btn.share { background: #fff3e6; color: #2a1404; border-color: #fff3e6; }
+.card .btn.share svg { width: 20px; height: 20px; }
+.card .quiet { display: flex; justify-content: center; gap: 4px; margin-top: 6px; }
+.modal { position: fixed; inset: 0; z-index: 40; background: rgba(10,12,26,.94); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+         padding: calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom)); }
+.modal[hidden] { display: none; }
+.modal img { display: block; width: auto; max-width: min(100%, 400px); max-height: calc(100% - 150px); aspect-ratio: 1080 / 1350; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); }
+.modal .row { width: min(400px, 100%); flex-wrap: nowrap; }
+.modal .row .btn { flex: 1 1 0; min-width: 0; padding: 0 6px; font-size: 15px; white-space: nowrap; }
+
 /* overlays: always a solid dark backdrop so text never sits on the busy game art */
 .ov { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px 16px; }
 .ov[hidden] { display: none; }
 .menu { background: rgba(14,16,34,.93); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); gap: 12px; container-type: inline-size; }
 .menu .mark { font-size: 12px; letter-spacing: 6px; color: var(--muted); margin-left: 6px; }
-.menu canvas { position: static; width: min(58vw, 250px, 32dvh); height: auto; aspect-ratio: 1; }
+.menu canvas { position: static; width: min(54vw, 230px, 30dvh); height: auto; aspect-ratio: 1; }
 .menu h1 { margin: 0; font-size: clamp(28px, 11.4cqi, 56px); line-height: 1.02; letter-spacing: -1px; white-space: nowrap; max-width: 100%; }
 .menu h1 span { color: var(--pumpkin); }
 .menu p { margin: 0; color: #d6d9ef; font-size: 15px; max-width: 320px; line-height: 1.4; }
@@ -196,12 +219,11 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
     <div id="fps"></div>
 
     <div class="ov menu" id="menu">
-      <div class="mark">SWIPE THEORY</div>
       <canvas id="menuCat" aria-hidden="true"></canvas>
       <h1>Protect <span>Pumpkin!</span></h1>
-      <p>Put your finger on the screen and move the shield. Keep Pumpkin safe from rain, hail, meteors, lava... and worse!</p>
+      <p>Move the shield. Keep Pumpkin safe!</p>
       <button class="play" id="bPlay"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><span id="playLab">Play</span></button>
-      <div class="row"><button class="btn" id="bMenuLevels">Levels</button><button class="btn" id="bMenuEndless">Endless</button></div>
+      <div class="quiet"><button class="lnk" id="bDaily">Daily <i class="sk" id="dailySk" hidden></i></button><button class="lnk" id="bMenuLevels">Levels</button><button class="lnk" id="bMenuEndless">Endless</button></div>
     </div>
 
     <div class="ov lv" id="levels" hidden>
@@ -225,10 +247,18 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
         <p id="rline"></p>
         <p id="rbest"></p>
         <p class="quote" id="rquote"></p>
-        <div class="row"><button class="btn" id="bResLevels">Levels</button><button class="btn" id="bRetry">Retry</button><button class="btn hot" id="bNext">Next</button></div>
+        <button class="btn hot big" id="bNext">Next level</button>
+        <button class="btn big share" id="bShareWin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg>Share my win</button>
+        <div class="quiet"><button class="lnk" id="bResLevels">Levels</button><button class="lnk" id="bRetry">Retry</button></div>
       </div>
     </div>
   </section>
+</div>
+
+<div class="modal" id="cardM" hidden role="dialog" aria-modal="true" aria-label="Your share card">
+  <img id="cardImg" alt="Your Protect Pumpkin result card" width="1080" height="1350">
+  <div class="row"><button class="btn hot" id="cShare">Share</button><button class="btn" id="cSave">Save image</button><button class="btn" id="cCopy">Copy link</button></div>
+  <button class="lnk" id="cClose">Close</button>
 </div>
 
 <div class="below">
@@ -275,14 +305,19 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
       <li><strong>Let the golden fish through!</strong> Fish are Pumpkin's snack. If he catches one he gets half a heart back.</li>
       <li><strong>Survive until the bar at the top is full.</strong> Lose at most 1 heart for 3 stars. Any star unlocks the next level.</li>
     </ol>
-    <h3>The 8 worlds</h3>
+    <h3>The 12 worlds (36 levels)</h3>
     <ul>
       <li><strong>Rainy Day</strong>, <strong>Hailstorm</strong>, <strong>Snowball Fight</strong> and <strong>Wild Wind</strong>, with a tornado at the end.</li>
-      <li><strong>Meteor Shower</strong> (with a frying pan), <strong>Volcano Island</strong>, <strong>Alien Attack</strong> and finally <strong>Impossible</strong>, where a dragon throws everything at once.</li>
+      <li><strong>Meteor Shower</strong> (with a frying pan), <strong>Volcano Island</strong> and <strong>Alien Attack</strong>.</li>
+      <li><strong>Glitch World</strong>: pixel glitches blink sideways on the way down (a player's idea!). <strong>Elevator</strong>: nuts, light bulbs and ceiling panels fall in a bumpy lift.</li>
+      <li><strong>TANK's Backyard</strong>: TANK the big grumpy (but friendly) dog throws bones and bouncy tennis balls. <strong>Alien Mothership</strong>: little UFOs swoop in and tractor beams come down.</li>
+      <li>Finally <strong>Impossible</strong>, where a dragon throws everything at once.</li>
       <li>The last level of every world ends with something giant falling on Pumpkin... and a twist. We won't spoil it.</li>
     </ul>
+    <h3>Daily challenge</h3>
+    <p>Every day there is one new daily level, the same for everyone in the world (it changes at midnight UTC). It mixes two worlds. Beat it on back-to-back days to grow your streak, then share your result card.</p>
     <h3>Endless mode</h3>
-    <p>Beat level 1-3 to unlock Endless. The worlds change every 25 seconds and it keeps getting faster. Your best score is saved on this device.</p>
+    <p>Beat level 1-3 to unlock Endless. The worlds change every 25 seconds (all 12 of them) and it keeps getting faster. Your best score is saved on this device.</p>
     <h3>Tips</h3>
     <ul>
       <li>Watch where things come from: rain leans with the wind, snowballs and lava fly in arcs from the sides, aliens aim straight at Pumpkin.</li>
@@ -290,7 +325,7 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
       <li>On a computer you can also use the arrow keys or WASD. Press P to pause.</li>
     </ul>
     <h3>For parents</h3>
-    <p>No account, no chat and nothing to download. Progress is saved only in this browser (local storage) and never sent anywhere. We count plays anonymously (no names, no IDs, no cookies) to see which levels are fun. Ads below the game are set to non-personalized. Sound starts only after the first tap and can be muted with the speaker button.</p>
+    <p>No account, no chat and nothing to download. Progress is saved only in this browser (local storage) and never sent anywhere. The share button draws a picture of the result on this device; nothing is sent unless you choose to share it. We count plays anonymously (no names, no IDs, no cookies) to see which levels are fun. Ads below the game are set to non-personalized. Sound starts only after the first tap and can be muted with the speaker button.</p>
     <p>Read more: <a href="/articles">articles about the science behind our games</a></p>
   </article>
   <footer>
@@ -308,11 +343,11 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
 </div>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="art.v1.js?v=2"></script>
+<script src="art.v2.js?v=1"></script>
 <script src="audio.v1.js"></script>
-<script src="game.v1.js?v=2"></script>
+<script src="game.v2.js?v=1"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
-<script src="/game-stats.v1.js" data-game="swipe-theory" defer></script>
+<script src="/game-stats.v1.js?v=2" data-game="swipe-theory" defer></script>
 </body>
 </html>
