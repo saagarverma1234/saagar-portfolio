@@ -109,7 +109,11 @@ a.ib { color: var(--text); text-decoration: none; }
 .btn[hidden] { display: none; }
 .lv { background: rgba(14,16,34,.97); justify-content: flex-start; overflow-y: auto; padding: 16px 12px 20px; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .lv h2 { margin: 2px 0 2px; font-size: 22px; }
-.lv .tot { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.lv .tot { color: var(--muted); font-size: 13px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
+.lv .lvsave { font-size: 13px; min-height: 40px; padding: 0 10px; color: var(--pumpkin); }
+.lv .lvsave svg { width: 15px; height: 15px; }
+.card .rsave { display: flex; margin: 6px auto 0; color: var(--yellow); font-size: 14px; }
+.card .rsave[hidden] { display: none; }
 .lvwrap { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 10px; }
 .wrow { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; text-align: left; }
 .wname { font-size: 15px; margin: 0 0 8px 2px; display: flex; align-items: center; gap: 8px; }
@@ -228,7 +232,7 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
 
     <div class="ov lv" id="levels" hidden>
       <h2>Levels</h2>
-      <div class="tot" id="tot"></div>
+      <div class="tot"><span id="tot"></span><button class="lnk lvsave" id="bLvSave" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Save code</button></div>
       <div class="lvwrap" id="grid"></div>
       <div class="row" style="margin-top:14px"><button class="btn" id="bLvClose">Close</button></div>
     </div>
@@ -249,6 +253,7 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
         <p class="quote" id="rquote"></p>
         <button class="btn hot big" id="bNext">Next level</button>
         <button class="btn big share" id="bShareWin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg>Share my win</button>
+        <button class="lnk rsave" id="bRSave" hidden>Save your stars: get a save code</button>
         <div class="quiet"><button class="lnk" id="bResLevels">Levels</button><button class="lnk" id="bRetry">Retry</button></div>
       </div>
     </div>
@@ -345,7 +350,8 @@ footer nav.site a { color: var(--muted); padding: 10px 6px; }
 <div class="toast" id="toast" role="status"></div>
 <script src="art.v2.js?v=1"></script>
 <script src="audio.v1.js"></script>
-<script src="game.v2.js?v=1"></script>
+<script src="/game-save.v1.js?v=1"></script>
+<script src="game.v2.js?v=2"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
 <script src="/game-stats.v1.js?v=4" data-game="swipe-theory" defer></script>

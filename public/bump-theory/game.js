@@ -371,6 +371,9 @@
       $('bShare').hidden = got === 0; $('rcard').classList.toggle('lost', got === 0);
       // past the tutorial, a win points at today's daily (the menu link alone was barely found: 15 Nov)
       $('bRDaily').hidden = !(!G.daily && got > 0 && i0 >= 4 && !dailyInfo().doneToday);
+      // once, after a real win (level 3+ or a daily): point at the save code, never next to the daily link
+      var sh = !!saveCode && got > 0 && (G.daily || i0 >= 2) && $('bRDaily').hidden && saveCode.hintDue();
+      $('bRSave').hidden = !sh; if (sh) saveCode.hintShown();
       $('result').hidden = false; $('tray').style.visibility = 'hidden';
       for (var s2 = 0; s2 < got; s2++) (function (s3) {
         setTimeout(function () { ss[s3].classList.add('on'); Snd.play('bell', 7 + s3 * 2, 0.4); }, 250 + s3 * 260);
@@ -561,12 +564,53 @@
     var sb = document.createElement('button'); sb.className = 'tile sand'; sb.textContent = 'Sandbox: build anything';
     sb.addEventListener('click', loadSandbox); grid.appendChild(sb);
     $('tot').textContent = tot + ' / ' + LEVELS.length * 3 + ' stars';
+    $('bLvSave').hidden = !saveCode;
     var inGame = G.mode !== 'menu';
     $('bLvMenu').hidden = !inGame; $('bLvClose').textContent = inGame ? 'Back to game' : 'Close';
     $('bLvClose').classList.toggle('gold', inGame);
     $('levels').hidden = false; $('menu').hidden = true; $('result').hidden = true;
     $('levels').scrollTop = 0;
   }
+
+  /* ---------------- save code: move stars to another phone (game-save.v1.js; progress only, no IDs) ---------------- */
+  // code data: l = level layout (2 = the 36-level order), s = stars per level as digits, b = best counts in base 36, d = [streak, last day, best streak]
+  var GS = window.GameSave, saveCode = null;
+  function exportProgress() {
+    var s = '', b = [], n = 0;
+    for (var i = 0; i < LEVELS.length; i++) { s += String(Math.min(3, starsOf(i))); var v = Math.floor(save.best[i] || 0); b.push(v > 0 ? v.toString(36) : ''); if (starsOf(i) || v > 0) n = i + 1; }
+    var d = save.daily || {}, out = { l: 2, s: s.slice(0, n), b: b.slice(0, n).join('.') };
+    if (d.last) out.d = [d.streak | 0, d.last | 0, d.best | 0];
+    return out;
+  }
+  function mergeProgress(p) {
+    if (p.l !== 2 || typeof p.s !== 'string' || !/^[0-3]*$/.test(p.s) || p.s.length > LEVELS.length || (p.b != null && typeof p.b !== 'string')) throw new Error('bad');
+    var bs = p.b ? p.b.split('.') : [], gained = 0, bests = 0;
+    for (var i = 0; i < p.s.length; i++) {
+      var st = +p.s[i]; if (st > starsOf(i)) { gained += st - starsOf(i); save.stars[i] = st; }
+      var v = bs[i] && /^[0-9a-z]{1,11}$/.test(bs[i]) ? parseInt(bs[i], 36) : 0;
+      if (v > 0 && v <= 1e16 && v > (save.best[i] || 0)) { save.best[i] = v; bests++; }
+    }
+    var streakNote = '';
+    if (Array.isArray(p.d) && GS.isInt(p.d[0], 0, 1e5) && GS.isInt(p.d[1], 1, today() + 1) && GS.isInt(p.d[2], 0, 1e5)) {
+      var dd = save.daily || {}, before = dailyInfo().streak, m = GS.mergeStreak(dd.streak, dd.last, p.d[0], p.d[1]);
+      dd.streak = m.streak; dd.last = m.last; dd.best = Math.max(dd.best || 0, p.d[2], m.streak); save.daily = dd;
+      if (dailyInfo().streak > before) streakNote = ' Daily streak: ' + dailyInfo().streak + ' days.';
+    }
+    persist();
+    if (!gained && !bests && !streakNote) return 'Loaded. You already had everything in that code, so nothing changed.';
+    return 'Loaded: ' + (gained ? gained + ' more star' + (gained === 1 ? '' : 's') : 'no new stars') + (bests ? ', ' + bests + ' better score' + (bests === 1 ? '' : 's') : '') + '.' + streakNote + ' Nothing you had was lost.';
+  }
+  if (GS) saveCode = GS.create({
+    prefix: 'BT', title: 'Bump Theory', accent: '#ffcc33', ink: '#1a1406',
+    intro: 'Your stars live only in this browser. Copy this code and keep it somewhere safe. Load it on another phone or browser to get your stars, best scores and daily streak back. It holds only game progress, nothing personal.',
+    get: exportProgress, merge: mergeProgress,
+    after: function () {
+      $('playLab').textContent = save.stars.some(function (s) { return s > 0; }) ? 'Continue' : 'Play';
+      if (!$('levels').hidden) { var top = $('levels').scrollTop; openLevels(); $('levels').scrollTop = top; }
+    }
+  });
+  $('bLvSave').addEventListener('click', function () { if (saveCode) saveCode.open(); });
+  $('bRSave').addEventListener('click', function () { if (saveCode) saveCode.open(); $('bRSave').hidden = true; });
 
   /* ---------------- share card ---------------- */
   function drawStar(c, x, y, r, on) {
@@ -921,7 +965,7 @@
   window.__bt = {
     G: G, stats: stats, levels: LEVELS, quality: function () { return quality; }, gl: function () { return !!gl; },
     audio: function () { return Snd.ctx ? Snd.ctx.state : 'none'; },
-    loadLevel: loadLevel, loadSandbox: loadSandbox, drop: drop, openLevels: openLevels, openCard: openCard,
+    loadLevel: loadLevel, loadSandbox: loadSandbox, drop: drop, openLevels: openLevels, openCard: openCard, saveCode: function () { return saveCode; }, save: function () { return JSON.parse(JSON.stringify(save)); },
     placeSolution: function () { G.placed = G.L.sol.map(function (d) { var it = S.makeItem(d, false); it.ok = true; return it; }); refreshTray(); },
     stress: function (n) {
       loadSandbox(); G.recycle = true; G.sim.recycle = true;

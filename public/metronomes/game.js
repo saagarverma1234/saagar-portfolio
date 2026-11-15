@@ -395,10 +395,11 @@
     var big = 'Synced in ' + fmt(t) + ' s!', sub = n + ' metronomes in step', note = '', small = 'image + link';
     if (flips) sub += ' · ' + flips + (flips === 1 ? ' flip' : ' flips');
     last = { time: t, n: n, flips: flips, beaten: null, streak: 0 };
+    var meaningful = false;   // a daily done or a challenge best: worth one pointer to the save code
     if (challenge) {
       var key = 'c2o-best-' + challenge.id, prev = parseFloat(store(key) || 'NaN');
       var score = challenge.score === 'flips' ? flips * 1000 + t : t;
-      if (!(score >= prev)) { store(key, String(score)); sub += ' · new best!'; renderChips(); }
+      if (!(score >= prev)) { store(key, String(score)); sub += ' · new best!'; renderChips(); meaningful = true; }
       else sub += ' · best ' + bestText(challenge, prev);
     }
     if (spec) {
@@ -406,6 +407,7 @@
       last.beaten = beaten;
       if (spec.kind === 'daily') {
         var rec = spec.day === LV.dayNumber() ? LV.recordDaily(spec.day, t) : null;
+        meaningful = !!rec;
         big = 'Daily #' + spec.day + ' done!';
         sub = fmt(t) + ' s · par ' + fmt(spec.target) + ' s ' + (beaten ? 'beaten' : 'missed');
         if (rec) {
@@ -431,6 +433,8 @@
     $('bannerBig').textContent = big; $('bannerSub').textContent = sub;
     $('bannerNote').textContent = note; $('bannerNote').hidden = !note;
     $('bShareSub').textContent = small;
+    var sh = meaningful && !!saveCode && saveCode.hintDue();
+    $('bBSave').hidden = !sh; if (sh) saveCode.hintShown();
     $('banner').classList.add('show');
     if (AC && !muted) { var t0 = AC.currentTime + 0.05; [523.25, 659.25, 783.99].forEach(function (f, k) { chime(f, t0 + k * 0.06); }); }
   }
@@ -635,6 +639,11 @@
       b.addEventListener('click', function () { initAudio(); setChallenge(c); T('challenge_start', { ch: c.id, src: 'chip' }); if (!started) begin(); else closeStart(); });
       box.appendChild(b);
     });
+    if (saveCode) {
+      var sv = el('button', 'chip save', 'Save code');
+      sv.addEventListener('click', function () { saveCode.open(); });
+      box.appendChild(sv);
+    }
     var g = $('goaltext'); g.innerHTML = '';
     if (spec) {
       g.appendChild(el('strong', 'gt-title', spec.kind === 'daily' ? spec.title : (spec.title || 'Player level')));
@@ -697,6 +706,48 @@
     setSpec(LV.daily(LV.dayNumber()), src);
     showStart('intro');
   }
+
+  // ---------------- save code (/game-save.v1.js): best times + daily streak to another phone. Progress only, no IDs. ----------------
+  // code data: c = challenge bests {id: score}, d = [streak, last day, best streak], b = daily best times {day: s}
+  var GS = window.GameSave, saveCode = null;
+  function exportProgress() {
+    var c = {}, any = false, p = LV.loadProgress(), out = {};
+    CH.forEach(function (ch) { var v = parseFloat(store('c2o-best-' + ch.id)); if (v === v && v > 0) { c[ch.id] = Math.round(v * 1000) / 1000; any = true; } });
+    if (any) out.c = c;
+    if (p.last) out.d = [p.streak | 0, p.last | 0, p.bestStreak | 0];
+    if (Object.keys(p.best).length) out.b = p.best;
+    return out;
+  }
+  function mergeProgress(o) {
+    if ((o.c != null && (typeof o.c !== 'object' || Array.isArray(o.c))) || (o.b != null && (typeof o.b !== 'object' || Array.isArray(o.b)))) throw new Error('bad');
+    var better = 0, note = '', today = LV.dayNumber();
+    Object.keys(o.c || {}).forEach(function (id) {
+      var v = o.c[id]; if (!CHMAP[id] || !GS.isNum(v, 0.001, 1e7)) return;
+      var prev = parseFloat(store('c2o-best-' + id) || 'NaN');
+      if (!(v >= prev - 0.001)) { store('c2o-best-' + id, String(v)); better++; }
+    });
+    var p = LV.loadProgress(), d = o.d, changed = false;
+    if (Array.isArray(d) && GS.isInt(d[0], 0, 1e5) && GS.isInt(d[1], 1, today + 1) && GS.isInt(d[2], 0, 1e5)) {
+      var before = LV.currentStreak(p, today), m = GS.mergeStreak(p.streak, p.last, d[0], d[1]);
+      p.streak = m.streak; p.last = m.last; p.bestStreak = Math.max(p.bestStreak, d[2], m.streak); changed = true;
+      var now = LV.currentStreak(p, today); if (now > before) note = ' Daily streak: ' + now + ' days.';
+    }
+    Object.keys(o.b || {}).forEach(function (k) {
+      var day = +k, v = o.b[k];
+      if (!GS.isInt(day, today - 30, today + 1) || !GS.isNum(v, 0.1, 1e5)) return;
+      if (!(+p.best[day] <= v)) { p.best[day] = Math.round(v * 10) / 10; changed = true; }
+    });
+    if (changed) LV.saveProgress(p);
+    if (!better && !note) return 'Loaded. You already had everything in that code, so nothing changed.';
+    return 'Loaded: ' + (better ? better + ' better challenge time' + (better === 1 ? '' : 's') + '.' : 'no better times.') + note + ' Nothing you had was lost.';
+  }
+  if (GS) saveCode = GS.create({
+    prefix: 'MS', title: 'Metronome Sync', accent: '#ffcc66', ink: '#1a1406',
+    intro: 'Your best times live only in this browser. Copy this code and keep it somewhere safe. Load it on another phone or browser to get your challenge bests and daily streak back. It holds only game progress, nothing personal.',
+    get: exportProgress, merge: mergeProgress,
+    after: function () { renderChips(); renderDailyBits(); }
+  });
+  $('bBSave').addEventListener('click', function () { if (saveCode) saveCode.open(); $('bBSave').hidden = true; });
 
   // ---------------- start screen: home (Play / Daily / Create) or a mode intro ----------------
   var startMode = 'home';
@@ -1006,7 +1057,7 @@
   resize();
   window.__game = {
     get sim() { return sim; }, get round() { return round; }, get spec() { return spec; }, get quality() { return Q.low ? 'low' : 'high'; }, get perf() { return perf.ema; },
-    begin: begin, setChallenge: function (id) { setChallenge(CHMAP[id] || null); }, openCard: openCard, levels: LV
+    begin: begin, setChallenge: function (id) { setChallenge(CHMAP[id] || null); }, openCard: openCard, levels: LV, saveCode: function () { return saveCode; }
   };
   requestAnimationFrame(frame);
 })();

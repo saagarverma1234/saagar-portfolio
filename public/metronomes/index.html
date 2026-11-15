@@ -350,6 +350,9 @@ footer nav.site a:hover { color: var(--text); text-decoration: underline; }
 /* challenge panel: daily + create chips, mode details */
 .chip.daily { border-color: rgba(255,204,102,.6); color: var(--gold); }
 .chip.make { border-style: dashed; }
+.chip.save { color: var(--muted); }
+.banner .bsave { display: block; width: 100%; margin-top: 6px; min-height: 40px; background: none; border: 0; color: var(--gold); font: inherit; font-size: 14px; cursor: pointer; }
+.banner .bsave[hidden] { display: none; }
 .goaltext .gt-title { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
 .goaltext .gt-line { display: block; }
 .goaltext .gt-exit { margin-top: 10px; min-height: 44px; font-size: 14px; }
@@ -498,6 +501,7 @@ body.og .timer { display: none; }
           <div class="note" id="bannerNote" hidden></div>
           <div class="row"><button class="btn gold" id="bShare">Share<small id="bShareSub">image + link</small></button><button class="btn" id="bAgain">Again</button></div>
           <a class="nextg" id="bNextGame" href="/bump-theory/?utm_source=metronomes&amp;utm_medium=playnext"><img src="/images/games/bump-theory.webp" alt="" width="64" height="36" loading="lazy" decoding="async"><span><small>Play next</small><b>1 Ball → 10,000</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+          <button class="bsave" id="bBSave" type="button" hidden>Save your progress: get a save code</button>
         </div>
         <div class="start" id="start">
           <button class="start-x" id="startX" type="button" aria-label="Back to the board" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -679,8 +683,9 @@ body.og .timer { display: none; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="stats.js?v=2"></script>
 <script src="engine.js?v=2"></script>
-<script src="levels.js?v=1"></script>
-<script src="game.js?v=4"></script>
+<script src="levels.js?v=2"></script>
+<script src="/game-save.v1.js?v=1"></script>
+<script src="game.js?v=5"></script>
 <script src="page.js?v=2" defer></script>
 <script src="/game-feedback.js?v=1" defer></script>
 </body>

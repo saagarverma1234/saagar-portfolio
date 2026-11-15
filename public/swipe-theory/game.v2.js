@@ -689,6 +689,9 @@
       shareB.hidden = !G.won;
       setTimeout(function () { for (var j = 0; j < 3; j++) if (j < st) rs[j].className = 'on'; }, 150);
     }
+    // once, after a real win (world 1 done or a daily): a gentle pointer to the save code
+    var sh = !!saveCode && G.won && !G.endless && (G.daily || G.li >= 2) && saveCode.hintDue();
+    $('bRSave').hidden = !sh; if (sh) saveCode.hintShown();
     show('result', true);
     try { main.focus({ preventScroll: true }); } catch (e) {}
   }
@@ -1022,6 +1025,7 @@
     h += '<button class="tile endless' + (eu ? '' : ' locked') + '" data-lv="endless"' + (eu ? '' : ' disabled') + '>' + (eu ? 'Endless mode · best ' + (data.endless || 0).toLocaleString('en-US') : 'Endless mode: beat level 1-3 to unlock') + '</button>';
     $('grid').innerHTML = h;
     $('tot').textContent = total + ' / ' + (NLEV * 3) + ' stars';
+    $('bLvSave').hidden = !saveCode;
     show('levels', true);
   }
   $('grid').addEventListener('click', function (e) {
@@ -1068,6 +1072,46 @@
   var toastT = 0;
   function toast(s) { var t = $('toast'); t.textContent = s; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2200); }
 
+  // ------------------------------------------------------------------ save code (game-save.v1.js): stars to another phone. Progress only: no IDs, nothing about the player.
+  // code data: l = level layout (2 = 12 worlds), s = stars per level as digits, e = endless best, d = [streak, last day, best streak, daily stars, daily day]
+  var GS = window.GameSave, saveCode = null;
+  function exportProgress() {
+    var str = '', n = 0;
+    for (var i = 0; i < NLEV; i++) { var v = Math.min(3, data.stars[i] | 0); str += v; if (v) n = i + 1; }
+    var out = { l: 2, s: str.slice(0, n) }, d = data.daily;
+    if (data.endless > 0) out.e = Math.floor(data.endless);
+    if (d && d.last) out.d = [d.streak | 0, d.last | 0, d.best | 0, d.st | 0, d.day | 0];
+    return out;
+  }
+  function mergeProgress(p) {
+    if (p.l !== 2 || typeof p.s !== 'string' || !/^[0-3]*$/.test(p.s) || p.s.length > NLEV) throw new Error('bad');
+    var gained = 0, note = '';
+    for (var i = 0; i < p.s.length; i++) { var st = +p.s[i], had = data.stars[i] | 0; if (st > had) { gained += st - had; data.stars[i] = st; } }
+    if (GS.isInt(p.e, 1, 1e9) && p.e > (data.endless || 0)) { data.endless = p.e; note += ' New Endless best: ' + p.e.toLocaleString('en-US') + '.'; }
+    var q = p.d, t = today();
+    if (Array.isArray(q) && GS.isInt(q[0], 0, 1e5) && GS.isInt(q[1], 1, t + 1) && GS.isInt(q[2], 0, 1e5) && GS.isInt(q[3], 0, 3) && GS.isInt(q[4], 0, t + 1)) {
+      var dd = data.daily || {}, before = dailyInfo().streak, m = GS.mergeStreak(dd.streak, dd.last, q[0], q[1]);
+      dd.streak = m.streak; dd.last = m.last; dd.best = Math.max(dd.best || 0, q[2], m.streak);
+      if (q[4] > (dd.day | 0)) { dd.day = q[4]; dd.st = q[3]; } else if (q[4] === dd.day) dd.st = Math.max(dd.st | 0, q[3]);
+      data.daily = dd;
+      if (dailyInfo().streak > before) note += ' Daily streak: ' + dailyInfo().streak + ' days.';
+    }
+    save();
+    if (!gained && !note) return 'Loaded! You already had all of those stars.';
+    return 'Loaded! ' + (gained ? gained + ' more star' + (gained === 1 ? '' : 's') + ' for Pumpkin.' : 'No new stars.') + note + ' Nothing you had was lost.';
+  }
+  if (GS) saveCode = GS.create({
+    prefix: 'PP', title: 'Protect Pumpkin', accent: '#ffa24c', ink: '#2a1404',
+    intro: 'Keep your stars safe! Copy this code and keep it, or ask a grown-up to keep it. Paste it on another phone or tablet to get your stars back. It only has your game progress, nothing about you.',
+    get: exportProgress, merge: mergeProgress,
+    after: function () {
+      if (!$('levels').hidden) { var top = $('levels').scrollTop; openLevels(); $('levels').scrollTop = top; }
+      if (G.mode === 'menu') { var keep = !$('levels').hidden; goMenu(); if (keep) { show('menu', false); show('levels', true); } }
+    }
+  });
+  $('bLvSave').addEventListener('click', function () { S.click(); if (saveCode) saveCode.open(); });
+  $('bRSave').addEventListener('click', function () { S.click(); if (saveCode) saveCode.open(); $('bRSave').hidden = true; });
+
   // menu art: Pumpkin under his umbrella
   function drawMenuArt() {
     var mc = $('menuCat'); if (!mc) return;
@@ -1099,6 +1143,6 @@
     get fps() { return fpsEma; }, get objs() { return G.objs.length; }, get audio() { return S.state; }, get stars() { return JSON.parse(JSON.stringify(data.stars)); },
     setTimeScale: function (k) { timeScale = k; }, start: function (i, e, d) { startLevel(i, e, d); },
     auto: function (on, opts) { AUTO.on = !!on; if (opts) for (var k in opts) AUTO[k] = opts[k]; AUTO.fx = shield.x; AUTO.fy = shield.y; ptr.kb = !!on; if (on && G.mode === 'ready') beginPlay(); },
-    get won() { return G.won; }, get nlev() { return NLEV; }, daily: function () { return dailyPlan(today()); }, get last() { return G.last; }, share: function () { openShareCard(); }
+    get won() { return G.won; }, get nlev() { return NLEV; }, daily: function () { return dailyPlan(today()); }, get last() { return G.last; }, share: function () { openShareCard(); }, saveCode: function () { return saveCode; }, get data() { return JSON.parse(JSON.stringify(data)); }
   };
 })();

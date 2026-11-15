@@ -254,7 +254,7 @@
     TOOLS: TOOLS, STARTS: STARTS, TITLE_MAX: TITLE_MAX,
     sanitizeTitle: sanitizeTitle, encodeLevel: encodeLevel, decodeLevel: decodeLevel, normalizeLevel: normalizeLevel, toolMask: toolMask,
     dayNumber: dayNumber, msToNextDay: msToNextDay, fmtCountdown: fmtCountdown, daily: daily,
-    loadProgress: loadProgress, recordDaily: recordDaily, currentStreak: currentStreak,
+    loadProgress: loadProgress, saveProgress: saveProgress, recordDaily: recordDaily, currentStreak: currentStreak,
     drawCard: drawCard
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.MetroLevels = api;
