@@ -19,6 +19,10 @@
     $game = $game ?? null;
     $games = $games ?? \App\Services\MetronomeStats::GAMES;
     $modeNames = ['level' => 'Levels', 'sandbox' => 'Sandbox', 'endless' => 'Endless', 'classic' => '10 worlds', 'daily' => 'Daily challenge', '' => 'Other'];
+    // Bump Theory and Swipe Theory log a daily as its UTC day of the year: show the date, not "318" (read as a session count, 15 Nov)
+    $levelLabel = fn (?string $rowGame, string $mode, int $n): string => $mode === 'daily' && $rowGame !== 'quiet-worlds' && $n >= 1 && $n <= 366
+        ? gmdate('j M', gmmktime(0, 0, 0, 1, $n, (int) gmdate('Y')))
+        : (string) $n;
     if (! ($unavailable ?? false)) {
         $baseQuery = ['game' => $game, 'range' => $preset, 'from' => $preset === 'custom' ? $fromDate : null, 'to' => $preset === 'custom' ? $toDate : null, 'test' => $includeTest ? 1 : null];
     }
@@ -246,7 +250,7 @@ tr.sel td { font-weight: 700; }
           @foreach ($levels as $row)
             <tr>
               <td>{{ $modeNames[$row['mode']] ?? $row['mode'] }}</td>
-              <td class="n">{{ $row['level'] }}</td>
+              <td class="n">{{ $levelLabel($game, $row['mode'], $row['level']) }}</td>
               <td class="n">{{ $num($row['reached']) }}</td>
               <td class="n">{{ $num($row['finished']) }}</td>
               <td class="n">{{ $row['finished'] ? $num($row['won']) : '–' }}</td>
@@ -376,8 +380,8 @@ tr.sel td { font-weight: 700; }
                   'challenge_start' => ($challengeNames[$event->chal] ?? $event->chal).' (via '.$event->ctrl.')',
                   'challenge_complete' => ($challengeNames[$event->chal] ?? $event->chal).($event->num !== null ? ', '.$event->num.' s' : ''),
                   'share' => $event->ctrl.' button'.(! empty($data['synced']) ? ', after sync' : ''),
-                  'level' => ($modeNames[$event->ctrl] ?? $event->ctrl).($event->num !== null ? ' '.(int) $event->num : ''),
-                  'result' => ($modeNames[$event->ctrl] ?? $event->ctrl).($event->num !== null ? ' '.(int) $event->num : '').(! empty($data['won']) ? ', won' : ', lost').(isset($data['st']) ? ', '.$data['st'].' stars' : '').(isset($data['sc']) ? ', score '.$num($data['sc']) : ''),
+                  'level' => ($modeNames[$event->ctrl] ?? $event->ctrl).($event->num !== null ? ' '.$levelLabel($event->game, (string) $event->ctrl, (int) $event->num) : ''),
+                  'result' => ($modeNames[$event->ctrl] ?? $event->ctrl).($event->num !== null ? ' '.$levelLabel($event->game, (string) $event->ctrl, (int) $event->num) : '').(! empty($data['won']) ? ', won' : ', lost').(isset($data['st']) ? ', '.$data['st'].' stars' : '').(isset($data['sc']) ? ', score '.$num($data['sc']) : ''),
                   'mute' => $event->num ? 'muted' : 'unmuted',
                   'pageview' => $event->chal ? 'challenge link: '.($challengeNames[$event->chal] ?? $event->chal) : '',
                   'play' => $event->chal ? ($challengeNames[$event->chal] ?? $event->chal) : '',

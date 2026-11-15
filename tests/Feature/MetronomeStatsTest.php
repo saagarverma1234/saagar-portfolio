@@ -220,3 +220,16 @@ test('the admin shows all games and can switch to one game', function () {
     expect(app(MetronomeStats::class)->forGame('quiet-worlds')->summary(0, time() + 1, false)['pageviews'])->toBe(0)
         ->and(app(MetronomeStats::class)->forGame('quiet-worlds')->summary(0, time() + 1, true)['pageviews'])->toBe(1);
 });
+
+test('the admin shows a daily challenge row as its date, not the day number', function () {
+    beacon(['e' => 'level', 'g' => 'bump-theory', 'sid' => '0123456789abcdef', 'd' => ['m' => 'daily', 'n' => 319]]);
+    beacon(['e' => 'level', 'g' => 'quiet-worlds', 'sid' => '0123456789abcdef', 'd' => ['m' => 'daily', 'n' => 3]]);
+    $cookie = adminCookie();
+    $date = gmdate('j M', gmmktime(0, 0, 0, 1, 319, (int) gmdate('Y')));
+
+    $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin?game=bump-theory&range=all')
+        ->assertOk()->assertSeeInOrder(['Daily challenge', $date])->assertDontSee('<td class="n">319</td>', false);
+
+    $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin?game=quiet-worlds&range=all')
+        ->assertOk()->assertSee('<td class="n">3</td>', false);
+});

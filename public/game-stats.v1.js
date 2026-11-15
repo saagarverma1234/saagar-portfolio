@@ -24,6 +24,8 @@
     var GAMES = {
       'bump-theory': {
         saveKey: 'bt1',
+        // the game writes its save on load (save upgrade), so "returning" = it holds a star or a daily
+        returning: function (raw) { try { var v = JSON.parse(raw); return !!(v && ((v.stars && v.stars.some(function (s) { return s > 0; })) || v.daily)); } catch (e) { return false; } },
         play: '#bPlay, #bMenuSand, #bDaily, #grid .tile:not(.locked), #bDrop, #inv',
         share: { mShare: 'share', mCopy: 'copy', mSave: 'save' },
         setup: function (track) {

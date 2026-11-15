@@ -361,7 +361,7 @@
       var ss = $('rstars').children; for (var k = 0; k < 3; k++) ss[k].classList.remove('on');
       $('rnum').textContent = fmt(c);
       var stuck = !G.daily && got === 0 && (fails[i0] || 0) >= 3;
-      $('rlab').textContent = got > 0 ? (got === 3 ? 'Perfect! ' : '') + 'Balls from 1 ball' + (newBest && prevStars ? ' · new best' : '') + (G.daily && streak > 1 ? ' · ' + streak + '-day streak' : '') + (got < 3 ? ' · 3 stars at ' + fmt(st[2]) : '')
+      $('rlab').textContent = got > 0 ? (got === 3 ? 'Perfect! ' : '') + 'Balls from 1 ball' + (newBest && prevStars ? ' · new best' : '') + (G.daily && streak > 1 ? ' · ' + streak + '-day streak' : '') + (got < 3 ? ' · 3 stars at ' + fmt(st[2]) : '') + (G.daily ? ' · new puzzle tomorrow' : '')
         : stuck ? 'Target ' + fmt(st[0]) + '. Stuck? The hint shows one good layout.' : 'Target ' + fmt(st[0]) + '. Move things and try again!';
       var canNext = !G.daily && (got > 0 || starsOf(i0) > 0) && i0 < LEVELS.length - 1;
       G.nextAct = G.daily ? (got > 0 ? 'play' : 'retry') : canNext ? 'next' : (got > 0 ? 'levels' : stuck ? 'hint' : 'retry');
@@ -369,6 +369,8 @@
       $('bNext').querySelector('svg').style.display = G.nextAct === 'retry' || G.nextAct === 'hint' ? 'none' : '';
       $('bRetry').querySelector('span').textContent = G.nextAct === 'hint' ? 'Try again' : G.nextAct === 'retry' ? 'Hint' : 'Retry';
       $('bShare').hidden = got === 0; $('rcard').classList.toggle('lost', got === 0);
+      // past the tutorial, a win points at today's daily (the menu link alone was barely found: 15 Nov)
+      $('bRDaily').hidden = !(!G.daily && got > 0 && i0 >= 4 && !dailyInfo().doneToday);
       $('result').hidden = false; $('tray').style.visibility = 'hidden';
       for (var s2 = 0; s2 < got; s2++) (function (s3) {
         setTimeout(function () { ss[s3].classList.add('on'); Snd.play('bell', 7 + s3 * 2, 0.4); }, 250 + s3 * 260);
@@ -531,6 +533,7 @@
     else if (G.li < LEVELS.length - 1) loadLevel(G.li + 1);
   });
   $('bDaily').addEventListener('click', function () { Snd.init(); loadDaily(); });
+  $('bRDaily').addEventListener('click', function () { Snd.init(); loadDaily(); });
   $('bBack').addEventListener('click', function (e) {
     if (G.mode === 'menu' && $('levels').hidden) return; // plain link to /games
     e.preventDefault(); Snd.init();
@@ -554,7 +557,7 @@
       grid.appendChild(b);
     });
     var db = document.createElement('button'), di = dailyInfo(); db.className = 'tile sand daily'; db.textContent = 'Daily challenge' + (di.doneToday ? ' · done' : '') + (di.streak ? ' · ' + di.streak + '-day streak' : '');
-    db.addEventListener('click', loadDaily); grid.appendChild(db);
+    db.addEventListener('click', loadDaily); grid.insertBefore(db, grid.firstChild);   // daily first, so it is seen
     var sb = document.createElement('button'); sb.className = 'tile sand'; sb.textContent = 'Sandbox: build anything';
     sb.addEventListener('click', loadSandbox); grid.appendChild(sb);
     $('tot').textContent = tot + ' / ' + LEVELS.length * 3 + ' stars';

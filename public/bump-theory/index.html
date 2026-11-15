@@ -163,6 +163,8 @@ a.btn { color: var(--text); text-decoration: none; }
 .res .rl { color: var(--muted); font-size: 14px; margin: 4px 0 12px; }
 .res .row .btn { flex: 1; min-width: 0; padding: 0 10px; }
 .res .row + .row { margin-top: 10px; }
+.res .rdaily { display: flex; margin: 6px auto -6px; color: var(--gold); }
+.res .rdaily[hidden] { display: none; }
 .res .btn.big { width: 100%; min-height: 56px; font-size: 19px; border-radius: 16px; }
 .res .btn.big svg { width: 18px; height: 18px; }
 .btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
@@ -271,6 +273,7 @@ footer nav.site a { color: var(--muted); }
         <div class="rl" id="rlab"></div>
         <div class="row"><button class="btn" id="bRetry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg><span>Retry</span></button><button class="btn share" id="bShare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg>Share score</button></div>
         <div class="row"><button class="btn gold big" id="bNext"><span id="nextLab">Next level</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div>
+        <button class="lnk rdaily" id="bRDaily" hidden>Try today's daily challenge</button>
       </div>
     </div>
 
@@ -388,10 +391,10 @@ footer nav.site a { color: var(--muted); }
 </div>
 <div class="toast" id="toast"></div>
 <script src="sim.js?v=3"></script>
-<script src="levels.js?v=3"></script>
-<script src="game.js?v=3"></script>
+<script src="levels.js?v=4"></script>
+<script src="game.js?v=4"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
-<script src="/game-stats.v1.js?v=3" data-game="bump-theory" defer></script>
+<script src="/game-stats.v1.js?v=4" data-game="bump-theory" defer></script>
 </body>
 </html>
