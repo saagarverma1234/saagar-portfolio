@@ -524,7 +524,7 @@ class MetronomeStats
 
         $fromHost = match (true) {
             $host === '' => '',
-            (bool) preg_match('/(^|\.)(youtube\.com|youtu\.be)$/', $host) => 'YouTube',
+            (bool) preg_match('/(^|\.)(youtube\.com|youtu\.be)$|^com\.google\.android\.youtube/', $host) => 'YouTube',   // 15 Nov: the Android YouTube app sends android-app://com.google.android.youtube (was counted as Google)
             (bool) preg_match('/(^|\.)(facebook\.com|fb\.com|fb\.me|messenger\.com)$/', $host) => 'Facebook',
             (bool) preg_match('/(^|\.)instagram\.com$/', $host) => 'Instagram',
             (bool) preg_match('/(^|\.)google\.[a-z.]+$|^com\.google\./', $host) => 'Google',
