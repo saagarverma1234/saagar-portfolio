@@ -25,6 +25,8 @@
   function dayLabel(day) { var d = new Date(day * 864e5); return ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][d.getUTCMonth()] + ' ' + d.getUTCDate(); }
   function dailyInfo() { var d = save.daily || {}, t = today(); return { streak: d.last >= t - 1 ? d.streak || 0 : 0, doneToday: d.last === t }; }
   var fails = {};
+  /* early levels (1-10) offer the hint after 2 misses, later ones after 3 (18 Nov: level 6 won only 51% of tries, 31% fewer players reached 6 than 5) */
+  function stuckAt(i) { return i < 10 ? 2 : 3; }
   function starsOf(i) { return save.stars[i] | 0; }
   function unlocked(i) { return i === 0 || starsOf(i - 1) > 0 || starsOf(i) > 0; }
 
@@ -203,7 +205,7 @@
     hideAll(); $('bHint').hidden = false; $('bHint').classList.remove('on'); setNav(true);
     $('ttl').innerHTML = G.daily ? '<small>DAILY · ' + dayLabel(G.L.day) + '</small><span>' + esc(G.L.name) + '</span>' : '<small>LEVEL ' + (i + 1) + '</small><span>' + esc(G.L.name) + '</span>';
     showTip(G.daily ? 'Daily challenge: the same puzzle for everyone today. ' + G.L.tip : i === 0 ? 'Drag x2 under the ball, then tap DROP' : G.L.tip);
-    if (!G.daily && (fails[i] || 0) >= 3) { G.hint = true; $('bHint').classList.add('on'); }
+    if (!G.daily && (fails[i] || 0) >= stuckAt(i)) { G.hint = true; $('bHint').classList.add('on'); }
     buildTray(); updateHud(true);
     try { history.replaceState(null, '', G.daily ? '?daily' : '?level=' + (i + 1)); } catch (e) { /* file:// etc. */ }
   }
@@ -360,7 +362,7 @@
       var card = $('rcard'); card.classList.toggle('win', got > 0);
       var ss = $('rstars').children; for (var k = 0; k < 3; k++) ss[k].classList.remove('on');
       $('rnum').textContent = fmt(c);
-      var stuck = !G.daily && got === 0 && (fails[i0] || 0) >= 3;
+      var stuck = !G.daily && got === 0 && (fails[i0] || 0) >= stuckAt(i0);
       $('rlab').textContent = got > 0 ? (got === 3 ? 'Perfect! ' : '') + 'Balls from 1 ball' + (newBest && prevStars ? ' · new best' : '') + (G.daily && streak > 1 ? ' · ' + streak + '-day streak' : '') + (got < 3 ? ' · 3 stars at ' + fmt(st[2]) : '') + (G.daily ? ' · new puzzle tomorrow' : '')
         : stuck ? 'Target ' + fmt(st[0]) + '. Stuck? The hint shows one good layout.' : 'Target ' + fmt(st[0]) + '. Move things and try again!';
       var canNext = !G.daily && (got > 0 || starsOf(i0) > 0) && i0 < LEVELS.length - 1;
