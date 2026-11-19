@@ -1,10 +1,13 @@
-/* Quiet Worlds: the traveller in the planet picture. A 2D canvas over the still: the same traveller as the videos
-   (sprite frames rendered from the episodes' 3D model) walks, sweeps, digs, knocks, sits, sleeps... for each choice,
-   and the scene reacts (sand, snow, light, a hole in the ground). No WebGL; if anything fails the still stays. */
+/* Quiet Worlds: the world fills the screen and the traveller lives in it. A full-screen portrait picture rendered from
+   the episodes' own 3D scenes (img/full/*.webp, 1080x1920), a slow camera drift, a little ambient life, and a 2D canvas
+   on top where the same traveller as the videos (sprite frames from the episodes' 3D model) walks, sweeps, digs, knocks,
+   sits, sleeps... for each choice, and the world answers (sand, snow, light, a hole in the ground). No WebGL; if anything
+   fails, the picture stays and the choices answer at once. */
 (function () {
   'use strict';
   var STAGE = window.QW_STAGE || {}, AT = window.QW_ATLAS;
-  var IW = 480, IH = 600, FIG = 146;     // picture size; traveller body height inside a sprite frame (px)
+  var IW = 1080, IH = 1920, FIG = AT ? AT.fig || 146 : 146;   // picture size; traveller body height inside a sprite frame (px)
+  var V_ = '3';
   var atlas = null, atlasOk = false, atlasWait = [];
   function loadAtlas(cb) {
     if (atlasOk) return cb(true);
@@ -13,16 +16,19 @@
     atlas = new Image(); atlas.decoding = 'async';
     atlas.onload = function () { atlasOk = true; atlasWait.splice(0).forEach(function (f) { f(true); }); };
     atlas.onerror = function () { atlasWait.splice(0).forEach(function (f) { f(false); }); atlas = null; };
-    atlas.src = 'traveller.webp?v=1';
+    atlas.src = 'traveller.webp?v=' + V_;
   }
   function canvasOk() { try { var c = document.createElement('canvas'); return !!(c.getContext && c.getContext('2d')); } catch (e) { return false; } }
+  var reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  function bgSrc(slug, n) { return 'img/full/' + slug + (n ? '-' + n : '') + '.webp?v=' + V_; }
+  function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
 
   /* ---------- actions (sprite sheet rows) ---------- */
   var ACT = { idle: [3, 1], walk: [11, 1], run: [15, 1], sweep: [8, 1], dig: [7, 1], knock: [9, 1], crouch: [7, 1], look: [4, 1], lookdown: [4, 1],
     sitdown: [0, 0], sit: [2, 1], sleep: [1, 1], wave: [8, 1], jump: [0, 0], clap: [9, 1], eat: [6, 1], reach: [0, 0], hold: [4, 1], hide: [3, 1], stumble: [0, 0] };
 
   /* ---------- reading a choice: what he does, where, and how the world answers ---------- */
-  var HOME = /\b(house|home|door|doors|porch|inside|indoors|cottage|cabin|bed|bedroom|kitchen|window|windows|room|bunk|shop|bakery|store|tent|hut|igloo|shed|steps?|curtains?|roof|chimney|stove|fire|fireplace|hearth|hall|counter|desk|bench|attic|cellar|sofa|couch|blanket|lamp|lantern|candle)\b/;
+  var HOME = /\b(house|home|door|doors|porch|inside|indoors|cottage|cabin|bed|bedroom|kitchen|window|windows|room|bunk|shop|bakery|store|tent|hut|igloo|shed|steps?|curtains?|roof|chimney|stove|fire|fireplace|hearth|hall|counter|desk|bench|attic|cellar|sofa|couch|blanket|lamp|lantern|candle|shutter|party)\b/;
   var FEAT = /\b(well|water|lake|pond|sea|ocean|river|stream|pool|spring|springs|hole|boat|dock|pier|jetty|balloon|tree|trees|garden|field|bear|bears|screen|truck|sheep|statue|bones?|ice|shore|beach|edge|cliff|fence|gate|path|road|tracks?|rails?|wheels?|engine|sinkhole|tv|tape|machine|crowd|kaiju|turtle|penguins?|seals?|ducks?|cats?|kittens?|dogs?|puppies|puppy|pandas?|rabbits?|bunnies|gnomes?|pumpkins?|scarecrow|swings?|slide|sandbox|stall|stalls|market)\b/;
   var FAR = /\b(back|behind|away|beyond|distance|far|explore|wander|follow|leave|edge|horizon|outside|deeper|further|farther|across|other side|the end)\b/;
   var RULES = [
@@ -31,7 +37,7 @@
     [/\b(keep walking|keep going|keep moving|pick up your pace|take the long way|walk on|turn back|turn and walk|walk the other way|back away)\b/, 'walk'],
     [/\b(keep reading|keep counting)\b/, 'lookdown'],
     [/\b(then bed|in bed)\b/, 'sleep'],
-    [/\b(hold (your )?breath|(hold|stay|keep) (very )?(still|down|quiet)|say nothing|silent|pretend|wedge yourself)/, 'hide'],
+    [/\b(hold (your )?breath|(hold|stay|keep|sit) (very )?(still|down|quiet)|say nothing|silent|pretend|wedge yourself)/, 'hide'],
     [/\b(ears|nose|sneeze|groan|hanky|yawn)\b/, 'face'],
     [/\b(finish|have|eat|drink)\b.*\b(breakfast|milkshake|pie|cucumber|apples?|bamboo|cherries|salmon|tomato|chocolate|bath|tea|soup|meal|lunch|dinner)\b/, 'eat'],
     [/\b(shout|yell|call out|call thank|call every|call through|call it|call his|shoo)\b/, 'shout'],
@@ -77,41 +83,68 @@
   function classify(text) { for (var i = 0; i < RULES.length; i++) if (RULES[i][0].test(text)) return RULES[i][1]; return 'walk'; }
   function fxOf(text, max) { var out = []; for (var i = 0; i < FX.length && out.length < max; i++) if (FX[i][0].test(text) && out.indexOf(FX[i][1]) < 0) out.push(FX[i][1]); return out; }
 
+  /* ---------- ambient life: a few CSS particles (compositor only), picked by the world's kind ---------- */
+  var LIFE = { snow: 'snow', mountain: 'snow', sea: 'bubble', swamp: 'fly', night: 'fly', city: 'fly', cave: 'fly', forest: 'mote', meadow: 'mote', candy: 'mote', sky: 'mote', desert: 'sand', space: 'star', interior: 'dust' };
+  function buildLife(box, kind, night, force) {
+    var k = night ? 'fly' : (force || LIFE[kind] || 'mote'), wrap = el('div', 'wlife l-' + k), n = k === 'snow' ? 26 : k === 'sand' ? 16 : 14;
+    var r = 9; function rnd() { r = (r * 9301 + 49297) % 233280; return r / 233280; }
+    for (var i = 0; i < n; i++) {
+      var p = el('i'); p.style.left = (rnd() * 100).toFixed(1) + '%'; p.style.top = (k === 'snow' || k === 'sand' ? -6 : 10 + rnd() * 80).toFixed(1) + '%';
+      var s = k === 'snow' ? 2 + rnd() * 4 : k === 'fly' ? 3 + rnd() * 3 : k === 'bubble' ? 4 + rnd() * 8 : k === 'star' ? 1.5 + rnd() * 2 : 2 + rnd() * 3;
+      p.style.width = p.style.height = s.toFixed(1) + 'px';
+      p.style.animationDuration = ((k === 'snow' ? 9 : k === 'sand' ? 4 : 7) + rnd() * 8).toFixed(1) + 's';
+      p.style.animationDelay = (-rnd() * 16).toFixed(1) + 's';
+      wrap.appendChild(p);
+    }
+    box.appendChild(wrap); return wrap;
+  }
+
   /* ---------- the stage ---------- */
-  function Stage(pic, w, opts) {
-    this.pic = pic; this.w = w; this.opts = opts || {};
+  function Stage(host, w, opts) {
+    this.host = host; this.w = w; this.opts = opts || {};
     var d = STAGE[w.slug];
-    if (!d) d = { globe: 1, v: [.5, .52, 1], p: [.5, 0], h: .17, hz: -5, home: [.64, 0], r: [.3, .7] };
-    this.d = d; this.cv = document.createElement('canvas'); this.cv.className = 'stage'; this.cv.setAttribute('aria-hidden', 'true');
-    this.g = this.cv.getContext('2d'); this.ready = false; this.dead = false; this.parts = []; this.marks = []; this.ov = { dark: 0, cold: 0, warm: 0 }; this.ovT = { dark: 0, cold: 0, warm: 0 };
-    this.pos = this.ground(d.p[0], d.p[1]); this.face = d.p[0] > .55 ? -1 : 1; this.act = 'idle'; this.rest = 'idle'; this.segs = null; this.t = 0; this.shake = 0;
+    if (!d) d = { globe: 1, p: [.5, 0], h: .085, hz: -5, home: [.66, 0], r: [.25, .75] };
+    this.d = d; this.dead = false; this.ready = false; this.parts = []; this.marks = []; this.ov = { dark: 0, cold: 0, warm: 0 }; this.ovT = { dark: 0, cold: 0, warm: 0 };
+    this.pos = d.p.slice(); this.face = d.p[0] > .55 ? -1 : 1; this.act = 'idle'; this.rest = 'idle'; this.segs = null; this.t = 0; this.shake = 0; this.night = '';
+    // DOM: blurred fill (desktop sides) + the portrait stage column: shake > drift > picture(s) + canvas, life on top
+    this.blur = el('div', 'wblur'); host.appendChild(this.blur);
+    this.box = el('div', 'wbox'); this.shk = el('div', 'wshake'); this.drift = el('div', 'wdrift' + (reduce ? '' : ' on'));
+    this.cv = el('canvas', 'stage'); this.cv.setAttribute('aria-hidden', 'true'); this.g = this.cv.getContext('2d');
+    this.shk.appendChild(this.drift); this.box.appendChild(this.shk); host.appendChild(this.box);
     this.tmp = document.createElement('canvas'); this.tg = this.tmp.getContext('2d');
     var self = this;
     this.onVis = function () { if (!document.hidden) self.kick(); };
     document.addEventListener('visibilitychange', this.onVis);
-    this.onResize = function () { self.size(); self.draw(); };
+    this.onResize = function () { if (self.ready) { self.size(); self.draw(); } };
     window.addEventListener('resize', this.onResize);
-    pic.appendChild(this.cv);
     var bgDone = false, atDone = false, fail = false;
-    function go() { if (fail || self.dead || !bgDone || !atDone) return; self.ready = true; self.tint(); self.size(); self.pos = self.spot(self.pos); pic.classList.add('live'); self.draw(); self.kick(); if (self.onReady) self.onReady(); }
-    if (d.globe) { this.bg = this.globeBg(opts.globe); bgDone = true; }
-    else {
-      var im = new Image(); im.decoding = 'async';
-      im.onload = function () { bgDone = true; go(); };
-      im.onerror = function () { fail = true; self.destroy(); };
-      im.src = 'img/' + w.slug + (d.s ? '-s' : '-a') + '.webp?v=1'; this.bg = im;
+    function go() {
+      if (fail || self.dead || !bgDone || !atDone) return;
+      self.ready = true; self.size(); self.tint(); self.pos = self.spot(self.pos); host.classList.add('live'); self.draw(); self.kick();
+      if (!reduce && !self.d.globe && self.d.life !== 'none') self.life = buildLife(self.box, w.kind, false, self.d.life);
+      if (self.onReady) self.onReady();
     }
-    loadAtlas(function (ok) { if (!ok) { fail = true; self.destroy(); return; } atDone = true; go(); });
+    if (d.globe) { this.bg = this.globeBg(opts.globe); this.bg.className = 'wbg'; this.drift.appendChild(this.bg); bgDone = true; this.blur.style.background = 'radial-gradient(circle at 50% 40%, #1d2350, #0a0b1a 70%)'; }
+    else {
+      var im = new Image(); im.decoding = 'async'; im.alt = ''; im.className = 'wbg';
+      im.onload = function () { bgDone = true; go(); };
+      im.onerror = function () { fail = true; if (self.onFail) self.onFail(); self.destroy(); };
+      im.src = bgSrc(w.slug); this.bg = im; this.drift.appendChild(im);
+      this.blur.style.backgroundImage = 'url("' + im.src + '")';
+    }
+    this.tone = el('div', 'wtone'); this.drift.appendChild(this.tone);
+    this.drift.appendChild(this.cv);
+    loadAtlas(function (ok) { if (!ok) { fail = true; if (self.onFail) self.onFail(); self.destroy(); return; } atDone = true; go(); });
   }
   var P = Stage.prototype;
-  P.globeBg = function (gcv) {   // the code-drawn planet, big, with its top as the ground
-    var c = document.createElement('canvas'); c.width = IW; c.height = IH; var g = c.getContext('2d');
-    var gr = g.createRadialGradient(IW / 2, IH * .35, 10, IW / 2, IH * .4, IH * .8); gr.addColorStop(0, '#1d2350'); gr.addColorStop(1, '#0a0b1a');
-    g.fillStyle = gr; g.fillRect(0, 0, IW, IH);
-    var r = 7; for (var i = 0; i < 90; i++) { r = (r * 9301 + 49297) % 233280; var x = r / 233280 * IW; r = (r * 9301 + 49297) % 233280; var y = r / 233280 * IH * .55; g.fillStyle = 'rgba(255,255,240,' + (.3 + (i % 5) / 8) + ')'; g.fillRect(x, y, i % 7 ? 1.5 : 2.5, i % 7 ? 1.5 : 2.5); }
-    var R = 360, cx = IW / 2, cy = IH * .58 + R;
+  P.globeBg = function (gcv) {   // the code-drawn planet, huge, with its top as the ground
+    var c = document.createElement('canvas'); c.width = IW / 2; c.height = IH / 2; var g = c.getContext('2d'), s2 = .5;
+    var gr = g.createRadialGradient(IW * s2 / 2, IH * s2 * .3, 10, IW * s2 / 2, IH * s2 * .35, IH * s2 * .8); gr.addColorStop(0, '#1d2350'); gr.addColorStop(1, '#0a0b1a');
+    g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height);
+    var r = 7; for (var i = 0; i < 160; i++) { r = (r * 9301 + 49297) % 233280; var x = r / 233280 * c.width; r = (r * 9301 + 49297) % 233280; var y = r / 233280 * c.height * .5; g.fillStyle = 'rgba(255,255,240,' + (.3 + (i % 5) / 8) + ')'; var q = i % 7 ? 1.5 : 2.5; g.fillRect(x, y, q, q); }
+    var R = 900, cx = IW / 2, cy = IH * .55 + R;
     this.d.gl = [cx / IW, cy / IH, R];
-    if (gcv) { g.imageSmoothingEnabled = false; var s = R / (gcv.width * .34); g.drawImage(gcv, cx - gcv.width * s / 2, cy - gcv.height * s / 2, gcv.width * s, gcv.height * s); }
+    if (gcv) { g.imageSmoothingEnabled = false; var k = R * s2 / (gcv.width * .34); g.drawImage(gcv, cx * s2 - gcv.width * k / 2, cy * s2 - gcv.height * k / 2, gcv.width * k, gcv.height * k); }
     this.pos = this.ground(this.d.p[0], 0);
     return c;
   };
@@ -120,38 +153,62 @@
     var cx = gl[0] * IW, cy = gl[1] * IH, R = gl[2], x = u * IW, dx = Math.max(-R * .95, Math.min(R * .95, x - cx));
     return [u, (cy - Math.sqrt(R * R - dx * dx)) / IH];
   };
+  /* Cover the stage column with the picture, centred on the world's focus (fx), and size the canvas to match. */
   P.size = function () {
-    var r = this.pic.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
-    var bw = Math.max(1, Math.round(r.width)), bh = Math.max(1, Math.round(r.height));
-    if (this.cv.width !== Math.round(bw * dpr) || this.cv.height !== Math.round(bh * dpr)) { this.cv.width = Math.round(bw * dpr); this.cv.height = Math.round(bh * dpr); }
-    var d = this.d, A = bw / bh, sw = IW / (d.v[2] || 1), sh = sw / A;
-    if (sh > IH) { sh = IH; sw = sh * A; }
-    if (sw > IW) { sw = IW; sh = sw / A; }
-    var sx = Math.max(0, Math.min(IW - sw, d.v[0] * IW - sw / 2)), sy = Math.max(0, Math.min(IH - sh, d.v[1] * IH - sh / 2));
-    this.view = { sx: sx, sy: sy, sw: sw, sh: sh, k: this.cv.width / sw };
-    var hp = d.h * IH * this.view.k; this.boost = Math.max(1, Math.min(1.7, this.cv.height * .16 / hp));   // tiny travellers get a little bigger, to stay readable
+    var r = this.box.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    var W = Math.max(1, Math.round(r.width)), H = Math.max(1, Math.round(r.height));
+    if (this.cv.width !== Math.round(W * dpr) || this.cv.height !== Math.round(H * dpr)) { this.cv.width = Math.round(W * dpr); this.cv.height = Math.round(H * dpr); }
+    var kc = Math.max(W / IW, H / IH), dw = IW * kc, dh = IH * kc, d = this.d;
+    var fx = d.fx != null ? d.fx : .5, ox = Math.max(W - dw, Math.min(0, W / 2 - fx * dw)), oy = Math.max(H - dh, Math.min(0, H * .5 - .5 * dh));
+    var bgs = this.drift.querySelectorAll('.wbg');
+    for (var i = 0; i < bgs.length; i++) { var s = bgs[i].style; s.width = dw + 'px'; s.height = dh + 'px'; s.left = ox + 'px'; s.top = oy + 'px'; }
+    this.cssH = H; this.kc = kc;
+    this.view = { sx: -ox / kc, sy: -oy / kc, sw: W / kc, sh: H / kc, k: this.cv.width / (W / kc) };
+    var hp = d.h * IH * kc; this.boost = Math.max(1, Math.min(1.6, H * .085 / hp));   // tiny travellers get a little bigger, to stay readable
+    this.topPad = (Math.max(64, (parseFloat(getComputedStyle(this.box).getPropertyValue('--top')) || 64))) / kc;   // keep his head under the top bar
   };
   P.tint = function () {   // light the traveller like the spot he stands on
     try {
       var c = document.createElement('canvas'); c.width = 24; c.height = 24; var g = c.getContext('2d'), d = this.d, hp = this.hAt(this.pos[1]) * IH;
-      g.drawImage(this.bg, this.pos[0] * IW - hp, this.pos[1] * IH - hp * 1.2, hp * 2, hp * 1.6, 0, 0, 24, 24);
+      var bg = this.nightEl && this.night ? this.nightEl : this.bg, sc = (bg.naturalWidth || bg.width) / IW;
+      g.drawImage(bg, (this.pos[0] * IW - hp) * sc, (this.pos[1] * IH - hp * 1.2) * sc, hp * 2 * sc, hp * 1.6 * sc, 0, 0, 24, 24);
       var px = g.getImageData(0, 0, 24, 24).data, r = 0, gg = 0, b = 0, n = px.length / 4;
       for (var i = 0; i < px.length; i += 4) { r += px[i]; gg += px[i + 1]; b += px[i + 2]; }
       r /= n; gg /= n; b /= n; var L = (0.299 * r + 0.587 * gg + 0.114 * b) / 255;
       this.tc = 'rgba(' + Math.round(r) + ',' + Math.round(gg) + ',' + Math.round(b) + ',' + (d.globe ? .12 : .2) + ')';
-      this.dk = Math.max(0, Math.min(.5, (.42 - L) * 1.1));
+      this.dk = Math.max(0, Math.min(.45, (.38 - L) * 1.0));
     } catch (e) { this.tc = 'rgba(0,0,0,0)'; this.dk = 0; }
   };
+  /* Night (or any alternative) picture for one beat; same geometry, cross-faded. */
+  P.setBg = function (n) {
+    n = n || ''; if (n === this.night || this.d.globe || this.dead) return;
+    this.night = n; var self = this;
+    if (n && !this.nightEl) {
+      var im = new Image(); im.decoding = 'async'; im.alt = ''; im.className = 'wbg alt';
+      im.onload = function () { if (self.dead) return; self.size(); im.classList.add('on'); self.tint(); self.draw(); };
+      im.src = bgSrc(this.w.slug, n); this.nightEl = im; this.drift.insertBefore(im, this.tone);
+    } else if (this.nightEl) { this.nightEl.classList.toggle('on', !!n); this.tint(); this.draw(); }
+    if (this.life) { this.life.remove(); this.life = null; }
+    if (!reduce && this.d.life !== 'none') this.life = buildLife(this.box, this.w.kind, !!n, this.d.life);
+    this.blur.style.backgroundImage = 'url("' + bgSrc(this.w.slug, n) + '")';
+  };
+  P.setTone = function (a) { this.tone.style.background = 'rgba(10,8,30,' + (a || 0) + ')'; };
   P.hAt = function (v) { var d = this.d, b = this.boost || 1; if (d.hz < -1) return d.h * b; return b * d.h * Math.max(.35, Math.min(1.8, (v - d.hz) / (d.p[1] - d.hz))); };
   P.toC = function (u, v) { var V = this.view; return [(u * IW - V.sx) * V.k, (v * IH - V.sy) * V.k]; };
-  P.clampU = function (u, v) {   // stay on the walkable strip and inside the visible part of the picture
-    var d = this.d, V = this.view, h = this.hAt(v) * IH;
+  P.clampU = function (u, v) {   // stay on the walkable strip and inside the visible part of the picture (with room for the drift)
+    var d = this.d, V = this.view, h = this.hAt(v) * IH, m = V.sw * .05;
     if (d.r) u = Math.max(d.r[0], Math.min(d.r[1], u));
-    var lo = (V.sx + h * .35) / IW, hi = (V.sx + V.sw - h * .35) / IW; if (lo < hi) u = Math.max(lo, Math.min(hi, u));
+    var lo = (V.sx + m + h * .3) / IW, hi = (V.sx + V.sw - m - h * .3) / IW; if (lo < hi) u = Math.max(lo, Math.min(hi, u));
     return u;
   };
-  P.clampV = function (v) { var V = this.view, h = this.hAt(v) * IH; return Math.max((V.sy + h * 1.05) / IH, Math.min((V.sy + V.sh * .965) / IH, v)); };
+  P.clampV = function (v) { var V = this.view, h = this.hAt(v) * IH; return Math.max((V.sy + this.topPad + h * 1.05) / IH, Math.min((V.sy + V.sh * .95) / IH, v)); };
   P.spot = function (pt) { var u = this.clampU(pt[0], pt[1]); var v = this.d.gl ? this.ground(u, 0)[1] : this.clampV(pt[1]); return [u, v]; };
+  /* Where he is on screen (CSS px inside the stage column), for the UI to keep clear of him. */
+  P.screenBox = function () {
+    if (!this.ready) return null;
+    var c = this.toC(this.pos[0], this.pos[1]), k = this.cv.width / (this.box.clientWidth || 1), h = this.hAt(this.pos[1]) * IH * this.view.k;
+    return { x: c[0] / k, foot: c[1] / k, head: (c[1] - h) / k, H: this.cssH };
+  };
 
   /* ---------- plans ---------- */
   P.plan = function (o, beatText) {
@@ -168,7 +225,7 @@
       if (!pt) return;
       var a = self.pos, dx = (pt[0] - a[0]) * IW, dy = (pt[1] - a[1]) * IH, dist = Math.sqrt(dx * dx + dy * dy), h = self.hAt((a[1] + pt[1]) / 2) * IH;
       if (dist < h * .12) return;
-      var sp = h * (run ? 3.2 : 1.5), dur = dist / sp, cap = run ? 1.25 : 1.2;
+      var sp = h * (run ? 3.2 : 1.5), dur = dist / sp, cap = run ? 1.25 : 1.3;
       if (dur > cap) { var k = cap / dur; pt = self.spot([a[0] + (pt[0] - a[0]) * k, a[1] + (pt[1] - a[1]) * k]); dur = cap; }
       segs.push({ a: run ? 'run' : 'walk', dur: Math.max(.45, dur), to: pt, fx: run ? 'puff' : null });
     }
@@ -239,37 +296,38 @@
     var plan = this.plan_ || { rest: 'idle', fx: [] };
     (plan.fx || []).forEach(function (f) { if (f === 'dark') self.ov.dark = self.ovT.dark = .28; if (f === 'snow') self.ov.cold = self.ovT.cold = .16; if (f === 'warm') self.ov.warm = self.ovT.warm = .22; });
     this.parts = this.parts.filter(function (p) { return p.k === 'zzz'; });
-    this.act = plan.rest; this.playing = false; this.segs = null;
+    this.act = plan.rest; this.playing = false; this.segs = null; this.setShake(0);
     var d = this.done; this.done = null; this.draw(); this.kick();
     if (d && !silent) d(true);
   };
   P.stopPlay = function () { this.playing = false; this.segs = null; this.done = null; };
   P.addMark = function (m) { this.marks.push({ k: m, u: this.pos[0] + this.face * this.hAt(this.pos[1]) * IH * .32 / IW, v: this.pos[1] + .004 }); };
+  P.setShake = function (px) { this.shk.style.transform = px ? 'translate3d(' + px.toFixed(1) + 'px,0,0)' : ''; };
 
   /* ---------- particles ---------- */
   function R(a, b) { return a + Math.random() * (b - a); }
   P.emit = function (k, dt) {
-    var V = this.view, u = this.pos[0] * IW, v = this.pos[1] * IH, h = this.hAt(this.pos[1]) * IH, f = this.face, P2 = this.parts, n, i;
+    var V = this.view, u = this.pos[0] * IW, v = this.pos[1] * IH, h = this.hAt(this.pos[1]) * IH, f = this.face, P2 = this.parts, n, i, sp = V.sh / 600;
     var rate = { sand: 60, snow: 40, rain: 90, wind: 14, notes: 3, hearts: 3, bubbles: 10, smoke: 6, sparkle: 9, dust: 14, dirt: 22, tap: 5, ripple: 2.2, puff: 10, crumbs: 6, zzz: 1.4, talk: 1.6, shout: 2.2 }[k];
     if (!rate) return; n = rate * dt; if (Math.random() < n % 1) n = Math.ceil(n); else n = Math.floor(n);
     for (i = 0; i < n && P2.length < 260; i++) {
       var p = { k: k, a: 0, life: 1.2 };
       switch (k) {
-        case 'sand': p.x = V.sx - 10; p.y = R(V.sy, V.sy + V.sh); p.vx = R(120, 220); p.vy = R(-10, 25); p.life = R(1.2, 2.4); p.s = R(1, 2.4); p.c = '#e8c889'; break;
-        case 'snow': p.x = R(V.sx, V.sx + V.sw); p.y = V.sy - 4; p.vx = R(-8, 8); p.vy = R(18, 40); p.life = V.sh / 28; p.s = R(1.2, 2.6); p.c = '#fff'; break;
-        case 'rain': p.x = R(V.sx, V.sx + V.sw + 40); p.y = V.sy - 10; p.vx = -40; p.vy = R(420, 520); p.life = V.sh / 420; p.s = 1; p.c = 'rgba(200,220,255,.55)'; break;
-        case 'wind': p.x = V.sx - 30; p.y = R(V.sy, V.sy + V.sh); p.vx = R(260, 360); p.vy = 0; p.life = 2; p.s = R(14, 34); p.c = 'rgba(255,255,255,.35)'; break;
-        case 'notes': p.x = u + f * h * .1; p.y = v - h * .95; p.vx = R(-12, 12); p.vy = -R(18, 30); p.life = 1.6; p.s = h * .16; p.c = '#f4c86e'; p.ch = Math.random() < .5 ? '♪' : '♫'; break;
-        case 'hearts': p.x = u + f * h * .3; p.y = v - h * .5; p.vx = R(-10, 10); p.vy = -R(14, 24); p.life = 1.5; p.s = h * .15; p.c = '#ff8fa8'; p.ch = '♥'; break;
-        case 'talk': case 'shout': p.x = u + f * h * .32; p.y = v - h * 1.05; p.vx = f * 4; p.vy = -8; p.life = .9; p.s = h * (k === 'shout' ? .26 : .2); p.c = '#fff'; p.ch = k === 'shout' ? '!' : '\u2026'; p.bub = 1; break;
-        case 'zzz': p.x = u + f * h * .1; p.y = v - h * .3; p.vx = R(4, 10) * f; p.vy = -R(10, 16); p.life = 2.2; p.s = h * .14; p.c = '#e9e4ff'; p.ch = 'z'; break;
-        case 'bubbles': p.x = u + R(-h * .3, h * .3); p.y = v - R(0, h * .6); p.vx = R(-4, 4); p.vy = -R(20, 40); p.life = 1.4; p.s = R(1.5, 3.5) * h / 60; p.c = 'rgba(220,245,255,.8)'; break;
-        case 'smoke': p.x = u + R(-h * .4, h * .4); p.y = v - R(0, h * .3); p.vx = R(-6, 6); p.vy = -R(8, 14); p.life = 2; p.s = R(.15, .3) * h; p.c = 'rgba(235,235,240,.22)'; break;
-        case 'sparkle': p.x = u + R(-h * .45, h * .45); p.y = v - R(h * .1, h * 1.1); p.vx = 0; p.vy = -R(2, 8); p.life = R(.5, 1); p.s = R(.03, .06) * h; p.c = '#fff3c4'; break;
-        case 'dust': p.x = u + f * h * R(.25, .5); p.y = v - R(0, h * .06); p.vx = f * R(10, 40); p.vy = -R(4, 16); p.life = R(.5, 1); p.s = R(.03, .07) * h; p.c = 'rgba(225,205,165,.75)'; break;
-        case 'puff': p.x = u - f * h * .1; p.y = v; p.vx = -f * R(8, 20); p.vy = -R(3, 10); p.life = R(.4, .7); p.s = R(.04, .08) * h; p.c = 'rgba(220,210,190,.6)'; break;
-        case 'dirt': p.x = u + f * h * .32; p.y = v - h * .05; p.vx = f * R(-10, 50); p.vy = -R(40, 90) * h / 60; p.g = 260 * h / 60; p.life = R(.5, .9); p.s = R(.025, .05) * h; p.c = Math.random() < .5 ? '#6b4a2e' : '#8a6440'; break;
-        case 'crumbs': p.x = u + f * h * .12; p.y = v - h * .82; p.vx = f * R(-6, 14); p.vy = R(0, 10); p.g = 160 * h / 60; p.life = .6; p.s = R(.015, .03) * h; p.c = '#e8b86a'; break;
+        case 'sand': p.x = V.sx - 10; p.y = R(V.sy, V.sy + V.sh); p.vx = R(120, 220) * sp; p.vy = R(-10, 25) * sp; p.life = R(1.2, 2.4); p.s = R(1, 2.4) * sp; p.c = '#e8c889'; break;
+        case 'snow': p.x = R(V.sx, V.sx + V.sw); p.y = V.sy - 4; p.vx = R(-8, 8) * sp; p.vy = R(18, 40) * sp; p.life = 600 / 28; p.s = R(1.2, 2.6) * sp; p.c = '#fff'; break;
+        case 'rain': p.x = R(V.sx, V.sx + V.sw + 40 * sp); p.y = V.sy - 10; p.vx = -40 * sp; p.vy = R(420, 520) * sp; p.life = 600 / 420; p.s = sp; p.c = 'rgba(200,220,255,.55)'; break;
+        case 'wind': p.x = V.sx - 30 * sp; p.y = R(V.sy, V.sy + V.sh); p.vx = R(260, 360) * sp; p.vy = 0; p.life = 2; p.s = R(14, 34) * sp; p.c = 'rgba(255,255,255,.35)'; break;
+        case 'notes': p.x = u + f * h * .1; p.y = v - h * .95; p.vx = R(-12, 12) * sp; p.vy = -R(18, 30) * sp; p.life = 1.6; p.s = h * .16; p.c = '#f4c86e'; p.ch = Math.random() < .5 ? '♪' : '♫'; break;
+        case 'hearts': p.x = u + f * h * .3; p.y = v - h * .5; p.vx = R(-10, 10) * sp; p.vy = -R(14, 24) * sp; p.life = 1.5; p.s = h * .15; p.c = '#ff8fa8'; p.ch = '♥'; break;
+        case 'talk': case 'shout': p.x = u + f * h * .32; p.y = v - h * 1.05; p.vx = f * 4 * sp; p.vy = -8 * sp; p.life = .9; p.s = h * (k === 'shout' ? .26 : .2); p.c = '#fff'; p.ch = k === 'shout' ? '!' : '…'; p.bub = 1; break;
+        case 'zzz': p.x = u + f * h * .1; p.y = v - h * .3; p.vx = R(4, 10) * f * sp; p.vy = -R(10, 16) * sp; p.life = 2.2; p.s = h * .14; p.c = '#e9e4ff'; p.ch = 'z'; break;
+        case 'bubbles': p.x = u + R(-h * .3, h * .3); p.y = v - R(0, h * .6); p.vx = R(-4, 4) * sp; p.vy = -R(20, 40) * sp; p.life = 1.4; p.s = R(1.5, 3.5) * h / 60; p.c = 'rgba(220,245,255,.8)'; break;
+        case 'smoke': p.x = u + R(-h * .4, h * .4); p.y = v - R(0, h * .3); p.vx = R(-6, 6) * sp; p.vy = -R(8, 14) * sp; p.life = 2; p.s = R(.15, .3) * h; p.c = 'rgba(235,235,240,.22)'; break;
+        case 'sparkle': p.x = u + R(-h * .45, h * .45); p.y = v - R(h * .1, h * 1.1); p.vx = 0; p.vy = -R(2, 8) * sp; p.life = R(.5, 1); p.s = R(.03, .06) * h; p.c = '#fff3c4'; break;
+        case 'dust': p.x = u + f * h * R(.25, .5); p.y = v - R(0, h * .06); p.vx = f * R(10, 40) * sp; p.vy = -R(4, 16) * sp; p.life = R(.5, 1); p.s = R(.03, .07) * h; p.c = 'rgba(225,205,165,.75)'; break;
+        case 'puff': p.x = u - f * h * .1; p.y = v; p.vx = -f * R(8, 20) * sp; p.vy = -R(3, 10) * sp; p.life = R(.4, .7); p.s = R(.04, .08) * h; p.c = 'rgba(220,210,190,.6)'; break;
+        case 'dirt': p.x = u + f * h * .32; p.y = v - h * .05; p.vx = f * R(-10, 50) * h / 60; p.vy = -R(40, 90) * h / 60; p.g = 260 * h / 60; p.life = R(.5, .9); p.s = R(.025, .05) * h; p.c = Math.random() < .5 ? '#6b4a2e' : '#8a6440'; break;
+        case 'crumbs': p.x = u + f * h * .12; p.y = v - h * .82; p.vx = f * R(-6, 14) * h / 60; p.vy = R(0, 10) * h / 60; p.g = 160 * h / 60; p.life = .6; p.s = R(.015, .03) * h; p.c = '#e8b86a'; break;
         case 'tap': p.x = u + f * h * .42; p.y = v - h * .7; p.vx = 0; p.vy = 0; p.life = .45; p.ring = h * .2; p.c = 'rgba(255,255,255,.8)'; break;
         case 'ripple': p.x = u + f * h * .35; p.y = v; p.vx = 0; p.vy = 0; p.life = .9; p.ring = h * .5; p.flat = 1; p.c = 'rgba(200,240,255,.9)'; break;
       }
@@ -291,7 +349,7 @@
     if (this.act === 'sleep' && !this.playing) this.emit('zzz', dt);
     this.parts = this.parts.filter(function (p) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.g) p.vy += p.g * dt; return p.life > 0; });
     ['dark', 'cold', 'warm'].forEach(function (k) { self.ov[k] += (self.ovT[k] - self.ov[k]) * Math.min(1, dt * 2.5); });
-    if (this.shake > 0) this.shake = Math.max(0, this.shake - dt);
+    if (this.shake > 0) { this.shake = Math.max(0, this.shake - dt); this.setShake(this.shake > 0 ? Math.sin(this.t * 60) * this.shake * 10 : 0); }
     this.draw();
     var busy = this.playing || this.parts.length || this.shake > 0 || Math.abs(this.ov.dark - this.ovT.dark) + Math.abs(this.ov.cold - this.ovT.cold) + Math.abs(this.ov.warm - this.ovT.warm) > .005;
     if (busy || this.act === 'sleep') this.kick();
@@ -329,10 +387,10 @@
   };
   P.draw = function () {
     if (!this.ready || this.dead) return;
-    var g = this.g, V = this.view, W = this.cv.width, H = this.cv.height, k = V.k, sh = this.shake > 0 ? Math.sin(this.t * 60) * this.shake * 6 * (W / 400) : 0;
-    g.setTransform(1, 0, 0, 1, sh, 0);
+    var g = this.g, V = this.view, W = this.cv.width, H = this.cv.height, k = V.k;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
     g.imageSmoothingEnabled = true;
-    try { g.drawImage(this.bg, V.sx, V.sy, V.sw, V.sh, 0, 0, W, H); } catch (e) {}
+    if (this.d.globe) { /* the globe picture is the .wbg canvas itself */ }
     var self = this, hpx;
     this.marks.forEach(function (m) {   // a dug hole stays
       var c = self.toC(m.u, m.v), hh = self.hAt(m.v) * IH * k;
@@ -341,11 +399,11 @@
     });
     // the traveller
     var c = this.toC(this.pos[0], this.pos[1]); hpx = this.hAt(this.pos[1]) * IH * k;
-    var sc = hpx / FIG, fw = AT.fw * sc, fh = AT.fh * sc, fi = this.frame(), fx = (fi % AT.cols) * AT.fw, fy = Math.floor(fi / AT.cols) * AT.fh, footY = AT.fh - 16;
-    if (this.act !== 'sleep') { g.fillStyle = 'rgba(0,0,0,.26)'; g.beginPath(); g.ellipse(c[0], c[1], hpx * .19, hpx * .05, 0, 0, Math.PI * 2); g.fill(); }
+    var sc = hpx / FIG, fw = AT.fw * sc, fh = AT.fh * sc, fi = this.frame(), fx = (fi % AT.cols) * AT.fw, fy = Math.floor(fi / AT.cols) * AT.fh, footY = AT.fh - (AT.foot || 16);
+    if (this.act !== 'sleep') { g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(c[0], c[1], hpx * .19, hpx * .05, 0, 0, Math.PI * 2); g.fill(); }
     var tw = Math.ceil(fw) + 2, th = Math.ceil(fh) + 2;
     if (this.tmp.width !== tw || this.tmp.height !== th) { this.tmp.width = tw; this.tmp.height = th; } else this.tg.clearRect(0, 0, tw, th);
-    var tg = this.tg; tg.globalCompositeOperation = 'source-over'; tg.imageSmoothingEnabled = true;
+    var tg = this.tg; tg.globalCompositeOperation = 'source-over'; tg.imageSmoothingEnabled = true; try { tg.imageSmoothingQuality = 'high'; } catch (e) {}
     tg.drawImage(atlas, fx, fy, AT.fw, AT.fh, 1, 1, fw, fh);
     tg.globalCompositeOperation = 'source-atop'; tg.fillStyle = this.tc; tg.fillRect(0, 0, tw, th);
     if (this.dk) { tg.fillStyle = 'rgba(8,10,24,' + this.dk + ')'; tg.fillRect(0, 0, tw, th); }
@@ -362,29 +420,31 @@
       g.globalAlpha = Math.max(0, al);
       if (p.bub) { var bs = p.s * k; g.fillStyle = 'rgba(255,255,255,.92)'; g.beginPath(); g.ellipse(x, y - bs * .3, bs * .75, bs * .5, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = '#1b1c34'; g.font = 'bold ' + Math.max(10, bs * .8) + 'px sans-serif'; g.textAlign = 'center'; g.fillText(p.ch, x, y - bs * .05); continue; }
       if (p.ch) { g.fillStyle = p.c; g.font = 'bold ' + Math.max(10, p.s * k) + 'px sans-serif'; g.textAlign = 'center'; g.fillText(p.ch, x, y); }
-      else if (p.ring) { var rr = p.ring * k * (1 - p.life / p.max) + 2; g.strokeStyle = p.c; g.lineWidth = Math.max(1, k * .9); g.beginPath(); if (p.flat) g.ellipse(x, y, rr, rr * .3, 0, 0, Math.PI * 2); else g.arc(x, y, rr * .5, 0, Math.PI * 2); g.stroke(); }
-      else if (p.k === 'rain' || p.k === 'wind') { g.strokeStyle = p.c; g.lineWidth = Math.max(1, k * .6); g.beginPath(); g.moveTo(x, y); if (p.k === 'rain') g.lineTo(x - 3 * k, y - 12 * k); else g.lineTo(x - p.s * k, y); g.stroke(); }
-      else if (p.k === 'bubbles') { g.strokeStyle = p.c; g.lineWidth = Math.max(1, k * .5); g.beginPath(); g.arc(x, y, p.s * k, 0, Math.PI * 2); g.stroke(); }
+      else if (p.ring) { var rr = p.ring * k * (1 - p.life / p.max) + 2; g.strokeStyle = p.c; g.lineWidth = Math.max(1, hpx * .012); g.beginPath(); if (p.flat) g.ellipse(x, y, rr, rr * .3, 0, 0, Math.PI * 2); else g.arc(x, y, rr * .5, 0, Math.PI * 2); g.stroke(); }
+      else if (p.k === 'rain' || p.k === 'wind') { g.strokeStyle = p.c; g.lineWidth = Math.max(1, W / 500); g.beginPath(); g.moveTo(x, y); if (p.k === 'rain') g.lineTo(x - W / 130, y - W / 32); else g.lineTo(x - p.s * k, y); g.stroke(); }
+      else if (p.k === 'bubbles') { g.strokeStyle = p.c; g.lineWidth = Math.max(1, W / 700); g.beginPath(); g.arc(x, y, p.s * k, 0, Math.PI * 2); g.stroke(); }
       else if (p.k === 'smoke' || p.k === 'puff' || p.k === 'dust') { g.fillStyle = p.c; g.beginPath(); g.arc(x, y, p.s * k * (1.4 - p.life / p.max * .4), 0, Math.PI * 2); g.fill(); }
       else { g.fillStyle = p.c; var ss = p.s * k; g.fillRect(x - ss / 2, y - ss / 2, ss, ss); }
     }
     g.globalAlpha = 1;
     // light changes
-    if (this.ov.warm > .01) { var gr = g.createRadialGradient(c[0], c[1] - hpx * .6, hpx * .2, c[0], c[1] - hpx * .6, Math.max(W, H) * .8); gr.addColorStop(0, 'rgba(255,214,140,' + this.ov.warm + ')'); gr.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = gr; g.fillRect(-10, 0, W + 20, H); }
-    if (this.ov.cold > .01) { g.fillStyle = 'rgba(150,190,255,' + this.ov.cold + ')'; g.fillRect(-10, 0, W + 20, H); }
-    if (this.ov.dark > .01) { var gd = g.createRadialGradient(c[0], c[1] - hpx * .5, hpx * .4, W / 2, H / 2, Math.max(W, H) * .75); gd.addColorStop(0, 'rgba(6,6,18,' + this.ov.dark * .4 + ')'); gd.addColorStop(1, 'rgba(6,6,18,' + Math.min(.7, this.ov.dark * 1.8) + ')'); g.fillStyle = gd; g.fillRect(-10, 0, W + 20, H); }
+    if (this.ov.warm > .01) { var gr = g.createRadialGradient(c[0], c[1] - hpx * .6, hpx * .2, c[0], c[1] - hpx * .6, Math.max(W, H) * .8); gr.addColorStop(0, 'rgba(255,214,140,' + this.ov.warm + ')'); gr.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+    if (this.ov.cold > .01) { g.fillStyle = 'rgba(150,190,255,' + this.ov.cold + ')'; g.fillRect(0, 0, W, H); }
+    if (this.ov.dark > .01) { var gd = g.createRadialGradient(c[0], c[1] - hpx * .5, hpx * .4, W / 2, H / 2, Math.max(W, H) * .75); gd.addColorStop(0, 'rgba(6,6,18,' + this.ov.dark * .4 + ')'); gd.addColorStop(1, 'rgba(6,6,18,' + Math.min(.7, this.ov.dark * 1.8) + ')'); g.fillStyle = gd; g.fillRect(0, 0, W, H); }
   };
   P.destroy = function () {
     this.dead = true; this.ready = false; this.playing = false; if (this.raf) cancelAnimationFrame(this.raf); clearTimeout(this.idleT);
     document.removeEventListener('visibilitychange', this.onVis); window.removeEventListener('resize', this.onResize);
-    if (this.cv.parentNode) this.cv.parentNode.removeChild(this.cv); this.pic.classList.remove('live');
+    [this.box, this.blur].forEach(function (n) { if (n && n.parentNode) n.parentNode.removeChild(n); });
+    this.host.classList.remove('live');
     var d = this.done; this.done = null; if (d) d(true);
   };
 
   window.QWScene = {
     ok: canvasOk() && !!AT,
     preload: function () { if (this.ok) loadAtlas(function () {}); },
-    mount: function (pic, w, opts) { if (!this.ok) return null; try { return new Stage(pic, w, opts); } catch (e) { return null; } },
+    preloadBg: function (slug) { if (STAGE[slug] && !STAGE[slug].globe) { var im = new Image(); im.decoding = 'async'; im.src = bgSrc(slug); } },
+    mount: function (host, w, opts) { if (!this.ok) return null; try { return new Stage(host, w, opts); } catch (e) { return null; } },
     classify: classify, fxOf: fxOf
   };
 })();

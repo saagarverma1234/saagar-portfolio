@@ -102,6 +102,7 @@ main.scr { flex: 1 0 auto; display: flex; flex-direction: column; padding-bottom
 .card .pic img, .card .pic canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .card .num { position: absolute; left: 8px; top: 8px; font-family: VT, monospace; font-size: 22px; line-height: 1; padding: 4px 8px 2px; border-radius: 8px; background: rgba(8, 9, 20, .82); color: var(--text); }
 .card .mine { position: absolute; right: 8px; top: 8px; font: 700 11px/1 InterB, var(--sans); letter-spacing: .5px; padding: 6px 8px; border-radius: 8px; background: rgba(8, 9, 20, .88); color: var(--teal); }
+.card .idea { position: absolute; left: 8px; bottom: 8px; font: 700 10.5px/1 InterB, var(--sans); letter-spacing: .6px; padding: 5px 7px; border-radius: 6px; background: var(--gold); color: #241a06; }
 .card .txt { padding: 9px 10px 11px; background: var(--panel); flex: 1; }
 .card .nm { font-family: VT, monospace; font-size: 25px; line-height: 1; color: var(--gold); }
 .card .pr { margin-top: 5px; font-size: 13.5px; line-height: 1.35; color: var(--text); font-family: var(--sans); font-weight: 500; }
@@ -111,46 +112,99 @@ main.scr { flex: 1 0 auto; display: flex; flex-direction: column; padding-bottom
       background: linear-gradient(rgba(10,11,26,0), rgba(10,11,26,.96) 30%); }
 .go .btn { width: 100%; max-width: 420px; min-height: 56px; font-size: 18px; }
 
-/* year: the story beats */
-#year { align-items: center; }
-.yr { width: min(100%, 560px); overflow: hidden; }
-.ypic { position: relative; width: 100%; aspect-ratio: 5 / 4; max-height: 38vh; max-height: 38dvh; background: #15162c; overflow: hidden; touch-action: manipulation; }
-.ypic canvas.stage { z-index: 1; opacity: 0; transition: opacity .35s, filter 1.2s; }
-.ypic.live canvas.stage { opacity: 1; }
-.ypic .skiphint { position: absolute; right: 10px; bottom: 10px; z-index: 2; font: 700 12px/1 InterB, var(--sans); letter-spacing: .3px; padding: 7px 10px; border-radius: 99px; background: rgba(8, 9, 20, .72); color: var(--muted); opacity: 0; transition: opacity .3s; pointer-events: none; }
-.ypic.playing .skiphint { opacity: 1; transition-delay: .5s; }
-.opt.acting { border-color: var(--gold); animation: qwAct 1s ease-in-out infinite alternate; }
-@keyframes qwAct { from { box-shadow: 0 0 0 0 rgba(244, 200, 110, 0); } to { box-shadow: 0 0 0 3px rgba(244, 200, 110, .28); } }
-.ypic img, .ypic canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 1.2s; }
-.ypic .tag { position: absolute; z-index: 2; left: 10px; top: 10px; font-family: VT, monospace; font-size: 24px; padding: 4px 10px 2px; border-radius: 8px; background: rgba(8, 9, 20, .85); color: var(--gold); }
-.ybody { padding: 14px 16px 16px; }
-.yday { display: flex; align-items: center; gap: 12px; }
-.yday .d { font-family: VT, monospace; font-size: 34px; line-height: 1; min-width: 104px; }
-.track { position: relative; flex: 1; height: 8px; border-radius: 99px; background: #26284a; }
+/* year: the world fills the screen, the story floats over it */
+:root { --stw: min(100vw, calc(100vh * .5625)); }
+@supports (height: 100dvh) { :root { --stw: min(100vw, calc(100dvh * .5625)); } }
+#world { position: fixed; inset: 0; z-index: 0; overflow: hidden; display: none; background: #0a0b1a center / cover no-repeat; }
+body.immersive #world { display: block; }
+body.immersive #sky, body.immersive .below { display: none; }
+body.immersive { overflow: hidden; overscroll-behavior: none; }
+#world .wblur { position: absolute; inset: -60px; background: #0a0b1a center / cover no-repeat; filter: blur(30px) brightness(.5) saturate(1.15); transform: scale(1.1); }
+#world .wbox { position: absolute; top: 0; bottom: 0; left: 50%; width: var(--stw); transform: translateX(-50%); overflow: hidden; --top: calc(104px + env(safe-area-inset-top)); box-shadow: 0 0 80px rgba(0, 0, 0, .55); }
+#world .wshake, #world .wdrift { position: absolute; inset: 0; }
+#world .wdrift.on { animation: qwDrift 34s ease-in-out infinite alternate; transform-origin: 50% 58%; will-change: transform; }
+@keyframes qwDrift { from { transform: scale(1.015) translate3d(-.7%, .2%, 0); } to { transform: scale(1.065) translate3d(.7%, -.5%, 0); } }
+#world .wbg { position: absolute; max-width: none; display: block; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+#world .wbg.alt { opacity: 0; transition: opacity 1.6s ease; }
+#world .wbg.alt.on { opacity: 1; }
+#world canvas.stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#world .wtone { position: absolute; inset: 0; pointer-events: none; background: rgba(10, 8, 30, 0); transition: background 1.4s; }
+#world .wscrim { position: absolute; z-index: 3; top: 0; bottom: 0; left: 50%; width: var(--stw); transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(rgba(5, 6, 16, .62), rgba(5, 6, 16, 0) calc(120px + env(safe-area-inset-top))), linear-gradient(rgba(5, 6, 16, 0) 42%, rgba(5, 6, 16, .5) 62%, rgba(5, 6, 16, .86));
+  transition: opacity .5s; }
+body.acting #world .wscrim { opacity: .35; }
+.wlife { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.wlife i { position: absolute; border-radius: 50%; background: rgba(255, 240, 200, .75); opacity: 0; animation: lifeFloat 10s linear infinite; }
+.l-snow i { background: #fff; animation-name: lifeFall; }
+.l-sand i { background: rgba(236, 206, 146, .85); border-radius: 1px; animation-name: lifeBlow; }
+.l-fly i { background: #ffe9a0; box-shadow: 0 0 8px 2px rgba(255, 214, 110, .55); animation-name: lifeFly; }
+.l-bubble i { background: transparent; border: 1.5px solid rgba(220, 245, 255, .55); animation-name: lifeRise; }
+.l-star i { background: #fff; animation-name: lifeTwinkle; }
+.l-dust i { background: rgba(255, 236, 200, .6); }
+@keyframes lifeFloat { 0% { opacity: 0; transform: translate3d(0, 0, 0); } 20% { opacity: .7; } 80% { opacity: .5; } 100% { opacity: 0; transform: translate3d(18px, -70px, 0); } }
+@keyframes lifeFall { 0% { opacity: 0; transform: translate3d(0, 0, 0); } 8% { opacity: .9; } 100% { opacity: .7; transform: translate3d(30px, 105vh, 0); } }
+@keyframes lifeBlow { 0% { opacity: 0; transform: translate3d(-40px, 0, 0); } 10% { opacity: .85; } 100% { opacity: 0; transform: translate3d(560px, 60px, 0); } }
+@keyframes lifeFly { 0% { opacity: 0; transform: translate3d(0, 0, 0); } 25% { opacity: .95; transform: translate3d(14px, -16px, 0); } 50% { opacity: .2; transform: translate3d(-8px, -30px, 0); } 75% { opacity: .9; transform: translate3d(10px, -44px, 0); } 100% { opacity: 0; transform: translate3d(0, -60px, 0); } }
+@keyframes lifeRise { 0% { opacity: 0; transform: translate3d(0, 40px, 0); } 15% { opacity: .8; } 100% { opacity: 0; transform: translate3d(12px, -220px, 0); } }
+@keyframes lifeTwinkle { 0%, 100% { opacity: .15; } 50% { opacity: .9; } }
+.glass { background: rgba(12, 13, 32, .56); -webkit-backdrop-filter: blur(14px) saturate(1.25); backdrop-filter: blur(14px) saturate(1.25); border: 1px solid rgba(255, 255, 255, .13); }
+body.immersive header.top { position: fixed; z-index: 30; top: 0; left: 50%; width: var(--stw); transform: translateX(-50%); height: auto; padding: calc(6px + env(safe-area-inset-top)) 12px 0; }
+body.immersive header.top .ib { background: rgba(12, 13, 32, .5); border-color: rgba(255, 255, 255, .16); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+body.immersive .brand { display: none; }
+body.immersive .prog { font-size: 21px; text-shadow: 0 1px 10px rgba(0, 0, 0, .9), 0 0 2px rgba(0, 0, 0, .8); color: #e9e4f2; }
+#year { position: fixed; z-index: 20; top: 0; bottom: 0; left: 50%; width: var(--stw); transform: translateX(-50%); padding: 0; display: block; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+#year[hidden] { display: none !important; }
+.yhud { position: absolute; left: 12px; right: 12px; top: calc(58px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 12px; border-radius: 999px;
+  background: rgba(12, 13, 32, .5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, .12); transition: opacity .45s; }
+.yhud .d { font-family: VT, monospace; font-size: 26px; line-height: 1; min-width: 84px; color: var(--text); }
+.yhud .of { font-family: VT, monospace; font-size: 18px; color: var(--dim); }
+.track { position: relative; flex: 1; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .16); }
 .track .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--gold)); width: 0; transition: width .9s ease; }
-.track .mk { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #3a3c66; border: 2px solid var(--bg); }
+.track .mk { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #4a4c78; border: 2px solid rgba(10, 11, 26, .9); }
 .track .mk.done { background: var(--gold); }
-.ytext { margin: 14px 0 12px; font: 500 17px/1.5 var(--sans); color: var(--text); min-height: 3em; }
+.skiphint { position: absolute; left: 50%; top: calc(108px + env(safe-area-inset-top)); transform: translateX(-50%); font: 700 12.5px/1 InterB, var(--sans); letter-spacing: .3px; padding: 8px 12px; border-radius: 99px;
+  background: rgba(8, 9, 20, .55); color: var(--muted); opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+body.acting .skiphint { opacity: 1; transition-delay: .7s; }
+.ysheet { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px;
+  max-height: calc(100% - 110px - env(safe-area-inset-top)); overflow-y: auto; scrollbar-width: none; transition: opacity .45s ease, transform .45s ease; }
+.ysheet::-webkit-scrollbar { display: none; }
+body.acting .ysheet { opacity: 0; transform: translateY(26px); pointer-events: none; }
+.ysheet.enter { animation: sheetIn .5s ease both; }
+@keyframes sheetIn { from { opacity: 0; transform: translateY(18px); } }
+.ycard { padding: 13px 15px 14px; border-radius: 18px; background: rgba(12, 13, 32, .58); -webkit-backdrop-filter: blur(14px) saturate(1.25); backdrop-filter: blur(14px) saturate(1.25); border: 1px solid rgba(255, 255, 255, .13); }
+.ytag { display: inline-block; margin: 0 0 7px; font: 700 11px/1 InterB, var(--sans); letter-spacing: 1.2px; text-transform: uppercase; color: #241a06; background: var(--gold); padding: 5px 8px; border-radius: 6px; }
+.ytext { margin: 0; font: 500 17px/1.48 var(--sans); color: var(--text); text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+.ytext:empty { display: none; }
+.ycard .ytext:not(:empty) + .yres:not(:empty) { margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(255, 255, 255, .12); }
+.yres { margin: 0; font: 600 16.5px/1.45 var(--sans); color: var(--teal); }
+.yres:empty, .ycrowd:empty { display: none; }
+.ycrowd { margin: 7px 0 0; font: 600 13px/1.4 var(--sans); color: var(--muted); }
 .opts { display: flex; flex-direction: column; gap: 8px; }
-.opt { position: relative; overflow: hidden; text-align: left; width: 100%; min-height: 52px; padding: 12px 56px 12px 14px; border-radius: 13px; cursor: pointer;
-       background: var(--panel2); border: 1.5px solid var(--line); color: var(--text); font: 700 16px/1.3 InterB, var(--sans); }
-@media (hover: hover) { .opt:not(:disabled):hover { border-color: var(--lav); } }
+.opt { position: relative; overflow: hidden; text-align: left; width: 100%; min-height: 52px; padding: 12px 56px 12px 15px; border-radius: 14px; cursor: pointer;
+  background: rgba(16, 17, 42, .58); -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border: 1.5px solid rgba(255, 255, 255, .18); color: var(--text); font: 700 16px/1.3 InterB, var(--sans);
+  transition: border-color .2s, background .2s; }
+@media (hover: hover) { .opt:not(:disabled):hover { border-color: var(--lav); background: rgba(26, 27, 60, .66); } }
 .opt:not(:disabled):active { transform: scale(.99); }
 .opt:disabled { cursor: default; }
-.opt .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(183, 166, 238, .16); transition: width .8s ease; }
+.opt .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(183, 166, 238, .18); transition: width .8s ease; }
 .opt .lab { position: relative; }
-.opt .pct { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font: 400 22px/1 VT, monospace; color: var(--muted); opacity: 0; transition: opacity .4s; }
+.opt .pct { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); font: 400 22px/1 VT, monospace; color: var(--muted); opacity: 0; transition: opacity .4s; }
 .opt.chosen { border-color: var(--gold); }
-.opt.chosen .bar { background: rgba(244, 200, 110, .2); }
+.opt.chosen .bar { background: rgba(244, 200, 110, .24); }
 .opt.chosen .pct { color: var(--gold); }
+.opts.done .opt { min-height: 40px; padding-top: 8px; padding-bottom: 8px; font-size: 14.5px; }
 .opts.done .opt:not(.chosen) { color: var(--muted); }
 .opts.shown .pct { opacity: 1; }
-.yres { margin: 12px 0 0; font: 500 16px/1.45 var(--sans); color: var(--teal); min-height: 0; }
-.yres:empty { display: none; }
-.ycrowd { margin: 8px 0 0; font: 600 13px/1.4 var(--sans); color: var(--dim); }
-.ycrowd:empty { display: none; }
-.ynext { margin-top: 14px; display: flex; }
-.ynext .btn { width: 100%; min-height: 54px; font-size: 17px; }
+.opt.acting { border-color: var(--gold); }
+.ynext { display: flex; }
+.ynext .btn { width: 100%; min-height: 54px; font-size: 17px; box-shadow: 0 8px 28px rgba(0, 0, 0, .35); }
+@media (max-height: 700px) {
+  .ytext { font-size: 15.5px; line-height: 1.42; } .yres { font-size: 15px; }
+  .opt { min-height: 46px; padding-top: 9px; padding-bottom: 9px; font-size: 15px; }
+  .opts.done .opt { min-height: 36px; padding-top: 6px; padding-bottom: 6px; font-size: 13.5px; }
+  .ycard { padding: 11px 13px 12px; } .ynext .btn { min-height: 50px; }
+  .yhud { top: calc(54px + env(safe-area-inset-top)); padding: 4px 12px; } .yhud .d { font-size: 22px; }
+}
 
 /* end: the reveal */
 #end { align-items: center; }
@@ -338,9 +392,6 @@ footer nav.site a { color: var(--muted); }
   .card .pic { aspect-ratio: 16 / 10; }
   .ask { margin: 0 0 4px; } .ask .l1 { font-size: 30px; } .ask .l2 { font-size: 20px; }
   .card .txt { padding: 7px 9px 9px; } .card .nm { font-size: 23px; } .card .pr { font-size: 12.5px; }
-  .ypic { max-height: 30vh; max-height: 30dvh; }
-  .ytext { margin: 10px 0 10px; font-size: 16px; }
-  .opt { min-height: 48px; padding-top: 10px; padding-bottom: 10px; }
   .rv .pic { max-height: 28vh; max-height: 28dvh; }
   .hero h1 { font-size: 54px; } .hero p { margin-bottom: 20px; font-size: 16px; }
 }
@@ -358,6 +409,7 @@ footer nav.site a { color: var(--muted); }
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
+<div id="world" aria-hidden="true"><div class="wscrim"></div></div>
 <div class="app">
   <header class="top">
     <a class="ib back" id="bBack" href="/games" aria-label="All games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Games</span></a>
@@ -390,16 +442,17 @@ footer nav.site a { color: var(--muted); }
   </main>
 
   <main class="scr" id="year" hidden>
-    <div class="yr panel">
-      <div class="ypic" id="yPic"><span class="tag" id="yName"></span><span class="skiphint">Tap to skip</span></div>
-      <div class="ybody">
-        <div class="yday"><span class="d" id="yDay">DAY 1</span><span class="track" id="yTrack" aria-hidden="true"><span class="fill" id="yFill"></span></span></div>
+    <div class="yhud" id="yHud"><span class="d" id="yDay">DAY 1</span><span class="track" id="yTrack" aria-hidden="true"><span class="fill" id="yFill"></span></span><span class="of">/365</span></div>
+    <span class="skiphint" id="ySkip">Tap anywhere to skip</span>
+    <div class="ysheet" id="ySheet">
+      <div class="ycard">
+        <div class="ytag" id="yTag" hidden>A player's idea</div>
         <p class="ytext" id="yText" aria-live="polite"></p>
-        <div class="opts" id="yOpts" role="group" aria-label="What do you do?"></div>
         <p class="yres" id="yRes" aria-live="polite"></p>
         <p class="ycrowd" id="yCrowd"></p>
-        <div class="ynext" id="yNextWrap"><button class="btn gold" id="yNext">Begin the year</button></div>
       </div>
+      <div class="opts" id="yOpts" role="group" aria-label="What do you do?"></div>
+      <div class="ynext" id="yNextWrap"><button class="btn gold" id="yNext">Begin the year</button></div>
     </div>
   </main>
 
@@ -515,7 +568,7 @@ footer nav.site a { color: var(--muted); }
       <li><strong>Notes, signs and habits are clues.</strong> The planet usually tells you its rule if you pay attention.</li>
     </ul>
     <h3>About Quiet Worlds</h3>
-    <p>Quiet Worlds is a YouTube channel of calm, slightly eerie "choose a planet to survive on for one year" videos. Every episode shows four little low-poly worlds, each with a cosy promise and a hidden secret. Most planets in this game come straight from the episodes, with their pictures rendered from the same 3D scenes, plus a few new worlds made just for the game.</p>
+    <p>Quiet Worlds is a YouTube channel of calm, slightly eerie "choose a planet to survive on for one year" videos. Every episode shows four little low-poly worlds, each with a cosy promise and a hidden secret. Most planets in this game come straight from the episodes, with their pictures rendered from the same 3D scenes, plus a few new worlds made just for the game. Sunset City came from a player's suggestion. During your year, the planet fills the whole screen and the traveller acts out every choice you make.</p>
     <h3>FAQ</h3>
     <p><strong>Is it free?</strong> Yes, with no download or account. Ads below the game help pay for it. There are no paid retries.</p>
     <p><strong>Where is my progress saved?</strong> In your browser only (local storage). To move it to another phone, open More, then Save code. We only count anonymous plays and anonymous choices, so we can show what share of players chose each option (no cookies, no names). See the <a href="/privacy">privacy policy</a>.</p>
@@ -590,13 +643,13 @@ footer nav.site a { color: var(--muted); }
   <button class="btn" id="mClose">Close</button>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="worlds.js?v=5"></script>
-<script src="story.js?v=5"></script>
-<script src="keepsakes.js?v=5"></script>
-<script src="stats.js?v=5"></script>
-<script src="stage.js?v=5"></script>
-<script src="scene.js?v=5"></script>
-<script src="game.js?v=5"></script>
+<script src="worlds.js?v=6"></script>
+<script src="story.js?v=6"></script>
+<script src="keepsakes.js?v=6"></script>
+<script src="stats.js?v=6"></script>
+<script src="stage.js?v=6"></script>
+<script src="scene.js?v=6"></script>
+<script src="game.js?v=6"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
 </body>

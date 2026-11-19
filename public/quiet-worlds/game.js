@@ -85,20 +85,24 @@
 
   /* The daily drop: one safe world + three others, the same for everyone. Safe worlds cycle without
      repeats every 24 days, the others every 16 days (3 a day), each cycle in a fresh seeded order. */
-  var SAFE = WORLDS.filter(function (w) { return w.outcome === 'thrive'; });
-  var RISKY = WORLDS.filter(function (w) { return w.outcome !== 'thrive'; });
+  /* Guest worlds (w.from = the drop day they arrive, e.g. a player's idea) stay out of the two cycles, so adding one
+     never changes a day's planets. A guest takes one risky seat on its first day and every 16 days after. */
+  var SAFE = WORLDS.filter(function (w) { return w.outcome === 'thrive' && !w.from; });
+  var RISKY = WORLDS.filter(function (w) { return w.outcome !== 'thrive' && !w.from; });
+  var GUESTS = WORLDS.filter(function (w) { return !!w.from; });
   function dropSet(day) {
     var i = day - 1, perRisky = Math.floor(RISKY.length / 3);
     var cs = Math.floor(i / SAFE.length), cr = Math.floor(i / perRisky), jr = (i % perRisky) * 3;
     var safe = shuffle(SAFE.slice(), mulberry(hashStr('qw-drop-safe-' + cs)))[i % SAFE.length];
     var risky = shuffle(RISKY.slice(), mulberry(hashStr('qw-drop-risky-' + cr))).slice(jr, jr + 3);
+    GUESTS.forEach(function (g, gi) { if (day >= g.from && (day - g.from) % 16 === 0) risky[(day + gi) % 3] = g; });
     return shuffle([safe].concat(risky), mulberry(hashStr('qw-drop-order-' + day)));
   }
   var lastFree = [];
   function freeSet() {
     var rnd = Math.random, avoid = function (w) { return lastFree.indexOf(w.slug) < 0; };
     var safe = shuffle(SAFE.filter(avoid), rnd)[0] || SAFE[0];
-    var risky = shuffle(RISKY.filter(avoid), rnd).slice(0, 3);
+    var risky = shuffle(RISKY.concat(GUESTS).filter(avoid), rnd).slice(0, 3);
     var set = shuffle([safe].concat(risky), rnd);
     lastFree = set.map(function (w) { return w.slug; });
     return set;
@@ -113,13 +117,15 @@
   /* The safe world forgives everything, risky worlds one slip, doomed worlds none. */
   function ending(w, choices) {
     var m = mistakes(w, choices);
+    if (w.three) return m === 0 ? 0 : m === 1 ? 1 : 2;   // three endings: thrive with no slip, survive one
     if (w.outcome === 'thrive') return m === 0 ? 0 : 1;
     if (w.outcome === 'barely') return m <= 1 ? 1 : 2;
     return m === 0 ? 1 : 2;
   }
-  function bestEnding(w) { return w.outcome === 'thrive' ? 0 : 1; }
+  function bestEnding(w) { return w.outcome === 'thrive' || w.three ? 0 : 1; }
   function endText(w, e) {
     var alt = STORY[w.slug].alt;
+    if (w.three) return e === 0 ? w.verdict : e === 1 ? alt : STORY[w.slug].lost;
     if (w.outcome === 'thrive') return e === 0 ? w.verdict : alt;
     if (w.outcome === 'barely') return e === 1 ? w.verdict : alt;
     return e === 2 ? w.verdict : alt;
@@ -354,10 +360,11 @@
   /* ---------- screens + navigation ---------- */
   var SCREENS = ['start', 'drop', 'year', 'end', 'past', 'shelf'], current = 'start', histPushed = false, ignorePop = false;
   function show(id) {
-    if (id !== 'year') dropStage();
+    if (id !== 'year') { dropStage(); document.body.classList.remove('acting'); }
     SCREENS.forEach(function (s) { $(s).hidden = s !== id; });
     current = id;
     document.body.classList.toggle('ingame', id !== 'start');
+    document.body.classList.toggle('immersive', id === 'year');
     if (id !== 'start' && !histPushed) { try { history.pushState({ qw: 1 }, ''); histPushed = true; } catch (e) {} }
     window.scrollTo(0, 0);
   }
@@ -433,6 +440,7 @@
       var pic = document.createElement('div'); pic.className = 'pic'; pic.appendChild(artEl(w, 'a', ''));
       var num = document.createElement('span'); num.className = 'num'; num.textContent = '0' + (k + 1); pic.appendChild(num);
       if (mine && mine.w === w.slug) { var mn = document.createElement('span'); mn.className = 'mine'; mn.textContent = 'YOUR PICK'; pic.appendChild(mn); }
+      if (w.idea) { var ide = document.createElement('span'); ide.className = 'idea'; ide.textContent = "A PLAYER'S IDEA"; pic.appendChild(ide); }
       var tx = document.createElement('div'); tx.className = 'txt';
       var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = w.name;
       var pr = document.createElement('div'); pr.className = 'pr'; pr.textContent = w.promise;
@@ -450,6 +458,7 @@
     $('grid').classList.add('picked');
     $('bChoose').disabled = false; $('bChoose').textContent = 'Live on ' + D.set[k].name + ' for a year';
     audio.select(k);
+    if (window.QWScene && window.QWScene.preloadBg) window.QWScene.preloadBg(D.set[k].slug);
   }
   function confirmPlanet() {
     if (!D || D.sel < 0) return;
@@ -469,19 +478,32 @@
   /* ---------- the year ---------- */
   /* ---------- the traveller in the picture (scene.js); without it the still stays and choices answer at once ---------- */
   var stage = null, playing = false;
-  function dropStage() { if (stage) { var s = stage; stage = null; playing = false; s.destroy(); } $('yPic').classList.remove('playing'); }
+  function setActing(on) { document.body.classList.toggle('acting', !!on); }
+  function dropStage() { if (stage) { var s = stage; stage = null; playing = false; s.destroy(); } setActing(false); }
+  /* The world behind the year: the old still as a cover picture (fallback), then the full-screen scene on top. */
   function mountStage(w) {
     dropStage();
+    var host = $('world');
+    host.style.backgroundImage = w.img ? 'url("' + artSrc(w, 'a') + '")' : '';
     if (!window.QWScene || !window.QWScene.ok) return;
-    stage = window.QWScene.mount($('yPic'), w, { globe: w.img ? null : artEl(w, 'a', '', 96) });
+    stage = window.QWScene.mount(host, w, { globe: w.img ? null : artEl(w, 'a', '', 320) });
     if (!stage) return;
     var s = stage;
     s.onReady = function () {
       if (s !== stage || !R) return;
       var b = R.b;
+      sceneBeat();
       if (b >= 0 && R.c[b] != null) s.endState(STORY[R.w].beats[b].options[R.c[b]], STORY[R.w].beats[b].text);
       else if (b < 0 && !reduceMotion) s.arrive();
     };
+    s.onFail = function () { if (s === stage) { stage = null; playing = false; setActing(false); } };
+  }
+  /* The world's mood for the current beat: night picture (bg 'n') and a slowly darkening year. */
+  function sceneBeat() {
+    if (!stage || !stage.ready || !R) return;
+    var b = R.b, beat = b >= 0 ? STORY[R.w].beats[b] : null;
+    stage.setBg(beat && beat.bg ? beat.bg : '');
+    stage.setTone(b < 1 ? 0 : b === 1 ? .1 : .2);
   }
   function skipStage(e) {
     if (!playing || !stage) return;
@@ -492,9 +514,7 @@
   function runLabel() { return R.m === 'free' ? 'Free play' : R.off ? 'Day #' + R.day : R.m === 'drop' ? 'Practice' : 'Past #' + R.day; }
   function showYear() {
     var w = BY[R.w], st = STORY[R.w];
-    var pic = $('yPic'); Array.prototype.slice.call(pic.querySelectorAll('img,canvas')).forEach(function (n) { n.remove(); });
-    pic.insertBefore(artEl(w, 'a', w.name), pic.firstChild);
-    $('yName').textContent = w.name;
+    $('yTag').hidden = !w.idea;
     mountStage(w);
     var tr = $('yTrack'); Array.prototype.slice.call(tr.querySelectorAll('.mk')).forEach(function (n) { n.remove(); });
     st.beats.forEach(function (b) { var mk = document.createElement('i'); mk.className = 'mk'; mk.style.left = (b.day / YEAR * 100) + '%'; tr.appendChild(mk); });
@@ -510,9 +530,10 @@
     $('yDay').textContent = 'DAY ' + day;
     $('yFill').style.width = (day / YEAR * 100) + '%';
     Array.prototype.forEach.call($('yTrack').querySelectorAll('.mk'), function (mk, i) { mk.classList.toggle('done', i < b || (i === b && R.c[b] != null)); });
-    var fl = b < 1 ? '' : b === 1 ? 'saturate(.9) brightness(.92)' : 'saturate(.78) brightness(.84) hue-rotate(-8deg)';
-    Array.prototype.forEach.call($('yPic').querySelectorAll('img,canvas'), function (el) { el.style.filter = fl; });
+    $('yTag').hidden = !(w.idea && b < 0);
+    sceneBeat();
     if (stage && stage.ready && !(b >= 0 && R.c[b] != null)) { if (b >= 0 || R.c.length) stage.reset(); }
+    sheetIn();
     if (b < 0) {
       $('yText').textContent = st.arrive;
       $('yNext').textContent = 'Begin the year';
@@ -548,9 +569,9 @@
     audio.choice(!o.ok);
     if (stage && stage.ready && !reduceMotion) {
       Array.prototype.forEach.call($('yOpts').children, function (btn) { btn.disabled = true; if (+btn.dataset.o === oi) btn.classList.add('chosen', 'acting'); });
-      $('yOpts').classList.add('done'); playing = true; $('yPic').classList.add('playing');
+      $('yOpts').classList.add('done'); playing = true; setActing(true);
       var plan = stage.play(o, beat.text, function () {
-        playing = false; $('yPic').classList.remove('playing');
+        playing = false; setActing(false);
         if (!R || R.b !== b || current !== 'year') return;
         Array.prototype.forEach.call($('yOpts').children, function (btn) { btn.classList.remove('acting'); });
         afterChoice();
@@ -561,11 +582,10 @@
     afterChoice();
   }
   function afterChoice() {
-    markChosen();
-    setTimeout(function () {
-      try { var r = $('yNextWrap').getBoundingClientRect(); if (r.bottom > window.innerHeight) $('yNextWrap').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'end' }); } catch (e) {}
-    }, 120);
+    markChosen(); sheetIn();
+    try { $('yNext').focus({ preventScroll: true }); } catch (e) {}
   }
+  function sheetIn() { var sh = $('ySheet'); sh.classList.remove('enter'); void sh.offsetWidth; if (!reduceMotion) sh.classList.add('enter'); sh.scrollTop = 0; }
   function markChosen() {
     var b = R.b, oi = R.c[b], beat = STORY[R.w].beats[b], opts = $('yOpts');
     opts.classList.add('done');
@@ -574,6 +594,7 @@
       if (+btn.dataset.o === oi) { btn.classList.add('chosen'); btn.setAttribute('aria-pressed', 'true'); }
     });
     $('yRes').textContent = beat.options[oi].r;
+    $('yText').textContent = '';
     $('yNext').textContent = b < 2 ? 'Continue' : 'See day 365';
     $('yNextWrap').hidden = false;
     Array.prototype.forEach.call($('yTrack').querySelectorAll('.mk'), function (mk, i) { mk.classList.toggle('done', i <= b); });
@@ -1014,7 +1035,7 @@
     } else if (current === 'end' && !endDone && (e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { finishEnd(); e.preventDefault(); }
   });
   window.addEventListener('resize', skyResize);
-  $('year').addEventListener('pointerdown', skipStage);
+  document.addEventListener('pointerdown', function (e) { if (current === 'year') skipStage(e); });
 
   skyResize(); syncMuteIcon(); refreshStart(); show('start');
   requestAnimationFrame(loop);

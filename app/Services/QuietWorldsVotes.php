@@ -36,7 +36,7 @@ class QuietWorldsVotes
         'lantern-lake', 'mushroom', 'night-sea', 'double-well', 'empty-zoo', 'scarecrow', 'endless-mall', 'pumpkin-patch',
         'drive-in', 'endless-library', 'teddy-bear-hills', 'night-market', 'playground', 'observatory', 'sunken-city',
         'kaiju-bones', 'video-store', 'pawn-shop', 'sunbeam-orchard', 'teacup-sea', 'sleeping-giants', 'star-mailbox',
-        'weather-shop', 'echo-canyon', 'hundred-floors', 'whisper-grass',
+        'weather-shop', 'echo-canyon', 'hundred-floors', 'whisper-grass', 'sunset-city',
     ];
 
     public function __construct(public MetronomeStats $stats) {}

@@ -1,8 +1,8 @@
 /* Quiet Worlds service worker, scoped to this folder. Keeps the game working offline after a visit.
    Pages: network first, cache as fallback. Game files and planet pictures: cache first (they are versioned).
    Never caches the stats beacon, the votes API, ads or other sites. No push notifications. */
-var CACHE = 'qw-v5';
-var CORE = ['index.html', 'game.js?v=5', 'worlds.js?v=5', 'story.js?v=5', 'keepsakes.js?v=5', 'stats.js?v=5', 'stage.js?v=5', 'scene.js?v=5', 'traveller.webp?v=1',
+var CACHE = 'qw-v6';
+var CORE = ['index.html', 'game.js?v=6', 'worlds.js?v=6', 'story.js?v=6', 'keepsakes.js?v=6', 'stats.js?v=6', 'stage.js?v=6', 'scene.js?v=6', 'traveller.webp?v=3',
   'vt323.woff2', 'inter-700.woff2', 'favicon.svg', 'icon-192.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', function (e) {
