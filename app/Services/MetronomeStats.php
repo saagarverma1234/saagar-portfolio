@@ -50,7 +50,7 @@ class MetronomeStats
 
     public const CONTROLS = [
         'nudge', 'shake', 'flip', 'big', 'weights', 'lift', 'teams', 'count', 'speed', 'reset', 'randomise', 'again', 'tap',
-        'menu', 'create',
+        'menu', 'create', 'skip',
     ];
 
     /** Start layouts a player level can use. */
