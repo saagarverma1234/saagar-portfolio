@@ -26,7 +26,7 @@
   function dailyInfo() { var d = save.daily || {}, t = today(); return { streak: d.last >= t - 1 ? d.streak || 0 : 0, doneToday: d.last === t }; }
   var fails = {};
   /* early levels (1-10) offer the hint after 2 misses, later ones after 3 (18 Nov: level 6 won only 51% of tries, 31% fewer players reached 6 than 5) */
-  function stuckAt(i) { return i < 10 ? 2 : 3; }
+  function stuckAt(i) { return i === 5 ? 1 : i < 10 ? 2 : 3; }  /* 19 Nov: level 6 (Tap to turn) still lost a third of players, hint after the FIRST miss */
   function starsOf(i) { return save.stars[i] | 0; }
   function unlocked(i) { return i === 0 || starsOf(i - 1) > 0 || starsOf(i) > 0; }
 

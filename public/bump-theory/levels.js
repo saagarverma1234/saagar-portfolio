@@ -49,7 +49,7 @@
     { name: 'Ramp', tip: 'Watch where the ball rolls.',
       drop: { x: 130, y: TOP }, fixed: [seg(60, 330, 430, 470)], inv: [{ t: 'gate', n: 3, c: 2 }],
       sol: [g(3, 560, 560, 90), g(3, 600, 820)], stars: [4, 6, 9] },
-    { name: 'Tap to turn', tip: 'Tap a gate to turn it. Lava eats balls.',
+    { name: 'Tap to turn', tip: 'Tap a gate to turn it upright. Lava eats balls.',
       drop: { x: 110, y: TOP }, fixed: [seg(50, 290, 330, 420), lava(270, 1235, 540, 50)],
       inv: [{ t: 'gate', n: 5, c: 1 }, { t: 'wall', c: 1 }],
       sol: [g(5, 470, 520, 90), wl(560, 900, 60)], stars: [3, 4, 5] },

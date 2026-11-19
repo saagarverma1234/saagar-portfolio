@@ -34,7 +34,7 @@
     { id: 'tie3', name: 'Break the 3-way tie', N: 100, start: 'tie3', score: 'flips', goal: 'Three teams a third of a swing apart. Left alone, this tie never breaks. Fewest flips wins: tap metronomes of ONE team to flip them. How many does it take?' },
     { id: 'shake', name: 'Shake at 229', N: 100, start: 'random', goal: 'All dialled to 208. Turn on the motor: it shakes the board at 229. Whose beat do they end up on?' },
     { id: 'weights', name: 'Weights off', N: 100, start: 'random', weights: true, goal: '48 kg of weights on the board. It is too heavy for the metronomes to move, so they stay out of step. Take the weights off.' },
-    { id: 'lift', name: 'Lift 20 off', N: 100, start: 'tie3', goal: 'A perfect 3-way tie. Lift 20 lime ones off the board. What do the other 80 do?' },
+    { id: 'lift', name: 'Lift 20 off', N: 100, start: 'tie3', goal: 'A perfect 3-way tie. Lift 20 lime ones off the board, then wait about 8 s. What do the other 80 do?' },
     { id: 'big', name: 'Add 1 big one', N: 100, start: 'tie3', goal: 'A perfect 3-way tie. Add one big metronome, 18x heavier. Whose beat wins?' }
   ];
   var CHMAP = {}; CH.forEach(function (c) { CHMAP[c.id] = c; });
