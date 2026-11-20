@@ -100,6 +100,28 @@ class AdminController extends Controller
     }
 
     /**
+     * NDJSON dump of one game's events for offline analysis (admin only, never the kids' games).
+     * ?game=bump-theory&days=30&after=<id>  (at most 50,000 rows per call; page with after=<last id>)
+     */
+    public function export(Request $request): Response
+    {
+        $game = (string) $request->query('game', '');
+        if (! $this->isAuthenticated($request) || ! isset(MetronomeStats::GAMES[$game]) || in_array($game, MetronomeStats::KIDS_GAMES, true)) {
+            return $this->private(response('Not found', 404));
+        }
+        $days = max(1, min(365, (int) $request->query('days', 30)));
+        $after = max(0, (int) $request->query('after', 0));
+        $this->stats->forGame($game);
+        $rows = $this->stats->export($game, time() - $days * 86400, $after);
+
+        return $this->private(response()->stream(function () use ($rows): void {
+            foreach ($rows as $row) {
+                echo json_encode($row, JSON_UNESCAPED_SLASHES), "\n";
+            }
+        }, 200, ['Content-Type' => 'application/x-ndjson; charset=utf-8']));
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function dashboard(Request $request, bool $includeTest): array

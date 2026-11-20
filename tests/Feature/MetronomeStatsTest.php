@@ -233,3 +233,14 @@ test('the admin shows a daily challenge row as its date, not the day number', fu
     $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin?game=quiet-worlds&range=all')
         ->assertOk()->assertSee('<td class="n">3</td>', false);
 });
+
+test('the export needs a login, never serves the kids game and returns ndjson rows', function () {
+    beacon(['e' => 'pageview', 'g' => 'bump-theory', 'sid' => str_repeat('b', 16), 'd' => ['ref' => '']]);
+    beacon(['e' => 'pageview', 'g' => 'swipe-theory', 'sid' => str_repeat('c', 16), 'd' => ['ref' => '']]);
+    $this->get('/admin/export?game=bump-theory')->assertNotFound();
+    $cookie = adminCookie();
+    $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin/export?game=swipe-theory')->assertNotFound();
+    $body = $this->withUnencryptedCookie('metronome_admin', $cookie)->get('/admin/export?game=bump-theory&days=2')->assertOk()->streamedContent();
+    $rows = array_values(array_filter(explode("\n", $body)));
+    expect($rows)->toHaveCount(1)->and(json_decode($rows[0], true)['name'])->toBe('pageview');
+});

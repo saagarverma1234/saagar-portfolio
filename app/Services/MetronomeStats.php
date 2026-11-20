@@ -894,6 +894,25 @@ class MetronomeStats
         ], $rows);
     }
 
+    /**
+     * Raw event rows for the private deep-dive export (/admin/export). Never for the kids' games:
+     * their data stays on the server and is only shown as dashboard totals.
+     *
+     * @return \Generator<int, object>
+     */
+    public function export(string $game, int $from, int $afterId = 0, int $limit = 50000): \Generator
+    {
+        if (! isset(self::GAMES[$game]) || in_array($game, self::KIDS_GAMES, true)) {
+            return;
+        }
+        $rows = $this->db()->table('events')->where('game', $game)->where('test', 0)->where('ts', '>=', $from)->where('id', '>', $afterId)
+            ->orderBy('id')->limit($limit)
+            ->cursor(['id', 'ts', 'name', 'vid', 'cid', 'sid', 'country', 'ref', 'utm', 'chal', 'ctrl', 'device', 'os', 'browser', 'ret', 'num', 'data']);
+        foreach ($rows as $row) {
+            yield $row;
+        }
+    }
+
     public function testEventCount(): int
     {
         return $this->db()->table('events')->where('test', 1)->count()

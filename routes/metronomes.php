@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/metronomes-api/event', [EventController::class, 'store']);
 
 Route::get('/admin', [AdminController::class, 'show']);
+Route::get('/admin/export', [AdminController::class, 'export']);
 Route::post('/admin/login', [AdminController::class, 'login']);
 Route::post('/admin/logout', [AdminController::class, 'logout']);
 Route::post('/admin/delete-test', [AdminController::class, 'deleteTest']);
