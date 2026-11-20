@@ -165,6 +165,14 @@ a.btn { color: var(--text); text-decoration: none; }
 .res .row + .row { margin-top: 10px; }
 .res .rdaily { display: flex; margin: 6px auto -6px; color: var(--gold); }
 .res .rdaily[hidden] { display: none; }
+/* 20 Nov 2026: "Play next" after the day's puzzle or the last level (natural end of a session) */
+.res .nextg { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 6px 10px 6px 6px; min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text); text-decoration: none; text-align: left; }
+.res .nextg[hidden] { display: none; }
+.res .nextg img { width: 64px; height: 36px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; background: #000; }
+.res .nextg span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.15; }
+.res .nextg small { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); }
+.res .nextg b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.res .nextg svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--gold); }
 .res .rsave { color: var(--muted); font-size: 14px; }
 .lv .tot { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
 .lv .lvsave { font-size: 13px; min-height: 40px; padding: 0 10px; color: var(--gold); }
@@ -280,6 +288,7 @@ footer nav.site a { color: var(--muted); }
         <div class="row"><button class="btn gold big" id="bNext"><span id="nextLab">Next level</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div>
         <button class="lnk rdaily" id="bRDaily" hidden>Try today's daily challenge</button>
         <button class="lnk rdaily rsave" id="bRSave" hidden>Save your progress: get a save code</button>
+        <a class="nextg" id="bRNextGame" hidden href="/quiet-worlds/?utm_source=bump-theory&amp;utm_medium=playnext"><img src="/images/games/quiet-worlds.webp" alt="" width="64" height="36" loading="lazy" decoding="async"><span><small>Play next</small><b>Choose Your Planet</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
       </div>
     </div>
 
@@ -397,11 +406,11 @@ footer nav.site a { color: var(--muted); }
 </div>
 <div class="toast" id="toast"></div>
 <script src="sim.js?v=3"></script>
-<script src="levels.js?v=5"></script>
+<script src="levels.js?v=6"></script>
 <script src="/game-save.v1.js?v=1"></script>
-<script src="game.js?v=7"></script>
+<script src="game.js?v=8"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
-<script src="/game-stats.v1.js?v=4" data-game="bump-theory" defer></script>
+<script src="/game-stats.v1.js?v=5" data-game="bump-theory" defer></script>
 </body>
 </html>

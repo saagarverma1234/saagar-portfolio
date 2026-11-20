@@ -928,15 +928,17 @@
     if (navigator.share) { navigator.share({ title: title, text: text, url: link }).catch(function () {}); return; }
     copyText(text + ' ' + link).then(function (ok) { toast(ok ? 'Link copied' : link); });
   }
+  /* utm_source=share (20 Nov 2026): /admin shows how many visitors the shared results bring back */
+  var UTM_SHARE = 'utm_source=share&utm_campaign=metronomes';
   function shareUrl(useMyTime) {
     var base = location.origin + location.pathname;
-    if (spec && spec.kind === 'daily') return base + '?daily';
+    if (spec && spec.kind === 'daily') return base + '?daily&' + UTM_SHARE;
     if (spec) {
       var L = {}; for (var k in spec) L[k] = spec[k];
       if (useMyTime && last.time && (last.beaten || !spec.target)) L.target = Math.min(r1(last.time), spec.target || 1e9);
-      return base + '?l=' + LV.encodeLevel(L);
+      return base + '?l=' + LV.encodeLevel(L) + '&' + UTM_SHARE;
     }
-    return base + (challenge ? '?c=' + challenge.id : '');
+    return base + (challenge ? '?c=' + challenge.id + '&' : '?') + UTM_SHARE;
   }
   function share() {
     var link = shareUrl(round.synced);

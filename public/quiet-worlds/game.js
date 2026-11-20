@@ -684,6 +684,7 @@
     $('bSkip').hidden = true; moodT = 0;
     if (R.ks === 'new') { $('rvKs').classList.add('new'); audio.found(); }
     tick();
+    prepShare();
   }
   function renderEndCrowd() {
     var el = $('rvCrowd'), v = votes(R.w, R.m === 'free' ? today() : R.day), raw = VOTES[R.w + ':' + (R.m === 'free' ? today() : R.day)];
@@ -725,10 +726,10 @@
     cd.innerHTML = '';
     if (R.m === 'free') {
       main.textContent = 'Next planet'; main.onclick = function () { openDrop(today(), 'free'); };
-      a.textContent = 'Share'; a.onclick = share;
+      a.textContent = 'Share'; a.onclick = quickShare;
       cd.textContent = 'Years survived in a row: ' + S.free.streak + ' (best ' + S.free.best + ')';
     } else {
-      main.textContent = 'Share my year'; main.onclick = share;
+      main.textContent = 'Share my year'; main.onclick = quickShare;
       if (R.m === 'past') { a.textContent = 'Past planets'; a.onclick = function () { openPast(); }; }
       else { a.textContent = 'Other planets'; a.onclick = function () { openDrop(today(), 'drop'); }; }
       cd.appendChild(document.createTextNode('Next four planets in '));
@@ -958,9 +959,41 @@
   function shareText() {
     var w = BY[R.w], k = S.ks[R.w], hasK = R.ks === 'new' || R.ks === 'have';
     return (R.m === 'free' ? 'Quiet Worlds: ' : 'Quiet Worlds Day #' + R.day + ': ') + 'I picked ' + w.name + ' and ' + ['thrived', 'survived the year', "didn't make it"][R.e] + '.' +
-      (hasK ? ' Keepsake: ' + ksName(R.w) + ' (' + RAR[k.r] + ').' : '') + ' Which planet would you pick? ' + PUBLIC_URL;
+      (hasK ? ' Keepsake: ' + ksName(R.w) + ' (' + RAR[k.r] + ').' : '') + ' Which planet would you pick? ' + PUBLIC_URL + '?utm_source=share&utm_campaign=quiet-worlds';
   }
   var cardBlob = null;
+  /* One-tap "Share my year" (20 Nov 2026: 25 share actions from 760 finished years with the 2-step card).
+     The card is drawn when the end screen settles, so the tap hands the image straight to the share sheet
+     (Safari needs navigator.share inside the tap). No share sheet (most desktops) -> the card preview as before. */
+  var ready = null;
+  function prepShare() {
+    ready = null;
+    if (!navigator.share || !navigator.canShare || !window.File || !R || R.e == null) return;
+    var run = R, w = BY[R.w];
+    var go = function () {
+      if (R !== run) return;
+      try {
+        makeCard().toBlob(function (b) {
+          if (!b || R !== run) return;
+          try { var f = new File([b], 'quiet-worlds-year.png', { type: 'image/png' }); if (navigator.canShare({ files: [f] })) ready = { r: run, f: f }; } catch (e) {}
+        }, 'image/png');
+      } catch (e) {}
+    };
+    var waits = [];
+    if (w.img) { var im = loadImg(artSrc(w, 'b')); if (!im.complete) waits.push(new Promise(function (res) { im.addEventListener('load', res, { once: true }); im.addEventListener('error', res, { once: true }); setTimeout(res, 2500); })); }
+    var fontP = document.fonts && document.fonts.load ? document.fonts.load('40px VT') : Promise.resolve();
+    Promise.all(waits.concat([fontP.catch(function () {})])).then(go, go);
+  }
+  function quickShare() {
+    if (!R || R.e == null) return;
+    stats.track('share', { w: 'button' });
+    var q = ready;
+    if (q && q.r === R && navigator.share) {
+      try { navigator.share({ files: [q.f], text: shareText() }).catch(function (e) { if (e && e.name !== 'AbortError') share(); }); return; } catch (e) {}
+    }
+    if (navigator.share) { try { navigator.share({ text: shareText() }).catch(function () {}); return; } catch (e) {} }
+    share();
+  }
   function share() {
     if (!R || R.e == null) return;
     var go = function () {

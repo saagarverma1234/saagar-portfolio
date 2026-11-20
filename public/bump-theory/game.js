@@ -371,11 +371,13 @@
       $('bNext').querySelector('svg').style.display = G.nextAct === 'retry' || G.nextAct === 'hint' ? 'none' : '';
       $('bRetry').querySelector('span').textContent = G.nextAct === 'hint' ? 'Try again' : G.nextAct === 'retry' ? 'Hint' : 'Retry';
       $('bShare').hidden = got === 0; $('rcard').classList.toggle('lost', got === 0);
+      if (got > 0 && navigator.share) prepCard();
       // past the tutorial, a win points at today's daily (the menu link alone was barely found: 15 Nov)
       $('bRDaily').hidden = !(!G.daily && got > 0 && i0 >= 4 && !dailyInfo().doneToday);
       // once, after a real win (level 3+ or a daily): point at the save code, never next to the daily link
       var sh = !!saveCode && got > 0 && (G.daily || i0 >= 2) && $('bRDaily').hidden && saveCode.hintDue();
       $('bRSave').hidden = !sh; if (sh) saveCode.hintShown();
+      $('bRNextGame').hidden = !(got > 0 && (G.daily || i0 === LEVELS.length - 1)) || !$('bRSave').hidden;
       $('result').hidden = false; $('tray').style.visibility = 'hidden';
       for (var s2 = 0; s2 < got; s2++) (function (s3) {
         setTimeout(function () { ss[s3].classList.add('on'); Snd.play('bell', 7 + s3 * 2, 0.4); }, 250 + s3 * 260);
@@ -546,7 +548,7 @@
     goMenu();
   });
   $('bLvMenu').addEventListener('click', function () { goMenu(); });
-  $('bShare').addEventListener('click', function () { openCard(); });
+  $('bShare').addEventListener('click', function () { quickShare(); });
 
   function openLevels() {
     var grid = $('grid'); grid.innerHTML = '';
@@ -663,8 +665,36 @@
     if (m.r.daily) return 'I got ' + fmt(m.r.count) + ' balls from 1 ball on today\'s Bump Theory daily challenge' + (m.r.streak > 1 ? ' (' + m.r.streak + '-day streak)' : '') + '! Can you beat it? ' + u;
     return m.sand ? 'I made ' + fmt(m.r.count) + ' balls in the Bump Theory sandbox. ' + u : 'I got ' + fmt(m.r.count) + ' balls from 1 ball on Bump Theory level ' + (m.r.level + 1) + '! Can you beat it? ' + u;
   }
-  function shareUrl(m) { return m.sand ? URL_BASE : m.r.daily ? URL_BASE + '?daily' : URL_BASE + '?level=' + (m.r.level + 1); }
+  /* utm_source=share: /admin shows how many visitors the shared links bring back (20 Nov 2026) */
+  function shareUrl(m) { return (m.sand ? URL_BASE + '?' : m.r.daily ? URL_BASE + '?daily&' : URL_BASE + '?level=' + (m.r.level + 1) + '&') + 'utm_source=share&utm_campaign=bump-theory'; }
   var lastCard = null;
+  /* One-tap share (20 Nov 2026: 6 shares in 3,210 sessions with the 2-step card, Metronome's 1-tap banner gets ~5%).
+     The card is drawn as soon as a win shows, so the tap can hand the image straight to the share sheet
+     (Safari needs navigator.share inside the tap). No share sheet (most desktops) -> the card modal as before. */
+  var ready = null;
+  function prepCard() {
+    ready = null;
+    try {
+      var m = makeCard();
+      m.canvas.toBlob(function (b) {
+        if (!b || !window.File) return;
+        try { var f = new File([b], 'bump-theory.png', { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [f] })) ready = { m: m, f: f }; } catch (e) { /* ignore */ }
+      }, 'image/png');
+    } catch (e) { ready = null; }
+  }
+  function quickShare() {
+    var q = ready;
+    if (q && G.lastResult && q.m.r === G.lastResult && navigator.share) {
+      try {
+        navigator.share({ files: [q.f], text: shareText(q.m) }).catch(function (e) { if (e && e.name !== 'AbortError') openCard(); });
+        return;
+      } catch (e) { /* fall through */ }
+    }
+    if (navigator.share && G.lastResult && G.mode !== 'sandbox') {
+      try { navigator.share({ title: '1 Ball \u2192 10,000', text: shareText({ r: G.lastResult, sand: false }) }).catch(function () {}); return; } catch (e) { /* fall through */ }
+    }
+    openCard();
+  }
   function openCard() {
     var go = function () {
       lastCard = makeCard();

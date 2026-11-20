@@ -168,7 +168,12 @@ body.acting .skiphint { opacity: 1; transition-delay: .7s; }
 .ysheet { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px;
   max-height: calc(100% - 110px - env(safe-area-inset-top)); overflow-y: auto; scrollbar-width: none; transition: opacity .45s ease, transform .45s ease; }
 .ysheet::-webkit-scrollbar { display: none; }
-body.acting .ysheet { opacity: 0; transform: translateY(26px); pointer-events: none; }
+/* 20 Nov 2026: while the traveller acts, the chosen answer stays on screen with a progress fill (the empty half-screen lost
+   players: 21% of those who made a choice left mid-year after the full-screen update, 6% before) */
+body.acting .ysheet { pointer-events: none; }
+body.acting .ysheet .ycard, body.acting .ysheet .ynext, body.acting .opt:not(.acting) { display: none; }
+body.acting .opt.acting .bar { animation: actBar 2.8s linear forwards; background: rgba(244, 200, 110, .26); }
+@keyframes actBar { from { width: 0; } to { width: 100%; } }
 .ysheet.enter { animation: sheetIn .5s ease both; }
 @keyframes sheetIn { from { opacity: 0; transform: translateY(18px); } }
 .ycard { padding: 13px 15px 14px; border-radius: 18px; background: rgba(12, 13, 32, .58); -webkit-backdrop-filter: blur(14px) saturate(1.25); backdrop-filter: blur(14px) saturate(1.25); border: 1px solid rgba(255, 255, 255, .13); }
@@ -271,6 +276,14 @@ body.acting .ysheet { opacity: 0; transform: translateY(26px); pointer-events: n
 .tip .x { background: none; border: 0; color: var(--dim); min-width: 40px; min-height: 40px; cursor: pointer; font-size: 20px; }
 .endact { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
 .endact .btn.gold { min-height: 54px; font-size: 17px; }
+/* 20 Nov 2026: one "Play next" card at the end of the year (the day's planet is done; 22% of players come from Facebook and never saw the other games) */
+.nextg { display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text); text-decoration: none; text-align: left; }
+.nextg:hover { border-color: rgba(244,200,110,.55); }
+.nextg img { width: 64px; height: 36px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; background: #000; }
+.nextg span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.15; }
+.nextg small { font: 700 10px var(--sans); letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); }
+.nextg b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nextg svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--gold); }
 .skip { position: absolute; right: 10px; top: 10px; background: rgba(8, 9, 20, .85); border: 1px solid var(--line); border-radius: 999px; min-height: 36px; padding: 0 14px; font-size: 13px; cursor: pointer; color: var(--muted); }
 
 /* list screens: past planets + shelf */
@@ -477,6 +490,7 @@ footer nav.site a { color: var(--muted); }
           <div class="endact">
             <button class="btn gold" id="bEndMain">Share my year</button>
             <div class="row"><button class="btn" id="bEndA">Other planets</button><button class="btn" id="bEndB">Home</button></div>
+            <a class="nextg" id="bNextGame" href="/bump-theory/?utm_source=quiet-worlds&amp;utm_medium=playnext"><img src="/images/games/bump-theory.webp" alt="" width="64" height="36" loading="lazy" decoding="async"><span><small>Play next</small><b>1 Ball → 10,000</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
           </div>
         </div>
       </div>
@@ -649,7 +663,7 @@ footer nav.site a { color: var(--muted); }
 <script src="stats.js?v=6"></script>
 <script src="stage.js?v=6"></script>
 <script src="scene.js?v=6"></script>
-<script src="game.js?v=6"></script>
+<script src="game.js?v=7"></script>
 <script src="/game-feedback.js?v=1" defer></script>
 <script src="/game-more.js?v=1" defer></script>
 </body>
